@@ -1,0 +1,25 @@
+{
+  "name": "opennote",
+  "version": "0.6.0",
+  "private": true,
+  "description": "Self-hosted Obsidian-vault-driven blog/notes platform",
+  "license": "MIT",
+  "scripts": {
+    "build": "pnpm -r --filter=./packages/* build",
+    "dev": "pnpm --filter @opennote/server dev",
+    "sync": "pnpm --filter @opennote/cli start -- sync",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "clean": "pnpm -r exec rm -rf dist node_modules .turbo"
+  },
+  "devDependencies": {
+    "typescript": "^5.5.4",
+    "tsx": "^4.16.5",
+    "vitest": "^2.0.5",
+    "@types/node": "^20.14.10"
+  },
+  "packageManager": "pnpm@9.7.0",
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

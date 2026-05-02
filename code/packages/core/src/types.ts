@@ -1,0 +1,127 @@
+/**
+ * 核心领域类型。所有 package 共享这一份定义。
+ * 与 DevDoc/01-data-model.md 严格对应。
+ */
+
+export type Visibility = 'public' | 'unlisted' | 'link-only' | 'private';
+
+/** 一篇笔记在 SQLite 里的形态 */
+export interface NoteRow {
+  slug: string;            // 唯一主键，一般从标题自动生成
+  title: string;
+  summary: string | null;
+  body_html: string;       // 已渲染好的 HTML
+  body_text: string;       // 纯文本，用于全文搜索
+  visibility: Visibility;
+  searchable: 0 | 1;       // bool（SQLite 不区分）
+  short_id: string | null; // 5 字符短链
+  source_path: string;     // 相对 vault 根的路径，例如 "posts/mcts.md"
+  created_at: string;      // ISO 8601
+  updated_at: string;
+  published_at: string | null;
+  scheduled_at: string | null;
+  word_count: number;
+  reading_minutes: number;
+  cover: string | null;    // 媒体路径
+  hash: string;            // 源文件内容 sha256，用于增量
+}
+
+/** frontmatter（原 .md 顶部的 YAML） */
+export interface Frontmatter {
+  title?: string;
+  slug?: string;
+  summary?: string;
+  visibility?: Visibility;
+  searchable?: boolean;
+  short_id?: string;
+  tags?: string[];
+  cover?: string;
+  created_at?: string;
+  published_at?: string;
+  scheduled_at?: string;
+  /** 原 yaml 文档里出现的、我们没显式认识的字段，原样保留 */
+  [key: string]: unknown;
+}
+
+/** 解析后的笔记（normalize 之前 / 之后都用这个） */
+export interface ParsedNote {
+  source_path: string;
+  frontmatter: Frontmatter;
+  body: string;            // 去掉 frontmatter 的 markdown
+  hash: string;
+}
+
+export interface NormalizedNote extends ParsedNote {
+  slug: string;
+  title: string;
+  visibility: Visibility;
+  searchable: boolean;
+  short_id: string | null;
+  tags: string[];
+  word_count: number;
+  reading_minutes: number;
+}
+
+/** 同步管线产出的事件，给 webhook / SSE 用 */
+export type SyncEvent =
+  | { kind: 'note.published'; slug: string; visibility: Visibility }
+  | { kind: 'note.updated'; slug: string }
+  | { kind: 'note.unpublished'; slug: string; reason: string }
+  | { kind: 'sync.started' }
+  | { kind: 'sync.completed'; stats: SyncStats }
+  | { kind: 'sync.failed'; err: string };
+
+export interface SyncStats {
+  added: number;
+  modified: number;
+  removed: number;
+  failed: number;
+  duration_ms: number;
+}
+
+/** 短链 */
+export interface ShortLink {
+  short_id: string;
+  slug: string;
+  created_at: string;
+  tombstoned_at: string | null;
+}
+
+/** 链接（出链）边 */
+export interface LinkEdge {
+  src_slug: string;
+  dst_slug: string | null;     // 解析失败 = null（断链）
+  raw_target: string;          // 原 [[...]] 内容
+}
+
+/** 站点配置（config.yaml） */
+export interface SiteConfig {
+  site: {
+    title: string;
+    url: string;
+    description?: string;
+    timezone?: string;
+    language?: string;
+  };
+  author: {
+    name: string;
+    email?: string;
+    avatar?: string;
+    bio?: string;
+    social?: { platform: string; url: string }[];
+  };
+  features?: {
+    comments?: boolean;
+    newsletter?: boolean;
+    search?: boolean;
+    graph?: boolean;
+  };
+  auth?: {
+    github?: { client_id: string; allowed_users: string[] };
+  };
+  paths: {
+    vault: string;             // 绝对路径或相对 cwd
+    out: string;               // 静态文件输出
+    db: string;                // SQLite 文件
+  };
+}

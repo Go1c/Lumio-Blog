@@ -1,0 +1,29 @@
+{
+  "name": "@opennote/server",
+  "version": "0.6.0",
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": { ".": "./src/index.ts" },
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc --noEmit",
+    "dev": "tsx watch src/main.ts",
+    "start": "tsx src/main.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.12.0",
+    "@opennote/core": "workspace:*",
+    "@opennote/db": "workspace:*",
+    "@opennote/sync": "workspace:*",
+    "@opennote/web-public": "workspace:*",
+    "hono": "^4.5.0",
+    "yaml": "^2.5.0"
+  },
+  "devDependencies": {
+    "tsx": "^4.16.5",
+    "typescript": "^5.5.4",
+    "vitest": "^2.0.5"
+  }
+}
