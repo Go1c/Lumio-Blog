@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=1400" />
+  <title>Screenshot harness</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles-hifi.css" />
+  <style>
+    html,body{margin:0;padding:0;background:#fff;}
+    #root{display:block;}
+    /* default desktop: lock to artboard size */
+    .shot-frame{box-shadow:none !important;border-radius:0 !important;}
+  </style>
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="hf-shared.jsx"></script>
+  <script type="text/babel" src="hf-home.jsx"></script>
+  <script type="text/babel" src="hf-article.jsx"></script>
+  <script type="text/babel" src="hf-admin.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="hf-mobile.jsx"></script>
+  <script type="text/babel" src="hf-extras.jsx"></script>
+  <script type="text/babel" src="hf-extras2.jsx"></script>
+  <script type="text/babel" src="hf-og.jsx"></script>
+  <script type="text/babel" src="hf-config.jsx"></script>
+  <script type="text/babel" src="hf-cli.jsx"></script>
+
+  <script type="text/babel">
+    /* global React, ReactDOM,
+       HFHome, HFArticle, HFDashboard, HFNoteDetail,
+       HFHomeMobile, HFArticleMobile, HFAdminMobile, HFSettingsMobile,
+       HFArticleComments, HFNewsletter, HFSearchResults, HFTagDetail,
+       HFNotFound, HFMediaLibrary, HFApiTokens, HFGraph, HFBlogCli,
+       HFSettings, HFAbout, HFRssPage, HFOgGenerator,
+       HFArticleAnalytics, HFConfigDocs */
+
+    const REGISTRY = {
+      'hifi-home':       { C: HFHome,            w: 1280, h: 820, themed: true  },
+      'hifi-article':    { C: HFArticle,         w: 1280, h: 820, themed: true  },
+      'hifi-dashboard':  { C: HFDashboard,       w: 1280, h: 820, themed: false },
+      'hifi-note':       { C: HFNoteDetail,      w: 1280, h: 820, themed: false },
+      'comments':        { C: HFArticleComments, w: 1280, h: 820, themed: true  },
+      'newsletter':      { C: HFNewsletter,      w: 1280, h: 820, themed: true  },
+      'search':          { C: HFSearchResults,   w: 1280, h: 820, themed: true  },
+      'tag':             { C: HFTagDetail,       w: 1280, h: 820, themed: true  },
+      '404':             { C: HFNotFound,        w: 1280, h: 820, themed: true  },
+      'graph':           { C: HFGraph,           w: 1280, h: 820, themed: true  },
+      'media':           { C: HFMediaLibrary,    w: 1280, h: 820, themed: false },
+      'tokens':          { C: HFApiTokens,       w: 1280, h: 820, themed: false },
+      'cli':             { C: HFBlogCli,         w: 1280, h: 820, themed: true  },
+      'settings':        { C: HFSettings,        w: 1280, h: 820, themed: false },
+      'about':           { C: HFAbout,           w: 1280, h: 820, themed: true  },
+      'rss':             { C: HFRssPage,         w: 1280, h: 820, themed: true  },
+      'og':              { C: HFOgGenerator,     w: 1280, h: 820, themed: false },
+      'analytics':       { C: HFArticleAnalytics,w: 1280, h: 820, themed: false },
+      'config':          { C: HFConfigDocs,      w: 1280, h: 820, themed: true  },
+      'm-home':          { C: HFHomeMobile,      w:  460, h: 920, themed: false },
+      'm-article':       { C: HFArticleMobile,   w:  460, h: 920, themed: false },
+      'm-admin':         { C: HFAdminMobile,     w:  460, h: 920, themed: false },
+      'm-settings':      { C: HFSettingsMobile,  w:  460, h: 920, themed: false },
+    };
+
+    const params = new URLSearchParams(location.search);
+    const id = params.get('id') || 'hifi-home';
+    const theme = params.get('theme') || 'light';
+    const entry = REGISTRY[id];
+
+    function Harness() {
+      if (!entry) return <div style={{padding:40,fontFamily:'sans-serif'}}>Unknown id: {id}<br/>Available: {Object.keys(REGISTRY).join(', ')}</div>;
+      const { C, w, h, themed } = entry;
+      const props = themed ? { theme, onTheme: () => {} } : { theme };
+      return (
+        <div className="shot-frame" style={{ width: w, height: h, overflow: 'hidden', background: '#fff', position:'relative' }}>
+          <C {...props} />
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<Harness />);
+
+    // Signal readiness for the screenshot loop
+    setTimeout(() => { window.__shotReady = true; document.title = 'shot-ready:' + id; }, 800);
+  </script>
+</body>
+</html>
