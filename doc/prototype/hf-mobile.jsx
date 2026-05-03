@@ -33,8 +33,8 @@ function MobileShell({ title, children, sub, theme = 'light', tabs = true, fab =
           <div style={{ fontWeight: 700, fontSize: 14, lineHeight: 1.2 }}>{title}</div>
           {sub && <div className="hf-mono hf-tiny hf-faint" style={{ marginTop: 1 }}>{sub}</div>}
         </div>
-        <span className="hf-btn hf-btn--icon" style={{ width: 28, height: 28 }}><HfIcon name="search" size={13} /></span>
-        <span className="hf-btn hf-btn--icon" style={{ width: 28, height: 28 }}><HfIcon name="dots" size={13} /></span>
+        <button type="button" className="hf-btn hf-btn--icon" style={{ width: 28, height: 28 }}><HfIcon name="search" size={13} /></button>
+        <button type="button" className="hf-btn hf-btn--icon" style={{ width: 28, height: 28 }}><HfIcon name="dots" size={13} /></button>
       </div>
 
       <div style={{ flex: 1, overflow: 'auto', position: 'relative' }}>
@@ -262,10 +262,10 @@ function HFArticleMobile({ theme = 'light' }) {
           background: 'var(--bg)', border: '1px solid var(--line)',
           borderRadius: 999, boxShadow: 'var(--shadow-3)',
         }}>
-          <span className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none' }}><HfIcon name="star" size={15} /></span>
-          <span className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none' }}><HfIcon name="link" size={15} /></span>
-          <span className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none' }}><HfIcon name="copy" size={15} /></span>
-          <span className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none', color: 'var(--accent)' }}><HfIcon name="arrowR" size={15} color="var(--accent)" /></span>
+          <button type="button" className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none' }}><HfIcon name="star" size={15} /></button>
+          <button type="button" className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none' }}><HfIcon name="link" size={15} /></button>
+          <button type="button" className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none' }}><HfIcon name="copy" size={15} /></button>
+          <button type="button" className="hf-btn hf-btn--icon" style={{ width: 36, height: 36, border: 'none', color: 'var(--accent)' }}><HfIcon name="arrowR" size={15} color="var(--accent)" /></button>
         </div>
       </MobileShell>
     </IOSDevice>
@@ -339,7 +339,7 @@ function HFAdminMobile({ theme = 'light' }) {
             {[['站内搜索', true], ['搜索引擎索引', true], ['RSS 收录', true], ['首页推荐', false]].map(([l, on], i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '8px 0', borderTop: i ? '1px solid var(--line)' : 'none' }}>
                 <span className="hf-sm hf-grow">{l}</span>
-                <span className={`hf-toggle ${on ? 'on' : ''}`} />
+                <button type="button" role="switch" aria-checked={on ? "true" : "false"} aria-label="切换" className={`hf-toggle ${on ? 'on' : ''}`} />
               </div>
             ))}
           </div>
@@ -359,12 +359,12 @@ function HFAdminMobile({ theme = 'light' }) {
               color: 'var(--accent)', wordBreak: 'break-all',
             }}>lumiogames.dev/s/fK3p9q2</div>
             <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-              <span className="hf-btn hf-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>
+              <button type="button" className="hf-btn hf-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>
                 <HfIcon name="copy" size={11} /> 复制
-              </span>
-              <span className="hf-btn hf-btn--sm hf-btn--primary" style={{ flex: 1, justifyContent: 'center' }}>
+              </button>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary" style={{ flex: 1, justifyContent: 'center' }}>
                 分享
-              </span>
+              </button>
             </div>
           </div>
 
@@ -374,10 +374,10 @@ function HFAdminMobile({ theme = 'light' }) {
             padding: 12, borderRadius: 10,
             background: 'var(--bg-soft)', border: '1px solid var(--line)',
           }}>
-            <span className="hf-btn hf-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>取消</span>
-            <span className="hf-btn hf-btn--sm hf-btn--primary" style={{ flex: 2, justifyContent: 'center' }}>
+            <button type="button" className="hf-btn hf-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>取消</button>
+            <button type="button" className="hf-btn hf-btn--sm hf-btn--primary" style={{ flex: 2, justifyContent: 'center' }}>
               保存可见性
-            </span>
+            </button>
           </div>
         </div>
       </MobileShell>

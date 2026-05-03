@@ -30,15 +30,16 @@ export function layout(o: LayoutOpts): string {
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.11/dist/katex.min.css" crossorigin="anonymous">
 </head>
 <body>
+  <a class="skip-link" href="#main-content">跳到正文</a>
   <header>
     <h1><a href="/" style="color:inherit;text-decoration:none">${esc(o.config.site.title)}</a></h1>
-    <nav>
+    <nav aria-label="主导航">
       <a href="/">首页</a>
       <a href="/tags/index.html">标签</a>
-      <a href="/feed.xml">RSS</a>
+      <a href="/feed.xml" aria-label="RSS 订阅">RSS</a>
     </nav>
   </header>
-  <main>${o.body}</main>
+  <main id="main-content">${o.body}</main>
   <footer>
     <p>${esc(o.config.author.name)} · powered by opennote</p>
   </footer>

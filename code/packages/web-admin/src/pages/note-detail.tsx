@@ -19,7 +19,7 @@ export function NoteDetailPage({ slug }: { slug: string }) {
     load();
   }, [slug]);
 
-  if (!note) return <p>loading…</p>;
+  if (!note) return <p role="status" aria-live="polite">loading…</p>;
 
   const setVisibility = async (v: Visibility) => {
     if (v === note.visibility) return;
@@ -57,22 +57,26 @@ export function NoteDetailPage({ slug }: { slug: string }) {
 
   return (
     <div class="detail">
-      <nav class="crumbs"><a href="#/">← 笔记列表</a></nav>
+      <nav class="crumbs" aria-label="面包屑"><a href="#/"><span aria-hidden="true">← </span>笔记列表</a></nav>
       <h2>{note.title}</h2>
       <p class="meta">
-        <span class={`badge ${note.visibility}`}>{note.visibility}</span>
-        {note.short_id && <> · <code>/n/{note.short_id}</code></>}
-        {' · '}{note.word_count} 字 · {note.reading_minutes} 分钟
+        <span class={`badge ${note.visibility}`} aria-label={`可见性:${note.visibility}`}>{note.visibility}</span>
+        {note.short_id && <> <span aria-hidden="true">·</span> <code>/n/{note.short_id}</code></>}
+        <span aria-hidden="true">{' · '}</span>
+        <span aria-label={`${note.word_count} 字`}>{note.word_count} 字</span>
+        <span aria-hidden="true"> · </span>
+        <span aria-label={`阅读时长 ${note.reading_minutes} 分钟`}>{note.reading_minutes} 分钟</span>
       </p>
 
       <div class="controls">
-        <div>
-          <h3>可见性</h3>
-          <div class="radio-group">
+        <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
+          <legend style={{ margin: '0 0 8px 0', fontSize: 12, textTransform: 'uppercase', color: 'var(--muted)', fontWeight: 600 }}>可见性</legend>
+          <div class="radio-group" role="radiogroup" aria-label="文章可见性">
             {VISIBILITIES.map((v) => (
               <label key={v}>
                 <input
                   type="radio"
+                  name="visibility"
                   checked={note.visibility === v}
                   disabled={busy}
                   onChange={() => setVisibility(v)}
@@ -81,21 +85,22 @@ export function NoteDetailPage({ slug }: { slug: string }) {
               </label>
             ))}
           </div>
-        </div>
+        </fieldset>
 
         <div>
-          <h3>可搜索</h3>
+          <h3 id="searchable-h">可搜索</h3>
           <label>
             <input
               type="checkbox"
               checked={!!note.searchable}
               disabled={busy || searchableDisabled}
+              aria-describedby={searchableDisabled ? 'searchable-help' : undefined}
               onChange={toggleSearchable}
             />
             {note.searchable ? '是' : '否'}
           </label>
           {searchableDisabled && (
-            <p style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
+            <p id="searchable-help" style={{ fontSize: 11, color: 'var(--muted)', marginTop: 6 }}>
               {note.visibility} 不允许 searchable
             </p>
           )}
@@ -103,13 +108,13 @@ export function NoteDetailPage({ slug }: { slug: string }) {
 
         <div>
           <h3>短链</h3>
-          <code>{note.short_id ?? '—'}</code>
+          <code aria-label="短链">{note.short_id ?? '—'}</code>
         </div>
       </div>
 
       {backlinks.length > 0 && (
-        <>
-          <h3>反向链接</h3>
+        <section aria-labelledby="backlinks-h">
+          <h3 id="backlinks-h">反向链接</h3>
           <ul>
             {backlinks.map((b) => (
               <li key={b.src_slug}>
@@ -117,14 +122,21 @@ export function NoteDetailPage({ slug }: { slug: string }) {
               </li>
             ))}
           </ul>
-        </>
+        </section>
       )}
 
-      <h3>预览</h3>
-      <div dangerouslySetInnerHTML={{ __html: note.body_html }} />
+      <section aria-labelledby="preview-h">
+        <h3 id="preview-h">预览</h3>
+        <div dangerouslySetInnerHTML={{ __html: note.body_html }} />
+      </section>
 
       {toast && (
-        <div class={`toast${toast.err ? ' error' : ''}`} onClick={() => setToast(null)}>
+        <div
+          class={`toast${toast.err ? ' error' : ''}`}
+          role={toast.err ? 'alert' : 'status'}
+          aria-live={toast.err ? 'assertive' : 'polite'}
+          onClick={() => setToast(null)}
+        >
           {toast.msg}
         </div>
       )}

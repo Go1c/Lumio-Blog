@@ -31,22 +31,23 @@ export function App() {
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
 
-  if (authed === null) return <main><p>loading…</p></main>;
+  if (authed === null) return <main aria-busy="true"><p>loading…</p></main>;
   if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
 
   return (
     <>
+      <a class="skip-link" href="#main-content">跳到主内容</a>
       <header>
         <h1><a href="#/" style={{ color: 'inherit', textDecoration: 'none' }}>opennote · admin</a></h1>
-        <div class="right">
-          <a href="#/" style={{ color: 'var(--muted)' }}>笔记</a>
-          <a href="#/tokens" style={{ color: 'var(--muted)' }}>tokens</a>
-          <a href="#/webhooks" style={{ color: 'var(--muted)' }}>webhooks</a>
-          <button onClick={() => api.sync().then(() => location.reload())}>↻ sync</button>
-          <button onClick={() => api.logout().then(() => setAuthed(false))}>logout</button>
-        </div>
+        <nav class="right" aria-label="后台导航">
+          <a href="#/" aria-current={route.name === 'list' ? 'page' : undefined} style={{ color: 'var(--muted)' }}>笔记</a>
+          <a href="#/tokens" aria-current={route.name === 'tokens' ? 'page' : undefined} style={{ color: 'var(--muted)' }}>tokens</a>
+          <a href="#/webhooks" aria-current={route.name === 'webhooks' ? 'page' : undefined} style={{ color: 'var(--muted)' }}>webhooks</a>
+          <button type="button" aria-label="同步内容" onClick={() => api.sync().then(() => location.reload())}><span aria-hidden="true">↻</span> sync</button>
+          <button type="button" aria-label="退出登录" onClick={() => api.logout().then(() => setAuthed(false))}>logout</button>
+        </nav>
       </header>
-      <main>
+      <main id="main-content">
         {route.name === 'list' && <NoteList />}
         {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
         {route.name === 'tokens' && <TokensPage />}

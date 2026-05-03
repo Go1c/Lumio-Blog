@@ -67,9 +67,9 @@ function NoteTree({ activePath = '游戏 AI/MCTS-LLM-RTS', dense = false }) {
             <span className="grow" style={{ whiteSpace: 'pre' }}>{name}</span>
             {perm && (
               <span style={{ display: 'flex', gap: 3 }}>
-                {perm.includes('public') && <span title="public" style={{ color: 'var(--ok)' }}>●</span>}
-                {perm.includes('link') && <span title="link only" style={{ color: 'var(--warn)' }}>◐</span>}
-                {perm.includes('private') && <span title="private" style={{ color: 'var(--danger)' }}>○</span>}
+                {perm.includes('public') && <span aria-label="公开" style={{ color: 'var(--ok-text, var(--ok))' }}><span aria-hidden="true">●</span></span>}
+                {perm.includes('link') && <span aria-label="仅链接" style={{ color: 'var(--warn-text, var(--warn))' }}><span aria-hidden="true">◐</span></span>}
+                {perm.includes('private') && <span aria-label="私有" style={{ color: 'var(--danger-text, var(--danger))' }}><span aria-hidden="true">○</span></span>}
                 {perm.includes('searchable') && <span title="searchable" style={{ color: 'var(--hi2)', fontSize: 11 }}>🔎</span>}
               </span>
             )}

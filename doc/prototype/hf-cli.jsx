@@ -251,8 +251,8 @@ function HFBlogCli({ theme = 'light', onTheme }) {
             </div>
             <div style={{ fontWeight: 600, color: 'var(--ink)', marginBottom: 6, fontSize: 12 }}>🤖 Agent 自动执行:</div>
             <div style={{ fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-3)', lineHeight: 1.8 }}>
-              → blog_search(<span style={{ color: 'var(--accent)' }}>vis=draft, untouched=30d</span>) <span style={{ color: 'var(--ok)' }}>· 14 hits</span><br />
-              → blog_read × 14 <span style={{ color: 'var(--ok)' }}>· batched in 1 call</span><br />
+              → blog_search(<span style={{ color: 'var(--accent)' }}>vis=draft, untouched=30d</span>) <span style={{ color: 'var(--ok-text)' }}>· 14 hits</span><br />
+              → blog_read × 14 <span style={{ color: 'var(--ok-text)' }}>· batched in 1 call</span><br />
               → 计算标题 embedding 相似度 → 4 组候选<br />
               → 写入 <code style={{ color: 'var(--accent)' }}>~/draft-cleanup.md</code>
             </div>
@@ -266,9 +266,9 @@ function HFBlogCli({ theme = 'light', onTheme }) {
             fontFamily: 'var(--mono)', fontSize: 12, lineHeight: 1.8, color: 'var(--ink-2)',
           }}>
             <span style={{ color: 'var(--ink-4)' }}># ~/.zshrc</span><br />
-            <span style={{ color: 'var(--accent)' }}>export</span> LUMIO_TOKEN=<span style={{ color: 'var(--ok)' }}>"lmg_pat_..."</span>{'  '}<span style={{ color: 'var(--ink-4)' }}># notes:write</span><br />
-            <span style={{ color: 'var(--accent)' }}>export</span> LUMIO_API=<span style={{ color: 'var(--ok)' }}>"https://api.lumio.games"</span><br />
-            <span style={{ color: 'var(--accent)' }}>export</span> LUMIO_FORMAT=<span style={{ color: 'var(--ok)' }}>"json"</span>{'  '}<span style={{ color: 'var(--ink-4)' }}># 默认 agent 友好</span>
+            <span style={{ color: 'var(--accent)' }}>export</span> LUMIO_TOKEN=<span style={{ color: 'var(--ok-text)' }}>"lmg_pat_..."</span>{'  '}<span style={{ color: 'var(--ink-4)' }}># notes:write</span><br />
+            <span style={{ color: 'var(--accent)' }}>export</span> LUMIO_API=<span style={{ color: 'var(--ok-text)' }}>"https://api.lumio.games"</span><br />
+            <span style={{ color: 'var(--accent)' }}>export</span> LUMIO_FORMAT=<span style={{ color: 'var(--ok-text)' }}>"json"</span>{'  '}<span style={{ color: 'var(--ink-4)' }}># 默认 agent 友好</span>
           </div>
 
         </div>

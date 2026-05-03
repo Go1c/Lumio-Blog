@@ -4,8 +4,9 @@ import { layout, esc } from './layout.js';
 export function renderPost(note: NoteRow, config: SiteConfig): string {
   const visibilityBadge =
     note.visibility !== 'public'
-      ? `<span class="badge">${esc(note.visibility)}</span>`
+      ? `<span class="badge" aria-label="可见性:${esc(visibilityLabel(note.visibility))}">${esc(note.visibility)}</span>`
       : '';
+  const isoDate = (note.published_at ?? note.updated_at).slice(0, 10);
 
   return layout({
     title: `${note.title} · ${config.site.title}`,
@@ -17,7 +18,11 @@ export function renderPost(note: NoteRow, config: SiteConfig): string {
         <h1>${esc(note.title)}</h1>
         <p class="meta">
           ${visibilityBadge}
-          ${formatDate(note.published_at ?? note.updated_at)} · ${note.reading_minutes} 分钟 · ${note.word_count} 字
+          <time datetime="${isoDate}">${isoDate}</time>
+          <span aria-hidden="true"> · </span>
+          <span aria-label="阅读时长 ${note.reading_minutes} 分钟">${note.reading_minutes} 分钟</span>
+          <span aria-hidden="true"> · </span>
+          <span aria-label="${note.word_count} 字">${note.word_count} 字</span>
         </p>
         ${note.body_html}
       </article>
@@ -25,6 +30,9 @@ export function renderPost(note: NoteRow, config: SiteConfig): string {
   });
 }
 
-function formatDate(iso: string): string {
-  return iso.slice(0, 10);
+function visibilityLabel(v: string): string {
+  if (v === 'public') return '公开';
+  if (v === 'unlisted' || v === 'link-only' || v === 'link') return '仅链接';
+  if (v === 'private') return '私有';
+  return v;
 }

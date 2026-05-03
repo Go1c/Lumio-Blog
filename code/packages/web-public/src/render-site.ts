@@ -71,23 +71,47 @@ function renderSitemap(posts: NoteRow[], tags: string[], config: SiteConfig): st
 }
 
 function render404(config: SiteConfig): string {
-  return `<!doctype html><meta charset=utf-8><title>404 · ${config.site.title}</title>
-<link rel=stylesheet href=/styles.css>
-<body><header><h1><a href=/ style="color:inherit;text-decoration:none">${config.site.title}</a></h1></header>
-<main><h1>404</h1><p>你想找的页面不存在。它可能已被删除、设为私有、或地址敲错了。</p>
-<p><a href="/">← 回首页</a></p></main></body>`;
+  const lang = config.site.language ?? 'zh-CN';
+  return `<!doctype html><html lang="${lang}"><head><meta charset=utf-8><title>404 · ${config.site.title}</title>
+<link rel=stylesheet href=/styles.css></head>
+<body><a class="skip-link" href="#main-content">跳到正文</a><header><h1><a href=/ style="color:inherit;text-decoration:none">${config.site.title}</a></h1></header>
+<main id="main-content"><h1>404</h1><p>你想找的页面不存在。它可能已被删除、设为私有、或地址敲错了。</p>
+<p><a href="/">← 回首页</a></p></main></body></html>`;
 }
 
 const CSS = `
 :root {
-  --bg: #ffffff; --fg: #1a1a1a; --muted: #6b6b6b; --accent: #2563eb;
+  --bg: #ffffff; --fg: #1a1a1a; --muted: #595959; --accent: #2563eb;
   --border: #e5e5e5; --code-bg: #f5f5f7;
+  --error-fg: #991b1b; --error-bg: #fee2e2;
 }
 @media (prefers-color-scheme: dark) {
-  :root { --bg: #0f0f10; --fg: #e8e8e8; --muted: #999; --accent: #60a5fa; --border: #2a2a2a; --code-bg: #1a1a1c; }
+  :root { --bg: #0f0f10; --fg: #e8e8e8; --muted: #b8b8b8; --accent: #60a5fa; --border: #2a2a2a; --code-bg: #1a1a1c;
+          --error-fg: #fca5a5; --error-bg: #450a0a; }
 }
 * { box-sizing: border-box; }
 html, body { margin: 0; padding: 0; }
+
+/* Accessibility: visible focus + skip link + reduced motion */
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
+.skip-link {
+  position: absolute; left: -9999px; top: 8px;
+  padding: 8px 14px; background: var(--accent); color: #fff;
+  text-decoration: none; border-radius: 6px; font-weight: 500; z-index: 1000;
+}
+.skip-link:focus, .skip-link:focus-visible { left: 8px; outline: 2px solid var(--fg); outline-offset: 2px; }
+.sr-only {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
+}
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    scroll-behavior: auto !important;
+  }
+}
 body {
   font: 16px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   background: var(--bg); color: var(--fg);
@@ -122,7 +146,7 @@ blockquote { border-left: 3px solid var(--border); margin: 0; padding: 4px 16px;
   .shiki, .shiki span { color: var(--shiki-light) !important; background-color: var(--shiki-light-bg) !important; }
 }
 .mermaid { text-align: center; margin: 16px 0; }
-.opennote-math-error { color: #c33; background: #fee; padding: 2px 6px; border-radius: 3px; }
+.opennote-math-error { color: var(--error-fg); background: var(--error-bg); padding: 2px 6px; border-radius: 3px; }
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
 `;

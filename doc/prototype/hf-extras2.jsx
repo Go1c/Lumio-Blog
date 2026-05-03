@@ -51,8 +51,8 @@ function HFRssPage({ theme = 'light', onTheme }) {
                   https://lumiogames.dev{url}
                 </div>
               </div>
-              <span className="hf-btn hf-btn--sm"><HfIcon name="copy" size={11} /> 复制</span>
-              <span className="hf-btn hf-btn--sm hf-btn--primary">订阅 →</span>
+              <button type="button" className="hf-btn hf-btn--sm"><HfIcon name="copy" size={11} /> 复制</button>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary">订阅 →</button>
             </div>
           ))}
 
@@ -136,9 +136,9 @@ function HFArticleAnalytics({ theme = 'light' }) {
               <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, letterSpacing: '-0.01em' }}>用 MCTS + LLM 给 RTS 做战术决策</h1>
             </div>
             <div className="hf-grow" />
-            <span className="hf-btn hf-btn--sm">↗ 查看页面</span>
-            <span className="hf-btn hf-btn--sm">导出 CSV</span>
-            <span className="hf-btn hf-btn--sm">时段 · 30d ▾</span>
+            <button type="button" className="hf-btn hf-btn--sm">↗ 查看页面</button>
+            <button type="button" className="hf-btn hf-btn--sm">导出 CSV</button>
+            <button type="button" className="hf-btn hf-btn--sm">时段 · 30d ▾</button>
           </div>
 
           {/* big numbers */}
@@ -299,7 +299,7 @@ function HFBackupExport({ theme = 'light' }) {
                 <div style={{ fontWeight: 600, fontSize: 14 }}>🔄 自动备份</div>
                 <div className="hf-sm hf-muted" style={{ marginTop: 2 }}>每天凌晨 3 点 push 到指定 Git 仓库</div>
               </div>
-              <span className="hf-toggle on" />
+              <button type="button" role="switch" aria-checked="true" aria-label="切换" className="hf-toggle on" />
             </div>
             <div style={{
               padding: 12, background: 'var(--bg-sunk)', borderRadius: 6,
@@ -307,7 +307,7 @@ function HFBackupExport({ theme = 'light' }) {
             }}>
               <div style={{ color: 'var(--ink-3)' }}>git remote:</div>
               <div style={{ color: 'var(--ink)' }}>git@github.com:lumio/blog-backup.git</div>
-              <div style={{ color: 'var(--ink-3)', marginTop: 6 }}>分支: <span style={{ color: 'var(--accent)' }}>main</span> · 加密: <span style={{ color: 'var(--ok)' }}>age</span></div>
+              <div style={{ color: 'var(--ink-3)', marginTop: 6 }}>分支: <span style={{ color: 'var(--accent)' }}>main</span> · 加密: <span style={{ color: 'var(--ok-text)' }}>age</span></div>
             </div>
             {/* recent backups */}
             <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', margin: '14px 0 8px', letterSpacing: '.05em' }}>▸ 最近 5 次</div>
@@ -358,12 +358,12 @@ function HFBackupExport({ theme = 'light' }) {
             padding: 16, border: '1px solid var(--danger)', borderRadius: 8,
             background: 'rgba(220, 38, 38, .04)',
           }}>
-            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--danger)', marginBottom: 4 }}>⚠️ 危险区</div>
+            <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--danger-text)', marginBottom: 4 }}>⚠️ 危险区</div>
             <div className="hf-sm hf-muted" style={{ marginBottom: 12 }}>这些操作不可逆。建议先做一次完整备份。</div>
             <div style={{ display: 'flex', gap: 8 }}>
-              <span className="hf-btn hf-btn--sm" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>清空所有草稿</span>
-              <span className="hf-btn hf-btn--sm" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>重置统计数据</span>
-              <span className="hf-btn hf-btn--sm" style={{ borderColor: 'var(--danger)', color: 'var(--danger)' }}>删除整站</span>
+              <button type="button" className="hf-btn hf-btn--sm" style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }}>清空所有草稿</button>
+              <button type="button" className="hf-btn hf-btn--sm" style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }}>重置统计数据</button>
+              <button type="button" className="hf-btn hf-btn--sm" style={{ borderColor: 'var(--danger)', color: 'var(--danger-text)' }}>删除整站</button>
             </div>
           </div>
         </div>
@@ -446,7 +446,7 @@ function HFSettings({ theme = 'light' }) {
                           color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center',
                           fontFamily: 'var(--mono)', fontWeight: 700, fontSize: 18,
                         }}>L</div>
-                        <span className="hf-btn hf-btn--sm">更换</span>
+                        <button type="button" className="hf-btn hf-btn--sm">更换</button>
                         <span className="hf-mono hf-tiny hf-faint">{val}</span>
                       </div>
                     ) : kind === 'textarea' ? (
@@ -513,7 +513,7 @@ function HFSettings({ theme = 'light' }) {
                 <span>+</span>
                 <span style={{ padding: '2px 8px', background: 'var(--bg-sunk)', borderRadius: 4, fontFamily: 'var(--mono)', fontSize: 10 }}>"逛笔记库 (auto)"</span>
                 <div className="hf-grow" />
-                <span className="hf-mono hf-tiny" style={{ color: 'var(--ok)' }}>● 自动刷新</span>
+                <span className="hf-mono hf-tiny" style={{ color: 'var(--ok-text)' }}>● 自动刷新</span>
               </div>
             </div>
 
@@ -532,7 +532,7 @@ function HFSettings({ theme = 'light' }) {
                   <span className="hf-mono hf-tiny hf-faint" style={{ textAlign: 'center', cursor: 'pointer' }}>×</span>
                 </div>
               ))}
-              <span className="hf-btn hf-btn--sm" style={{ marginTop: 4 }}>+ 添加</span>
+              <button type="button" className="hf-btn hf-btn--sm" style={{ marginTop: 4 }}>+ 添加</button>
             </div>
 
             {/* save bar */}
@@ -542,10 +542,10 @@ function HFSettings({ theme = 'light' }) {
               borderRadius: 8, display: 'flex', alignItems: 'center', gap: 10,
               boxShadow: 'var(--shadow-2)',
             }}>
-              <span className="hf-mono hf-tiny" style={{ color: 'var(--warn)' }}>● 有未保存的更改 (3)</span>
+              <span className="hf-mono hf-tiny" style={{ color: 'var(--warn-text)' }}>● 有未保存的更改 (3)</span>
               <div className="hf-grow" />
-              <span className="hf-btn hf-btn--sm">放弃</span>
-              <span className="hf-btn hf-btn--sm hf-btn--primary">保存</span>
+              <button type="button" className="hf-btn hf-btn--sm">放弃</button>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary">保存</button>
             </div>
           </div>
         </div>

@@ -137,8 +137,8 @@ function HFOgGenerator({ theme = 'light' }) {
               <span className="hf-tag" style={{ fontSize: 10 }}>1200 × 630</span>
               <span className="hf-tag hf-tag--accent" style={{ fontSize: 10 }}>auto · 每篇文章自动生成</span>
               <div className="hf-grow" />
-              <span className="hf-btn hf-btn--sm">↻ 重新渲染</span>
-              <span className="hf-btn hf-btn--sm">⬇ 下载 PNG</span>
+              <button type="button" className="hf-btn hf-btn--sm">↻ 重新渲染</button>
+              <button type="button" className="hf-btn hf-btn--sm">⬇ 下载 PNG</button>
             </div>
 
             {/* preview frame — show OG at fitted scale */}
@@ -253,7 +253,7 @@ function HFOgGenerator({ theme = 'light' }) {
             <div style={{ padding: 8, background: 'var(--bg-sunk)', border: '1px solid var(--line)', borderRadius: 4, fontFamily: 'var(--mono)', fontSize: 10, lineHeight: 1.5, marginBottom: 10, wordBreak: 'break-all', color: 'var(--ink-2)' }}>
               https://lumiogames.dev/og?slug=<span style={{ color: 'var(--accent)' }}>mcts-llm-rts</span>&t=<span style={{ color: 'var(--accent)' }}>{tmpl}</span>
             </div>
-            <span className="hf-btn hf-btn--sm" style={{ width: '100%', justifyContent: 'center' }}>📋 复制链接</span>
+            <button type="button" className="hf-btn hf-btn--sm" style={{ width: '100%', justifyContent: 'center' }}>📋 复制链接</button>
 
             {/* validators */}
             <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', margin: '18px 0 8px', letterSpacing: '.05em' }}>▸ 校验器</div>

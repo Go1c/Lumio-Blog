@@ -45,7 +45,7 @@ function HFArticleComments({ theme = 'light', onTheme }) {
               }}>?</div>
               <div className="hf-sm hf-muted">用 GitHub 登录后评论 →</div>
               <div className="hf-grow" />
-              <span className="hf-btn hf-btn--sm hf-btn--primary">登录 GitHub</span>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary">登录 GitHub</button>
             </div>
             <div style={{
               padding: 12, background: 'var(--bg-soft)',
@@ -56,11 +56,11 @@ function HFArticleComments({ theme = 'light', onTheme }) {
             </div>
             <div style={{ display: 'flex', gap: 6, marginTop: 8 }}>
               {['B', 'I', '<>','#', '@', '🙂'].map((g, i) => (
-                <span key={i} className="hf-btn hf-btn--icon" style={{ width: 26, height: 26, fontSize: 11, fontFamily: 'var(--mono)' }}>{g}</span>
+                <button type="button" key={i} className="hf-btn hf-btn--icon" style={{ width: 26, height: 26, fontSize: 11, fontFamily: 'var(--mono)' }}>{g}</button>
               ))}
               <div className="hf-grow" />
-              <span className="hf-btn hf-btn--sm hf-btn--ghost">预览</span>
-              <span className="hf-btn hf-btn--sm hf-btn--primary" style={{ opacity: .5 }}>发布</span>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--ghost">预览</button>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary" style={{ opacity: .5 }}>发布</button>
             </div>
           </div>
 
@@ -120,7 +120,7 @@ function HFArticleComments({ theme = 'light', onTheme }) {
           ))}
 
           <div style={{ textAlign: 'center', padding: '20px 0', color: 'var(--ink-3)', fontSize: 13 }}>
-            <span className="hf-btn hf-btn--sm">加载更多评论 (8)</span>
+            <button type="button" className="hf-btn hf-btn--sm">加载更多评论 (8)</button>
           </div>
         </div>
       </div>
@@ -158,14 +158,14 @@ function HFNewsletter({ theme = 'light', onTheme }) {
                 </span>
                 <input className="hf-input" placeholder="your@email.com" style={{ paddingLeft: 36, height: 42, fontSize: 14 }} defaultValue="" />
               </div>
-              <span className="hf-btn hf-btn--primary" style={{ height: 42, padding: '0 22px', fontSize: 14 }}>
+              <button type="button" className="hf-btn hf-btn--primary" style={{ height: 42, padding: '0 22px', fontSize: 14 }}>
                 订阅 <HfIcon name="arrowR" size={13} color="#fff" />
-              </span>
+              </button>
             </div>
-            <div className="hf-tiny hf-muted" style={{ marginTop: 10 }}>
-              <span className="hf-check on" style={{ marginRight: 6, transform: 'scale(.85) translateY(2px)' }} />
-              我也想收到偶尔的<b style={{ color: 'var(--ink)' }}>实验性内容</b>（草稿、还没成形的想法）
-            </div>
+            <label className="hf-tiny hf-muted hf-check-label" style={{ marginTop: 10, display: 'inline-flex' }}>
+              <button type="button" role="checkbox" aria-checked="true" className="hf-check on" style={{ marginRight: 6 }} />
+              <span>我也想收到偶尔的<b style={{ color: 'var(--ink)' }}>实验性内容</b>(草稿、还没成形的想法)</span>
+            </label>
           </div>
 
           {/* social proof */}
@@ -352,8 +352,8 @@ function HFTagDetail({ theme = 'light', onTheme }) {
               <span>·</span>
               <span><b style={{ color: 'var(--ink)', fontFamily: 'var(--mono)' }}>3.4k</b> 月浏览</span>
               <div className="hf-grow" />
-              <span className="hf-btn hf-btn--sm"><HfIcon name="rss" size={11} /> RSS</span>
-              <span className="hf-btn hf-btn--sm"><HfIcon name="bell" size={11} /> 关注</span>
+              <button type="button" className="hf-btn hf-btn--sm"><HfIcon name="rss" size={11} /> RSS</button>
+              <button type="button" className="hf-btn hf-btn--sm"><HfIcon name="bell" size={11} /> 关注</button>
             </div>
           </div>
         </div>
@@ -476,16 +476,16 @@ function HFNotFound({ theme = 'light', onTheme }) {
             </div>
             <div className="hf-col" style={{ gap: 6, fontSize: 12, fontFamily: 'var(--mono)' }}>
               <div style={{ display: 'flex' }}>
-                <span style={{ color: 'var(--ok)', width: 80 }}>✓ resolved</span>
+                <span style={{ color: 'var(--ok-text)', width: 80 }}>✓ resolved</span>
                 <span className="hf-muted">slug = "private-draft"</span>
               </div>
               <div style={{ display: 'flex' }}>
-                <span style={{ color: 'var(--ok)', width: 80 }}>✓ found</span>
+                <span style={{ color: 'var(--ok-text)', width: 80 }}>✓ found</span>
                 <span className="hf-muted">note id = nt_a3fK29p</span>
               </div>
               <div style={{ display: 'flex' }}>
-                <span style={{ color: 'var(--danger)', width: 80 }}>✗ blocked</span>
-                <span className="hf-muted">visibility = <b style={{ color: 'var(--danger)' }}>private</b></span>
+                <span style={{ color: 'var(--danger-text)', width: 80 }}>✗ blocked</span>
+                <span className="hf-muted">visibility = <b style={{ color: 'var(--danger-text)' }}>private</b></span>
               </div>
               <div style={{ display: 'flex' }}>
                 <span style={{ color: 'var(--ink-4)', width: 80 }}>· hint</span>
@@ -495,9 +495,9 @@ function HFNotFound({ theme = 'light', onTheme }) {
           </div>
 
           <div style={{ display: 'flex', gap: 10, justifyContent: 'center', marginTop: 28 }}>
-            <span className="hf-btn hf-btn--primary"><HfIcon name="home" size={13} color="#fff" /> 回首页</span>
-            <span className="hf-btn"><HfIcon name="search" size={13} /> 搜索</span>
-            <span className="hf-btn">联系作者</span>
+            <button type="button" className="hf-btn hf-btn--primary"><HfIcon name="home" size={13} color="#fff" /> 回首页</button>
+            <button type="button" className="hf-btn"><HfIcon name="search" size={13} /> 搜索</button>
+            <button type="button" className="hf-btn">联系作者</button>
           </div>
 
           {/* maybe you wanted */}
@@ -546,15 +546,15 @@ function HFMediaLibrary({ theme = 'light' }) {
                 <span className="hf-tag" style={{ fontSize: 10, color: '#f6821f', borderColor: '#f6821f' }}>Cloudflare R2</span>
                 <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, marginLeft: 4 }}>
                   <span className="hf-dot hf-dot--ok" style={{ animation: 'pulse-dot 2s infinite' }} />
-                  <span className="hf-mono hf-tiny" style={{ color: 'var(--ok)' }}>已连接</span>
+                  <span className="hf-mono hf-tiny" style={{ color: 'var(--ok-text)' }}>已连接</span>
                 </span>
               </div>
               <div className="hf-mono hf-tiny hf-muted" style={{ marginTop: 4 }}>
                 lumio-blog-media · auto · 上次握手 12s 前
               </div>
             </div>
-            <span className="hf-btn hf-btn--sm">↻ 重新连接</span>
-            <span className="hf-btn hf-btn--sm">📋 cloudflare 控制台 ↗</span>
+            <button type="button" className="hf-btn hf-btn--sm">↻ 重新连接</button>
+            <button type="button" className="hf-btn hf-btn--sm">📋 cloudflare 控制台 ↗</button>
           </div>
 
           {/* TOP — config + stats */}
@@ -582,8 +582,8 @@ function HFMediaLibrary({ theme = 'light' }) {
                   }}>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', color: secret ? 'var(--ink-4)' : 'var(--ink-2)' }}>{val}</span>
                     {status === 'ok' && <span className="hf-dot hf-dot--ok" style={{ width: 6, height: 6 }} />}
-                    {secret && <span style={{ cursor: 'pointer', color: 'var(--ink-3)', fontSize: 11 }}>👁</span>}
-                    {copy && <span style={{ cursor: 'pointer', color: 'var(--ink-3)' }}><HfIcon name="copy" size={10} /></span>}
+                    {secret && <button type="button" aria-label="显示/隐藏" style={{ cursor: 'pointer', color: 'var(--ink-3)', fontSize: 11, background: 'transparent', border: 0, padding: '4px 6px', minHeight: 24 }}><span aria-hidden="true">👁</span></button>}
+                    {copy && <button type="button" aria-label="复制" style={{ cursor: 'pointer', color: 'var(--ink-3)', background: 'transparent', border: 0, padding: '4px 6px', minHeight: 24 }}><HfIcon name="copy" size={10} /></button>}
                   </div>
                 </div>
               ))}
@@ -601,16 +601,16 @@ function HFMediaLibrary({ theme = 'light' }) {
                       <div className="hf-sm" style={{ fontWeight: 500 }}>{n}</div>
                       <div className="hf-tiny hf-muted" style={{ marginTop: 1 }}>{sub}</div>
                     </div>
-                    <span className={`hf-toggle ${on ? 'on' : ''}`} />
+                    <button type="button" role="switch" aria-checked={on ? "true" : "false"} aria-label="切换" className={`hf-toggle ${on ? 'on' : ''}`} />
                   </div>
                 ))}
               </div>
 
               <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
-                <span className="hf-btn hf-btn--sm hf-btn--primary">保存 + 重新部署</span>
-                <span className="hf-btn hf-btn--sm">连通性测试</span>
+                <button type="button" className="hf-btn hf-btn--sm hf-btn--primary">保存 + 重新部署</button>
+                <button type="button" className="hf-btn hf-btn--sm">连通性测试</button>
                 <div className="hf-grow" />
-                <span className="hf-mono hf-tiny" style={{ color: 'var(--ok)' }}>✓ 上次测试 200 OK · 38ms</span>
+                <span className="hf-mono hf-tiny" style={{ color: 'var(--ok-text)' }}>✓ 上次测试 200 OK · 38ms</span>
               </div>
             </div>
 
@@ -634,12 +634,12 @@ function HFMediaLibrary({ theme = 'light' }) {
                 {/* progress bar */}
                 <div className="hf-tiny hf-muted" style={{ marginBottom: 4, display: 'flex', justifyContent: 'space-between' }}>
                   <span>10 GB 免费额度</span>
-                  <span style={{ color: 'var(--ok)' }}>12.4% 已用</span>
+                  <span style={{ color: 'var(--ok-text)' }}>12.4% 已用</span>
                 </div>
                 <div style={{ height: 5, background: 'var(--bg-sunk)', borderRadius: 3, overflow: 'hidden' }}>
                   <div style={{ height: '100%', width: '12.4%', background: 'var(--ok)' }} />
                 </div>
-                <div className="hf-mono hf-tiny" style={{ color: 'var(--ok)', marginTop: 6, lineHeight: 1.5 }}>
+                <div className="hf-mono hf-tiny" style={{ color: 'var(--ok-text)', marginTop: 6, lineHeight: 1.5 }}>
                   💰 当前账单: <b>$0.00</b> · 免费额度内
                 </div>
               </div>
@@ -654,7 +654,7 @@ function HFMediaLibrary({ theme = 'light' }) {
                 </svg>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontFamily: 'var(--mono)', fontSize: 10, color: 'var(--ink-4)' }}>
                   <span>命中率 94.2%</span>
-                  <span style={{ color: 'var(--ok)' }}>↑ 1.2%</span>
+                  <span style={{ color: 'var(--ok-text)' }}>↑ 1.2%</span>
                 </div>
               </div>
             </div>
@@ -690,8 +690,8 @@ function HFMediaLibrary({ theme = 'light' }) {
                 <HfIcon name="search" size={11} color="var(--ink-3)" />
                 <span className="hf-faint hf-tiny">前缀搜索…</span>
               </div>
-              <span className="hf-btn hf-btn--sm">视图: 网格 ▾</span>
-              <span className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="plus" size={10} color="#fff" /> 上传到 R2</span>
+              <button type="button" className="hf-btn hf-btn--sm">视图: 网格 ▾</button>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="plus" size={10} color="#fff" /> 上传到 R2</button>
             </div>
 
             {/* drag drop hint */}
@@ -783,7 +783,7 @@ function HFMediaLibrary({ theme = 'light' }) {
                 <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 4 }}>
                   <span style={{ fontWeight: 600, fontSize: 14 }}>shader-graph.jpg</span>
                   <span className="hf-mono hf-tiny hf-muted">1920×1080 · 284 KB · webp</span>
-                  <span className="hf-tag" style={{ fontSize: 9, color: 'var(--ok)', borderColor: 'var(--ok)' }}>已引用 · 3</span>
+                  <span className="hf-tag" style={{ fontSize: 9, color: 'var(--ok-text)', borderColor: 'var(--ok)' }}>已引用 · 3</span>
                 </div>
 
                 {/* URL list */}
@@ -804,19 +804,19 @@ function HFMediaLibrary({ theme = 'light' }) {
                         overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap',
                         color: kind === 'public' ? 'var(--accent)' : 'var(--ink-2)',
                       }}>{url}</div>
-                      <span style={{ cursor: 'pointer', color: 'var(--ink-3)', textAlign: 'center' }}><HfIcon name="copy" size={10} /></span>
-                      <span style={{ cursor: 'pointer', color: 'var(--ink-3)', textAlign: 'center', fontSize: 11 }}>↗</span>
+                      <button type="button" aria-label="复制 URL" style={{ cursor: 'pointer', color: 'var(--ink-3)', textAlign: 'center', background: 'transparent', border: 0, padding: '4px 6px', minHeight: 24 }}><HfIcon name="copy" size={10} /></button>
+                      <button type="button" aria-label="在新标签页打开" style={{ cursor: 'pointer', color: 'var(--ink-3)', textAlign: 'center', fontSize: 11, background: 'transparent', border: 0, padding: '4px 6px', minHeight: 24 }}><span aria-hidden="true">↗</span></button>
                     </div>
                   ))}
                 </div>
 
                 <div style={{ display: 'flex', gap: 6, marginTop: 10 }}>
-                  <span className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="copy" size={10} color="#fff" /> 复制 markdown</span>
-                  <span className="hf-btn hf-btn--sm">替换</span>
-                  <span className="hf-btn hf-btn--sm">生成 OG 图</span>
-                  <span className="hf-btn hf-btn--sm">CDN purge</span>
+                  <button type="button" className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="copy" size={10} color="#fff" /> 复制 markdown</button>
+                  <button type="button" className="hf-btn hf-btn--sm">替换</button>
+                  <button type="button" className="hf-btn hf-btn--sm">生成 OG 图</button>
+                  <button type="button" className="hf-btn hf-btn--sm">CDN purge</button>
                   <div className="hf-grow" />
-                  <span className="hf-btn hf-btn--sm" style={{ color: 'var(--danger)' }}>从 R2 删除</span>
+                  <button type="button" className="hf-btn hf-btn--sm" style={{ color: 'var(--danger-text)' }}>从 R2 删除</button>
                 </div>
               </div>
             </div>
@@ -850,9 +850,9 @@ function HFApiTokens({ theme = 'light' }) {
           }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <span className="hf-dot hf-dot--ok" />
-              <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--ok)' }}>新令牌已创建 — 立即复制保存</span>
+              <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--ok-text)' }}>新令牌已创建 — 立即复制保存</span>
               <div className="hf-grow" />
-              <span className="hf-mono hf-tiny" style={{ color: 'var(--ok)' }}>本次后不再显示</span>
+              <span className="hf-mono hf-tiny" style={{ color: 'var(--ok-text)' }}>本次后不再显示</span>
             </div>
             <div style={{
               fontFamily: 'var(--mono)', fontSize: 13,
@@ -863,7 +863,7 @@ function HFApiTokens({ theme = 'light' }) {
               <span style={{ flex: 1, wordBreak: 'break-all', color: 'var(--ink)' }}>
                 lmg_pat_<span style={{ color: 'var(--accent)' }}>9d4f2a8b3c5e7f1a0d6b8e2c4a5f9d3b1e7c8a4f</span>
               </span>
-              <span className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="copy" size={11} color="#fff" /> 复制</span>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="copy" size={11} color="#fff" /> 复制</button>
             </div>
           </div>
 
@@ -872,7 +872,7 @@ function HFApiTokens({ theme = 'light' }) {
             <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--line)', display: 'flex', alignItems: 'center', background: 'var(--bg-soft)' }}>
               <span style={{ fontWeight: 600, fontSize: 13 }}>已激活 · 4 个</span>
               <div className="hf-grow" />
-              <span className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="plus" size={11} color="#fff" /> 新建 token</span>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="plus" size={11} color="#fff" /> 新建 token</button>
             </div>
             <div style={{ display: 'grid', gridTemplateColumns: '36px 1fr 100px 110px 120px 100px 70px', alignItems: 'center', padding: '8px 16px', background: 'var(--bg-soft)', borderBottom: '1px solid var(--line)', fontFamily: 'var(--mono)', fontSize: 11, color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '.05em' }}>
               <span></span>
@@ -1009,9 +1009,9 @@ function HFGraph({ theme = 'light', onTheme }) {
             padding: 4, background: 'var(--bg)', border: '1px solid var(--line)',
             borderRadius: 6, boxShadow: 'var(--shadow-2)',
           }}>
-            <span className="hf-btn hf-btn--icon" style={{ width: 28, height: 28, border: 'none' }}>+</span>
-            <span className="hf-btn hf-btn--icon" style={{ width: 28, height: 28, border: 'none' }}>−</span>
-            <span className="hf-btn hf-btn--icon" style={{ width: 28, height: 28, border: 'none', fontSize: 11 }}>⌖</span>
+            <button type="button" className="hf-btn hf-btn--icon" style={{ width: 28, height: 28, border: 'none' }}>+</button>
+            <button type="button" className="hf-btn hf-btn--icon" style={{ width: 28, height: 28, border: 'none' }}>−</button>
+            <button type="button" className="hf-btn hf-btn--icon" style={{ width: 28, height: 28, border: 'none', fontSize: 11 }}>⌖</button>
           </div>
 
           {/* legend */}
@@ -1048,8 +1048,8 @@ function HFGraph({ theme = 'light', onTheme }) {
             把 MCTS 的展开阶段交给 LLM，听起来像偷懒——但延迟和成本都不可接受...
           </p>
           <div style={{ display: 'flex', gap: 6, marginTop: 12 }}>
-            <span className="hf-btn hf-btn--sm hf-btn--primary" style={{ flex: 1, justifyContent: 'center' }}>打开</span>
-            <span className="hf-btn hf-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>↗ focus</span>
+            <button type="button" className="hf-btn hf-btn--sm hf-btn--primary" style={{ flex: 1, justifyContent: 'center' }}>打开</button>
+            <button type="button" className="hf-btn hf-btn--sm" style={{ flex: 1, justifyContent: 'center' }}>↗ focus</button>
           </div>
 
           <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', margin: '20px 0 8px', letterSpacing: '.05em' }}>▸ 直接关联 · 5</div>
@@ -1072,7 +1072,7 @@ function HFGraph({ theme = 'light', onTheme }) {
             {[['只显示已发布', true], ['显示标签节点', false], ['显示孤立笔记', false]].map(([l, on], i) => (
               <div key={i} style={{ display: 'flex', alignItems: 'center', fontSize: 12 }}>
                 <span style={{ flex: 1 }}>{l}</span>
-                <span className={`hf-toggle ${on ? 'on' : ''}`} />
+                <button type="button" role="switch" aria-checked={on ? "true" : "false"} aria-label="切换" className={`hf-toggle ${on ? 'on' : ''}`} />
               </div>
             ))}
           </div>

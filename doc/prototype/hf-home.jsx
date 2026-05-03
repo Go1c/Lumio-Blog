@@ -35,6 +35,7 @@ function HFHome({ theme = 'light', onTheme }) {
 
   return (
     <HFBrowser url="lumiogames.dev" height={820} theme={theme}>
+      <a href="#main-content" className="skip-link">跳到正文</a>
       <HfNav active="首页" theme={theme} onTheme={onTheme} />
 
       <div style={{ overflow: 'auto', height: 'calc(100% - 56px)' }}>
@@ -45,8 +46,8 @@ function HFHome({ theme = 'light', onTheme }) {
           overflow: 'hidden',
           borderBottom: '1px solid var(--line)',
         }}>
-          <div className="hf-blob" style={{ width: 360, height: 360, background: 'var(--accent)', top: -80, right: -40 }} />
-          <div className="hf-blob b2" style={{ width: 260, height: 260, background: '#a855f7', bottom: -60, left: 200 }} />
+          <div className="hf-blob" aria-hidden="true" style={{ width: 360, height: 360, background: 'var(--accent)', top: -80, right: -40 }} />
+          <div className="hf-blob b2" aria-hidden="true" style={{ width: 260, height: 260, background: '#a855f7', bottom: -60, left: 200 }} />
 
           <div style={{ position: 'relative', maxWidth: 920, margin: '0 auto' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 14 }}>
@@ -77,12 +78,12 @@ function HFHome({ theme = 'light', onTheme }) {
               }}>✎ md · 后台 → 设置</span>
             </p>
             <div style={{ display: 'flex', gap: 10, marginTop: 24 }}>
-              <span className="hf-btn hf-btn--primary">
+              <a href="/posts" className="hf-btn hf-btn--primary">
                 看最新文章 <HfIcon name="arrowR" size={13} />
-              </span>
-              <span className="hf-btn">
-                <HfIcon name="layers" size={13} /> 逛笔记库 (142)
-              </span>
+              </a>
+              <a href="/notes" className="hf-btn">
+                <HfIcon name="layers" size={13} /> 逛笔记库 <span aria-label="共 142 条">(142)</span>
+              </a>
             </div>
           </div>
         </div>
@@ -90,61 +91,76 @@ function HFHome({ theme = 'light', onTheme }) {
         {/* THREE-COLUMN BODY */}
         <div style={{ display: 'grid', gridTemplateColumns: '220px 1fr 260px', maxWidth: 1280, margin: '0 auto', padding: '32px 28px' }}>
           {/* LEFT: catalog tree */}
-          <aside style={{ paddingRight: 24, borderRight: '1px solid var(--line)' }}>
+          <aside aria-label="目录" style={{ paddingRight: 24, borderRight: '1px solid var(--line)' }}>
             <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '.05em' }}>
               ▸ 目录
             </div>
             {[
-              ['📄 文章', [
+              ['文章', '📄', [
                 ['游戏 AI 笔谈', 24, true],
                 ['渲染拾遗', 21],
                 ['引擎源码读', 13],
               ]],
-              ['📓 笔记', [
+              ['笔记', '📓', [
                 ['daily', 38],
                 ['论文速读', 9],
                 ['TIL', 14],
               ]],
-              ['📚 文档系列', [
+              ['文档系列', '📚', [
                 ['Vulkan GPU-Driven', 6],
                 ['hermes-agent', 4],
               ]],
-            ].map(([title, items], gi) => (
+            ].map(([title, emoji, items], gi) => (
               <div key={gi} style={{ marginBottom: 16 }}>
-                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }}>{title}</div>
-                <div className="hf-col" style={{ gap: 2 }}>
-                  {items.map(([n, c, active], i) => (
-                    <div key={i} style={{
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      padding: '4px 10px',
-                      borderRadius: 4,
-                      fontSize: 13,
-                      color: active ? 'var(--accent)' : 'var(--ink-2)',
-                      background: active ? 'var(--accent-soft)' : 'transparent',
-                      fontWeight: active ? 600 : 400,
-                    }}>
-                      <span>{n}</span>
-                      <span className="hf-mono hf-tiny hf-faint">{c}</span>
-                    </div>
-                  ))}
+                <div style={{ fontWeight: 700, fontSize: 13, marginBottom: 6 }} id={`cat-${gi}`}>
+                  <span aria-hidden="true">{emoji} </span>{title}
                 </div>
+                <ul aria-labelledby={`cat-${gi}`} className="hf-col" style={{ gap: 2, listStyle: 'none', padding: 0, margin: 0 }}>
+                  {items.map(([n, c, active], i) => (
+                    <li key={i}>
+                      <a
+                        href={`/category/${encodeURIComponent(n)}`}
+                        aria-current={active ? 'page' : undefined}
+                        style={{
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          padding: '6px 10px',
+                          borderRadius: 4,
+                          fontSize: 13,
+                          color: active ? 'var(--accent-2)' : 'var(--ink-2)',
+                          background: active ? 'var(--accent-soft)' : 'transparent',
+                          fontWeight: active ? 600 : 400,
+                          textDecoration: 'none',
+                        }}>
+                        <span>{n}</span>
+                        <span className="hf-mono hf-tiny hf-faint" aria-label={`${c} 篇`}>{c}</span>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               </div>
             ))}
           </aside>
 
           {/* MIDDLE: feed */}
-          <main style={{ padding: '0 24px', minWidth: 0 }}>
+          <main id="main-content" style={{ padding: '0 24px', minWidth: 0 }} aria-labelledby="recent-heading">
             <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 4 }}>
-              <h2 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>最近发布</h2>
+              <h2 id="recent-heading" style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>最近发布</h2>
               <span className="hf-mono hf-tiny hf-faint">38 articles · 142 notes</span>
               <div className="hf-grow" />
-              <span className="hf-tag" style={{ background: 'var(--bg-soft)' }}>全部</span>
-              <span className="hf-tag hf-tag--accent">游戏 AI</span>
-              <span className="hf-tag" style={{ background: 'var(--bg-soft)' }}>渲染</span>
+              <div role="group" aria-label="按标签筛选" style={{ display: 'flex', gap: 6 }}>
+                <button type="button" className="hf-tag" aria-pressed="true" style={{ background: 'var(--bg-soft)' }}>全部</button>
+                <button type="button" className="hf-tag hf-tag--accent" aria-pressed="false">游戏 AI</button>
+                <button type="button" className="hf-tag" aria-pressed="false" style={{ background: 'var(--bg-soft)' }}>渲染</button>
+              </div>
             </div>
-            <div className="hf-mono hf-tiny hf-faint" style={{ marginBottom: 20 }}>
-              排序: 最新 ↓
+            <div style={{ marginBottom: 20 }}>
+              <button type="button" className="hf-mono hf-tiny" aria-haspopup="listbox" aria-label="排序方式:最新" style={{
+                color: 'var(--ink-3)', background: 'transparent', border: 0,
+                padding: '4px 0', cursor: 'pointer', font: 'inherit',
+              }}>
+                排序: 最新 <span aria-hidden="true">↓</span>
+              </button>
             </div>
 
             {/* PINNED card */}
@@ -158,24 +174,26 @@ function HFHome({ theme = 'light', onTheme }) {
             }}>
               <div style={{ position: 'absolute', top: 12, right: 12, display: 'flex', gap: 6 }}>
                 <span className="hf-tag hf-tag--accent" style={{ fontSize: 11 }}>
-                  <HfIcon name="pin" size={10} /> 置顶
+                  <HfIcon name="pin" size={10} /> <span aria-label="已置顶">置顶</span>
                 </span>
               </div>
-              <div style={{ display: 'flex', gap: 6, marginBottom: 8 }}>
+              <ul style={{ display: 'flex', gap: 6, marginBottom: 8, listStyle: 'none', padding: 0 }} aria-label="标签">
                 {recent[0][1].map(t => (
-                  <span key={t} className="hf-tag" style={{ fontSize: 11 }}>#{t}</span>
+                  <li key={t}><a href={`/tag/${encodeURIComponent(t)}`} className="hf-tag" style={{ fontSize: 11, textDecoration: 'none' }}>#{t}</a></li>
                 ))}
-              </div>
+              </ul>
               <h3 style={{ fontSize: 22, fontWeight: 700, lineHeight: 1.3, margin: 0 }}>
-                {recent[0][0]}
+                <a href={`/posts/${encodeURIComponent(recent[0][0])}`} style={{ color: 'inherit', textDecoration: 'none' }}>{recent[0][0]}</a>
               </h3>
               <p style={{ color: 'var(--ink-3)', fontSize: 14, lineHeight: 1.6, marginTop: 8, marginBottom: 12 }}>
                 把 MCTS 的展开阶段（rollout）交给 LLM 评估，听起来像偷懒——但 token 成本和延迟在 100ms 决策窗口下完全不可接受。下文记录踩坑过程。
               </p>
-              <div className="hf-mono hf-tiny hf-faint" style={{ display: 'flex', gap: 12 }}>
-                <span>{recent[0][2]}</span><span>·</span>
-                <span>{recent[0][3]}</span><span>·</span>
-                <span>{recent[0][4]} views</span>
+              <div className="hf-mono hf-tiny" style={{ display: 'flex', gap: 12, color: 'var(--ink-4)' }}>
+                <time dateTime={recent[0][2]}>{recent[0][2]}</time>
+                <span aria-hidden="true">·</span>
+                <span aria-label={`阅读时长 ${recent[0][3]}`}>{recent[0][3]}</span>
+                <span aria-hidden="true">·</span>
+                <span aria-label={`${recent[0][4]} 次阅读`}>{recent[0][4]} views</span>
               </div>
             </article>
 
@@ -184,30 +202,32 @@ function HFHome({ theme = 'light', onTheme }) {
               <article key={i} className="hf-hover" style={{
                 padding: '16px 4px',
                 borderBottom: '1px solid var(--line)',
-                cursor: 'default',
                 display: 'grid',
                 gridTemplateColumns: '90px 1fr auto',
                 gap: 16,
                 alignItems: 'start',
               }}>
-                <div className="hf-mono hf-tiny hf-faint" style={{ paddingTop: 4 }}>{date.slice(5)}</div>
+                <time dateTime={date} className="hf-mono hf-tiny" style={{ paddingTop: 4, color: 'var(--ink-4)' }}>{date.slice(5)}</time>
                 <div>
-                  <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, lineHeight: 1.4 }}>{title}</h3>
-                  <div style={{ display: 'flex', gap: 6, marginTop: 6 }}>
-                    {ts.map(t => <span key={t} className="hf-tag" style={{ fontSize: 11 }}>#{t}</span>)}
-                  </div>
+                  <h3 style={{ fontSize: 15, fontWeight: 600, margin: 0, lineHeight: 1.4 }}>
+                    <a href={`/posts/${encodeURIComponent(title)}`} style={{ color: 'inherit', textDecoration: 'none' }}>{title}</a>
+                  </h3>
+                  <ul style={{ display: 'flex', gap: 6, marginTop: 6, listStyle: 'none', padding: 0 }} aria-label="标签">
+                    {ts.map(t => <li key={t}><a href={`/tag/${encodeURIComponent(t)}`} className="hf-tag" style={{ fontSize: 11, textDecoration: 'none' }}>#{t}</a></li>)}
+                  </ul>
                 </div>
-                <div className="hf-mono hf-tiny hf-faint" style={{ paddingTop: 4, textAlign: 'right' }}>
-                  {mins}<br />{views}
+                <div className="hf-mono hf-tiny" style={{ paddingTop: 4, textAlign: 'right', color: 'var(--ink-4)' }}>
+                  <span aria-label={`阅读时长 ${mins}`}>{mins}</span><br />
+                  <span aria-label={`${views} 次阅读`}>{views}</span>
                 </div>
               </article>
             ))}
           </main>
 
           {/* RIGHT: who am I + recent notes */}
-          <aside style={{ paddingLeft: 24, borderLeft: '1px solid var(--line)' }}>
+          <aside aria-label="作者资料与最近笔记" style={{ paddingLeft: 24, borderLeft: '1px solid var(--line)' }}>
             <div style={{ textAlign: 'center' }}>
-              <div style={{
+              <div aria-hidden="true" style={{
                 width: 64, height: 64, borderRadius: '50%',
                 background: 'linear-gradient(135deg, var(--accent), #a855f7)',
                 margin: '0 auto 10px',
@@ -216,11 +236,11 @@ function HFHome({ theme = 'light', onTheme }) {
               }}>L</div>
               <div style={{ fontWeight: 700, fontSize: 15 }}>LumioGames</div>
               <div className="hf-tiny hf-muted" style={{ marginTop: 2 }}>独立游戏 / 引擎渲染 / AI</div>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10 }}>
-                <span className="hf-btn hf-btn--sm hf-btn--ghost">github</span>
-                <span className="hf-btn hf-btn--sm hf-btn--ghost">x</span>
-                <span className="hf-btn hf-btn--sm hf-btn--ghost">mail</span>
-              </div>
+              <ul style={{ display: 'flex', justifyContent: 'center', gap: 6, marginTop: 10, listStyle: 'none', padding: 0 }} aria-label="社交链接">
+                <li><a href="https://github.com/lumiogames" rel="noopener noreferrer" className="hf-btn hf-btn--sm hf-btn--ghost">GitHub</a></li>
+                <li><a href="https://x.com/lumiogames" rel="noopener noreferrer" className="hf-btn hf-btn--sm hf-btn--ghost">X</a></li>
+                <li><a href="mailto:hi@lumiogames.dev" className="hf-btn hf-btn--sm hf-btn--ghost">Mail</a></li>
+              </ul>
             </div>
 
             {/* SELF-PROMO AD */}
@@ -228,37 +248,41 @@ function HFHome({ theme = 'light', onTheme }) {
               <HfAd variant="hero" />
             </div>
 
-            <div style={{ marginTop: 24 }}>
-              <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '.05em', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <section aria-labelledby="recent-notes-h" style={{ marginTop: 24 }}>
+              <h3 id="recent-notes-h" className="hf-mono hf-tiny" style={{ color: 'var(--ink-3)', textTransform: 'uppercase', margin: '0 0 10px', letterSpacing: '.05em', display: 'flex', alignItems: 'center', gap: 6, fontSize: 11, fontWeight: 700 }}>
                 <HfIcon name="activity" size={11} /> 最近笔记
-              </div>
-              <div className="hf-col" style={{ gap: 10 }}>
+              </h3>
+              <ul className="hf-col" style={{ gap: 10, listStyle: 'none', padding: 0, margin: 0 }}>
                 {notes.map(([n, v, t], i) => (
-                  <div key={i} className="hf-hover" style={{ padding: '8px 10px', borderRadius: 6, cursor: 'default' }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
-                      <span className={`hf-vis hf-vis--${v}`} style={{ fontSize: 10 }}>
-                        {v === 'public' && '公开'}
-                        {v === 'link' && '仅链接'}
-                        {v === 'private' && '私有'}
-                      </span>
-                      <span className="hf-mono hf-tiny hf-faint">· {t}</span>
-                    </div>
-                    <div className="hf-sm" style={{ fontWeight: 500, lineHeight: 1.4 }}>{n}</div>
-                  </div>
+                  <li key={i}>
+                    <a href={`/notes/${encodeURIComponent(n)}`} className="hf-hover" style={{ display: 'block', padding: '8px 10px', borderRadius: 6, textDecoration: 'none', color: 'inherit' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 3 }}>
+                        <span className={`hf-vis hf-vis--${v}`} style={{ fontSize: 11 }}>
+                          {v === 'public' && '公开'}
+                          {v === 'link' && '仅链接'}
+                          {v === 'private' && '私有'}
+                        </span>
+                        <time dateTime={t} className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)' }}>· {t}</time>
+                      </div>
+                      <div className="hf-sm" style={{ fontWeight: 500, lineHeight: 1.4 }}>{n}</div>
+                    </a>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
 
-            <div style={{ marginTop: 24 }}>
-              <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', marginBottom: 10, letterSpacing: '.05em' }}>▸ 标签云</div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 5 }}>
+            <section aria-labelledby="tag-cloud-h" style={{ marginTop: 24 }}>
+              <h3 id="tag-cloud-h" className="hf-mono hf-tiny" style={{ color: 'var(--ink-3)', textTransform: 'uppercase', margin: '0 0 10px', letterSpacing: '.05em', fontSize: 11, fontWeight: 700 }}>▸ 标签云</h3>
+              <ul style={{ display: 'flex', flexWrap: 'wrap', gap: 5, listStyle: 'none', padding: 0, margin: 0 }}>
                 {tags.map((tg, i) => (
-                  <span key={i} className={`hf-tag ${tg.hot ? 'hf-tag--accent' : ''}`} style={{ fontSize: 11 }}>
-                    #{tg.t}<span className="hf-mono hf-faint" style={{ marginLeft: 3, fontSize: 10 }}>{tg.c}</span>
-                  </span>
+                  <li key={i}>
+                    <a href={`/tag/${encodeURIComponent(tg.t)}`} className={`hf-tag ${tg.hot ? 'hf-tag--accent' : ''}`} style={{ fontSize: 11, textDecoration: 'none' }} aria-label={`标签 ${tg.t} (${tg.c} 篇)${tg.hot ? ',热门' : ''}`}>
+                      #{tg.t}<span className="hf-mono hf-faint" aria-hidden="true" style={{ marginLeft: 3, fontSize: 10 }}>{tg.c}</span>
+                    </a>
+                  </li>
                 ))}
-              </div>
-            </div>
+              </ul>
+            </section>
           </aside>
         </div>
       </div>

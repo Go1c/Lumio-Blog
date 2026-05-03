@@ -23,7 +23,7 @@ function HFBrowser({ url, children, height, theme = 'light', tabs }) {
         gap: 10,
         flexShrink: 0,
       }}>
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div style={{ display: 'flex', gap: 6 }} aria-hidden="true">
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#ff5f56' }} />
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#ffbd2e' }} />
           <span style={{ width: 11, height: 11, borderRadius: '50%', background: '#27c93f' }} />
@@ -40,8 +40,8 @@ function HFBrowser({ url, children, height, theme = 'light', tabs }) {
           maxWidth: 460,
           margin: '0 auto',
           textAlign: 'center',
-        }}>
-          🔒 {url}
+        }} aria-label={`mock browser address: secure ${url}`}>
+          <span aria-hidden="true">🔒 </span>{url}
         </div>
       </div>
       <div style={{ flex: 1, overflow: 'hidden', position: 'relative', background: 'var(--bg)' }} className="hf">
@@ -93,15 +93,15 @@ function HfIcon({ name, size = 16, color = 'currentColor', strokeWidth = 1.6 }) 
 // === site nav (frontend top bar) =======================================
 function HfNav({ active, onTheme, theme }) {
   const items = [
-    { id: '首页', icon: 'home' },
-    { id: '文章', icon: 'doc' },
-    { id: '笔记', icon: 'note' },
-    { id: '文档', icon: 'book' },
-    { id: '标签', icon: 'tag' },
-    { id: '关于', icon: null },
+    { id: '首页', icon: 'home', href: '/' },
+    { id: '文章', icon: 'doc', href: '/posts' },
+    { id: '笔记', icon: 'note', href: '/notes' },
+    { id: '文档', icon: 'book', href: '/docs' },
+    { id: '标签', icon: 'tag', href: '/tags' },
+    { id: '关于', icon: null, href: '/about' },
   ];
   return (
-    <div style={{
+    <nav aria-label="主导航" style={{
       position: 'sticky',
       top: 0,
       zIndex: 10,
@@ -113,8 +113,11 @@ function HfNav({ active, onTheme, theme }) {
       alignItems: 'center',
       gap: 24,
     }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 8 }} className="hf-md-edit">
-        <div style={{
+      <a href="/" aria-label="LumioGames 首页" style={{
+        display: 'flex', alignItems: 'center', gap: 8,
+        textDecoration: 'none', color: 'inherit',
+      }} className="hf-md-edit">
+        <div aria-hidden="true" style={{
           width: 26, height: 26, borderRadius: 7,
           background: 'var(--ink)', color: 'var(--bg)',
           display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -123,54 +126,74 @@ function HfNav({ active, onTheme, theme }) {
         <div style={{ fontWeight: 700, fontSize: 15 }}>
           LumioGames<span style={{ color: 'var(--ink-3)', fontFamily: 'var(--mono)', fontSize: 11, marginLeft: 4 }}>/blog</span>
         </div>
-        <span className="hf-md-pill" style={{
+        <span className="hf-md-pill" aria-hidden="true" style={{
           fontFamily: 'var(--mono)', fontSize: 9,
           padding: '2px 6px', borderRadius: 999,
-          background: 'var(--accent-soft)', color: 'var(--accent)',
+          background: 'var(--accent-soft)', color: 'var(--accent-2)',
           cursor: 'help', opacity: 0, transition: 'opacity .2s',
           whiteSpace: 'nowrap',
         }}>✎ 后台 → 设置 → 站点</span>
-      </div>
-      <div style={{ display: 'flex', gap: 4, marginLeft: 8 }}>
+      </a>
+      <ul style={{
+        display: 'flex', gap: 4, marginLeft: 8,
+        listStyle: 'none', padding: 0, margin: 0,
+      }}>
         {items.map(it => (
-          <span key={it.id} style={{
-            padding: '6px 12px',
-            fontSize: 13,
-            fontWeight: 500,
-            color: active === it.id ? 'var(--ink)' : 'var(--ink-3)',
-            position: 'relative',
-            cursor: 'default',
-          }}>
-            {it.id}
-            {active === it.id && <span style={{
-              position: 'absolute', bottom: -19, left: 12, right: 12, height: 2,
-              background: 'var(--accent)',
-            }} />}
-          </span>
+          <li key={it.id}>
+            <a
+              href={it.href}
+              aria-current={active === it.id ? 'page' : undefined}
+              style={{
+                display: 'inline-block',
+                padding: '6px 12px',
+                fontSize: 13,
+                fontWeight: 500,
+                color: active === it.id ? 'var(--ink)' : 'var(--ink-3)',
+                position: 'relative',
+                textDecoration: 'none',
+                borderRadius: 4,
+              }}
+            >
+              {it.id}
+              {active === it.id && <span aria-hidden="true" style={{
+                position: 'absolute', bottom: -19, left: 12, right: 12, height: 2,
+                background: 'var(--accent)',
+              }} />}
+            </a>
+          </li>
         ))}
-      </div>
+      </ul>
       <div className="hf-grow" />
-      <div style={{
+      <button type="button" aria-label="打开搜索 (⌘K)" aria-keyshortcuts="Meta+K" style={{
         display: 'flex',
         alignItems: 'center',
         gap: 8,
         padding: '6px 12px',
+        minHeight: 32,
         background: 'var(--bg-soft)',
         border: '1px solid var(--line)',
         borderRadius: 8,
         minWidth: 220,
         fontSize: 12,
         color: 'var(--ink-3)',
+        cursor: 'pointer',
+        font: 'inherit',
+        textAlign: 'left',
       }}>
         <HfIcon name="search" size={13} />
         <span className="hf-grow">搜索文章、笔记、标签…</span>
-        <span className="hf-kbd">⌘K</span>
-      </div>
-      <span className="hf-btn hf-btn--icon" onClick={onTheme} style={{ cursor: 'pointer' }}>
+        <span className="hf-kbd" aria-hidden="true">⌘K</span>
+      </button>
+      <button
+        type="button"
+        className="hf-btn hf-btn--icon"
+        onClick={onTheme}
+        aria-label={theme === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
+      >
         <HfIcon name={theme === 'dark' ? 'sun' : 'moon'} size={14} />
-      </span>
-      <span className="hf-btn hf-btn--icon"><HfIcon name="rss" size={14} /></span>
-    </div>
+      </button>
+      <a href="/rss.xml" className="hf-btn hf-btn--icon" aria-label="RSS 订阅"><HfIcon name="rss" size={14} /></a>
+    </nav>
   );
 }
 
@@ -184,7 +207,7 @@ function HfAd({ variant = 'native' }) {
 
   if (variant === 'hero') {
     return (
-      <a href={url} target="_blank" rel="noopener" style={{
+      <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`赞助:Lumio Games API — 访问 ${host}(在新标签页打开)`} style={{
         display: 'block',
         position: 'relative',
         padding: 16,
@@ -235,7 +258,7 @@ function HfAd({ variant = 'native' }) {
 
   // native (inline article)
   return (
-    <a href={url} target="_blank" rel="noopener" style={{
+    <a href={url} target="_blank" rel="noopener noreferrer" aria-label={`赞助:Lumio Games API(在新标签页打开)`} style={{
       display: 'block',
       margin: '24px 0',
       padding: 18,

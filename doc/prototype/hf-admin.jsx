@@ -88,9 +88,9 @@ function AdminShell({ active, breadcrumb, children, theme }) {
         }}>
           <div className="hf-mono hf-tiny hf-muted">{breadcrumb}</div>
           <div className="hf-grow" />
-          <span className="hf-btn hf-btn--sm"><HfIcon name="sync" size={12} /> 同步</span>
-          <span className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="plus" size={12} /> 新建</span>
-          <span className="hf-btn hf-btn--icon"><HfIcon name="bell" size={14} /></span>
+          <button type="button" className="hf-btn hf-btn--sm"><HfIcon name="sync" size={12} /> 同步</button>
+          <button type="button" className="hf-btn hf-btn--sm hf-btn--primary"><HfIcon name="plus" size={12} /> 新建</button>
+          <button type="button" className="hf-btn hf-btn--icon"><HfIcon name="bell" size={14} /></button>
           <div style={{
             width: 28, height: 28, borderRadius: '50%',
             background: 'linear-gradient(135deg, var(--accent), #a855f7)',
@@ -213,7 +213,7 @@ function HFDashboard({ theme = 'light' }) {
                       <div className="hf-sm" style={{ fontWeight: 500 }}>{t}</div>
                       <div className="hf-tiny hf-muted" style={{ marginTop: 2 }}>{sub}</div>
                     </div>
-                    {btn && <span className="hf-btn hf-btn--sm">{btn}</span>}
+                    {btn && <button type="button" className="hf-btn hf-btn--sm">{btn}</button>}
                   </div>
                 );
               })}
@@ -329,8 +329,8 @@ function HFNoteDetail({ theme = 'light' }) {
               <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: 1.3, flex: 1 }}>
                 用 MCTS + LLM 给 RTS 做战术决策
               </h1>
-              <span className="hf-btn hf-btn--sm"><HfIcon name="edit" size={11} /> 在 Obsidian 打开</span>
-              <span className="hf-btn hf-btn--sm hf-btn--icon"><HfIcon name="dots" size={13} /></span>
+              <button type="button" className="hf-btn hf-btn--sm"><HfIcon name="edit" size={11} /> 在 Obsidian 打开</button>
+              <button type="button" className="hf-btn hf-btn--sm hf-btn--icon"><HfIcon name="dots" size={13} /></button>
             </div>
             <div className="hf-mono hf-tiny hf-muted" style={{ marginBottom: 8 }}>
               游戏 AI/MCTS-LLM-RTS.md · 修改 2m 前 · 12 min read
@@ -386,7 +386,7 @@ function HFNoteDetail({ theme = 'light' }) {
                     <span style={{ fontSize: 12 }}>📅</span>
                     <span className="hf-sm" style={{ fontWeight: 500 }}>定时发布</span>
                     <div className="hf-grow" />
-                    <span className="hf-toggle" />
+                    <button type="button" role="switch" aria-checked="false" aria-label="切换" className="hf-toggle" />
                   </div>
                   <div style={{
                     fontFamily: 'var(--mono)', fontSize: 11,
@@ -411,7 +411,7 @@ function HFNoteDetail({ theme = 'light' }) {
                 ].map(([l, on], i) => (
                   <div key={i} style={{ display: 'flex', alignItems: 'center', padding: '6px 0', borderTop: i ? '1px solid var(--line)' : 'none' }}>
                     <span className="hf-sm hf-grow">{l}</span>
-                    <span className={`hf-toggle ${on ? 'on' : ''}`} />
+                    <button type="button" role="switch" aria-checked={on ? "true" : "false"} aria-label="切换" className={`hf-toggle ${on ? 'on' : ''}`} />
                   </div>
                 ))}
               </div>
@@ -429,9 +429,9 @@ function HFNoteDetail({ theme = 'light' }) {
                   color: 'var(--accent)', wordBreak: 'break-all',
                 }}>lumiogames.dev/s/fK3p9q2</div>
                 <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-                  <span className="hf-btn hf-btn--sm"><HfIcon name="copy" size={11} /> 复制</span>
-                  <span className="hf-btn hf-btn--sm">设密码</span>
-                  <span className="hf-btn hf-btn--sm" style={{ color: 'var(--danger)', borderColor: 'var(--danger-soft)' }}>撤销</span>
+                  <button type="button" className="hf-btn hf-btn--sm"><HfIcon name="copy" size={11} /> 复制</button>
+                  <button type="button" className="hf-btn hf-btn--sm">设密码</button>
+                  <button type="button" className="hf-btn hf-btn--sm" style={{ color: 'var(--danger-text)', borderColor: 'var(--danger-soft)' }}>撤销</button>
                 </div>
                 <div className="hf-tiny hf-muted" style={{ marginTop: 8, display: 'flex', justifyContent: 'space-between' }}>
                   <span>访问 218 次</span><span>上次 2h 前</span>
@@ -532,15 +532,15 @@ function HFNoteDetail({ theme = 'light' }) {
                   </div>
                 </div>
                 <div className="hf-col" style={{ gap: 6, minWidth: 200 }}>
-                  <span className="hf-btn hf-btn--primary" style={{ justifyContent: 'center' }}>
+                  <button type="button" className="hf-btn hf-btn--primary" style={{ justifyContent: 'center' }}>
                     <HfIcon name="copy" size={12} color="#fff" /> 复制为公众号 HTML
-                  </span>
-                  <span className="hf-btn hf-btn--sm" style={{ justifyContent: 'center' }}>
+                  </button>
+                  <button type="button" className="hf-btn hf-btn--sm" style={{ justifyContent: 'center' }}>
                     <HfIcon name="eye" size={11} /> 预览（公众号样式）
-                  </span>
-                  <span className="hf-btn hf-btn--sm" style={{ justifyContent: 'center' }}>
+                  </button>
+                  <button type="button" className="hf-btn hf-btn--sm" style={{ justifyContent: 'center' }}>
                     导出 .html
-                  </span>
+                  </button>
                   <div className="hf-tiny hf-muted" style={{ marginTop: 4, textAlign: 'center', lineHeight: 1.5 }}>
                     复制后粘进公众号编辑器即可，<br />样式不会丢。
                   </div>
@@ -598,7 +598,7 @@ function HFNoteDetail({ theme = 'light' }) {
                       <span className="hf-muted">版本历史</span><span className="hf-mono">14 versions</span>
                     </div>
                   </div>
-                  <span className="hf-btn hf-btn--sm" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}>查看历史</span>
+                  <button type="button" className="hf-btn hf-btn--sm" style={{ width: '100%', justifyContent: 'center', marginTop: 10 }}>查看历史</button>
                 </div>
               </div>
             </div>

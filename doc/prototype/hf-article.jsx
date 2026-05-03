@@ -72,10 +72,11 @@ function HFArticle({ theme = 'light', onTheme }) {
 
   return (
     <HFBrowser url="lumiogames.dev/posts/mcts-llm-rts" height={820} theme={theme}>
+      <a href="#main-content" className="skip-link">跳到正文</a>
       <HfNav active="文章" theme={theme} onTheme={onTheme} />
       {/* progress bar */}
-      <div style={{ position: 'sticky', top: 56, zIndex: 9, height: 2, background: 'transparent' }}>
-        <div style={{ height: 2, width: `${progress}%`, background: 'var(--accent)', transition: 'width .15s' }} />
+      <div role="progressbar" aria-label="阅读进度" aria-valuemin={0} aria-valuemax={100} aria-valuenow={Math.round(progress)} style={{ position: 'sticky', top: 56, zIndex: 9, height: 2, background: 'transparent' }}>
+        <div style={{ height: 2, width: `${progress}%`, background: 'var(--accent)', transition: 'width .15s' }} aria-hidden="true" />
       </div>
 
       <div ref={bodyRef} style={{ overflow: 'auto', height: 'calc(100% - 56px)' }} className="hf">
@@ -119,32 +120,36 @@ function HFArticle({ theme = 'light', onTheme }) {
             </div>
 
             {/* floating action rail */}
-            <div style={{ display: 'flex', gap: 6, padding: 8, background: 'var(--bg-soft)', borderRadius: 8, border: '1px solid var(--line)' }}>
-              <span className="hf-btn hf-btn--icon"><HfIcon name="star" size={13} /></span>
-              <span className="hf-btn hf-btn--icon"><HfIcon name="link" size={13} /></span>
-              <span className="hf-btn hf-btn--icon"><HfIcon name="copy" size={13} /></span>
-              <span className="hf-btn hf-btn--icon"><HfIcon name="dots" size={13} /></span>
+            <div role="toolbar" aria-label="文章操作" style={{ display: 'flex', gap: 6, padding: 8, background: 'var(--bg-soft)', borderRadius: 8, border: '1px solid var(--line)' }}>
+              <button type="button" className="hf-btn hf-btn--icon" aria-label="收藏"><HfIcon name="star" size={13} /></button>
+              <button type="button" className="hf-btn hf-btn--icon" aria-label="复制链接"><HfIcon name="link" size={13} /></button>
+              <button type="button" className="hf-btn hf-btn--icon" aria-label="复制内容"><HfIcon name="copy" size={13} /></button>
+              <button type="button" className="hf-btn hf-btn--icon" aria-label="更多操作" aria-haspopup="menu"><HfIcon name="dots" size={13} /></button>
             </div>
           </aside>
 
           {/* MIDDLE article */}
-          <article style={{ padding: '0 8px', minWidth: 0, position: 'relative' }}>
-            <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
-              <span className="hf-tag hf-tag--accent">#游戏 AI</span>
-              <span className="hf-tag">#MCTS</span>
-              <span className="hf-tag">#LLM</span>
-            </div>
+          <main id="main-content" style={{ padding: '0 8px', minWidth: 0, position: 'relative' }}>
+            <article>
+            <ul style={{ display: 'flex', gap: 6, marginBottom: 12, listStyle: 'none', padding: 0 }} aria-label="标签">
+              <li><a href="/tag/%E6%B8%B8%E6%88%8F%20AI" className="hf-tag hf-tag--accent" style={{ textDecoration: 'none' }}>#游戏 AI</a></li>
+              <li><a href="/tag/MCTS" className="hf-tag" style={{ textDecoration: 'none' }}>#MCTS</a></li>
+              <li><a href="/tag/LLM" className="hf-tag" style={{ textDecoration: 'none' }}>#LLM</a></li>
+            </ul>
             <h1 style={{ fontSize: 36, fontWeight: 800, lineHeight: 1.2, margin: 0, letterSpacing: '-0.01em' }}>
               用 MCTS + LLM 给 RTS 做战术决策
             </h1>
             <div style={{ fontSize: 18, color: 'var(--ink-3)', marginTop: 8, fontWeight: 400 }}>
               一次失败的尝试，以及它教会我的事
             </div>
-            <div className="hf-mono hf-tiny hf-faint" style={{ marginTop: 14, display: 'flex', gap: 12 }}>
-              <span>2026-04-28</span><span>·</span>
-              <span>12 min read</span><span>·</span>
-              <span>1,243 views</span><span>·</span>
-              <span>💬 4 评论</span>
+            <div className="hf-mono hf-tiny" style={{ marginTop: 14, display: 'flex', gap: 12, color: 'var(--ink-4)' }}>
+              <time dateTime="2026-04-28">2026-04-28</time>
+              <span aria-hidden="true">·</span>
+              <span aria-label="阅读时长 12 分钟">12 min read</span>
+              <span aria-hidden="true">·</span>
+              <span aria-label="1,243 次阅读">1,243 views</span>
+              <span aria-hidden="true">·</span>
+              <a href="#comments" style={{ color: 'inherit' }} aria-label="跳转到评论区,共 4 条"><span aria-hidden="true">💬 </span>4 评论</a>
             </div>
 
             <hr className="hf-divider" style={{ margin: '20px 0' }} />
@@ -246,8 +251,8 @@ function HFArticle({ theme = 'light', onTheme }) {
 
             {/* end card */}
             <hr className="hf-divider" style={{ margin: '32px 0 16px' }} />
-            <div style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 16, background: 'var(--bg-soft)', borderRadius: 10 }}>
-              <div style={{
+            <aside aria-label="订阅作者" style={{ display: 'flex', gap: 14, alignItems: 'center', padding: 16, background: 'var(--bg-soft)', borderRadius: 10 }}>
+              <div aria-hidden="true" style={{
                 width: 50, height: 50, borderRadius: '50%',
                 background: 'linear-gradient(135deg, var(--accent), #a855f7)',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -257,19 +262,22 @@ function HFArticle({ theme = 'light', onTheme }) {
                 <div style={{ fontWeight: 700 }}>LumioGames</div>
                 <div className="hf-sm hf-muted">订阅以收到下一篇游戏 AI 笔记</div>
               </div>
-              <span className="hf-btn hf-btn--primary">订阅</span>
-            </div>
-          </article>
+              <button type="button" className="hf-btn hf-btn--primary">订阅</button>
+            </aside>
+            </article>
+          </main>
 
           {/* RIGHT — comments rail */}
-          <aside>
+          <aside id="comments" aria-label="评论">
             <div style={{ position: 'sticky', top: 80 }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-                <span style={{ fontSize: 14, fontWeight: 700 }}>💬 评论</span>
-                <span className="hf-mono hf-tiny hf-faint">{ARTICLE_COMMENTS.length}</span>
+                <h2 style={{ fontSize: 14, fontWeight: 700, margin: 0 }}><span aria-hidden="true">💬 </span>评论</h2>
+                <span className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)' }} aria-label={`共 ${ARTICLE_COMMENTS.length} 条`}>{ARTICLE_COMMENTS.length}</span>
                 <div className="hf-grow" />
-                <span className="hf-tag" style={{ fontSize: 10 }}>全部</span>
-                <span className="hf-tag" style={{ fontSize: 10 }}>未读 · 2</span>
+                <div role="group" aria-label="评论筛选" style={{ display: 'flex', gap: 6 }}>
+                  <button type="button" className="hf-tag" aria-pressed="true" style={{ fontSize: 11 }}>全部</button>
+                  <button type="button" className="hf-tag" aria-pressed="false" style={{ fontSize: 11 }}>未读 · 2</button>
+                </div>
               </div>
 
               {/* legend hint */}
@@ -281,41 +289,50 @@ function HFArticle({ theme = 'light', onTheme }) {
               </div>
 
               {/* comment cards */}
+              <ol style={{ listStyle: 'none', padding: 0, margin: 0 }}>
               {ARTICLE_COMMENTS.map(c => (
-                <div
+                <li
                   key={c.mid}
                   className={`hf-comment-card ${active === c.mid ? 'active' : ''}`}
                   onMouseEnter={() => setActive(c.mid)}
                 >
                   <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
-                    <span className="hf-avatar" style={{ background: c.color }}>{c.avatar}</span>
+                    <span className="hf-avatar" aria-hidden="true" style={{ background: c.color }}>{c.avatar}</span>
                     <span style={{ fontWeight: 600, fontSize: 12 }}>{c.author}</span>
-                    {c.isAuthor && <span className="hf-tag hf-tag--accent" style={{ fontSize: 9, padding: '0 4px' }}>作者</span>}
-                    {c.pinned && <span className="hf-tag" style={{ fontSize: 9, padding: '0 4px', color: 'var(--warn)' }}>📌 置顶</span>}
+                    {c.isAuthor && <span className="hf-tag hf-tag--accent" style={{ fontSize: 11, padding: '0 6px' }}>作者</span>}
+                    {c.pinned && <span className="hf-tag hf-tag--warn" style={{ fontSize: 11, padding: '0 6px' }}><span aria-hidden="true">📌 </span>置顶</span>}
                     <div className="hf-grow" />
-                    <span className="hf-mono hf-tiny hf-faint">{c.time}</span>
+                    <time className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)' }} dateTime={c.time}>{c.time}</time>
                   </div>
                   <div className="hf-comment-quote">"{c.quote}"</div>
                   <div style={{ lineHeight: 1.6, color: 'var(--ink-2)' }}
                     dangerouslySetInnerHTML={{ __html: c.body }} />
                   <div style={{ display: 'flex', gap: 10, marginTop: 8, fontSize: 11 }}>
-                    <span className="hf-mono hf-faint">↩ 回复 {c.replies > 0 && `(${c.replies})`}</span>
-                    <span className="hf-mono hf-faint">👍</span>
+                    <button type="button" className="hf-mono" aria-label={`回复 ${c.author}${c.replies > 0 ? `,已有 ${c.replies} 条回复` : ''}`} style={{ background: 'transparent', border: 0, padding: '4px 6px', color: 'var(--ink-3)', cursor: 'pointer', font: 'inherit', minHeight: 24 }}>
+                      <span aria-hidden="true">↩</span> 回复 {c.replies > 0 && <span aria-hidden="true">({c.replies})</span>}
+                    </button>
+                    <button type="button" aria-label="点赞" style={{ background: 'transparent', border: 0, padding: '4px 6px', color: 'var(--ink-3)', cursor: 'pointer', font: 'inherit', minHeight: 24 }}>
+                      <span aria-hidden="true">👍</span>
+                    </button>
                     <div className="hf-grow" />
-                    <span className="hf-mono hf-faint">···</span>
+                    <button type="button" aria-label="更多操作" aria-haspopup="menu" style={{ background: 'transparent', border: 0, padding: '4px 6px', color: 'var(--ink-3)', cursor: 'pointer', font: 'inherit', minHeight: 24 }}>
+                      <span aria-hidden="true">···</span>
+                    </button>
                   </div>
-                </div>
+                </li>
               ))}
+              </ol>
 
               {/* compose stub */}
-              <div style={{
+              <form aria-label="发表评论" style={{
                 padding: 10, background: 'var(--bg-soft)', borderRadius: 8,
                 border: '1px solid var(--line)', display: 'flex', alignItems: 'center', gap: 8,
                 fontSize: 12, color: 'var(--ink-3)', marginTop: 4,
-              }}>
-                <span className="hf-avatar" style={{ background: 'var(--ink-4)', width: 20, height: 20, fontSize: 10 }}>?</span>
-                <span>选段评论 · 或全文评论…</span>
-              </div>
+              }} onSubmit={(e) => e.preventDefault()}>
+                <span className="hf-avatar" aria-hidden="true" style={{ background: 'var(--ink-3)', width: 20, height: 20, fontSize: 10 }}>?</span>
+                <label htmlFor="compose-input" className="sr-only">写下你的评论</label>
+                <input id="compose-input" type="text" placeholder="选段评论 · 或全文评论…" style={{ flex: 1, border: 0, background: 'transparent', font: 'inherit', color: 'inherit', padding: 6, minHeight: 24 }} />
+              </form>
             </div>
           </aside>
         </div>

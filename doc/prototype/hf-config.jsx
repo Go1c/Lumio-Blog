@@ -85,7 +85,7 @@ function HFConfigDocs({ theme = 'light', onTheme }) {
               tab === 'env' ? '.env · gitignore' :
               'YAML frontmatter · 写在 .md 顶部'
             }</span>
-            <span style={{ cursor: 'pointer', color: T.comment }}>📋 复制</span>
+            <button type="button" aria-label="复制配置内容" style={{ cursor: 'pointer', color: T.comment, background: 'transparent', border: 0, font: 'inherit', padding: '4px 6px', minHeight: 24 }}><span aria-hidden="true">📋 </span>复制</button>
           </div>
 
           {/* code area */}
