@@ -9,7 +9,7 @@ import {
   nowIso,
 } from '@opennote/core';
 import { NoteRepo, ShortLinkRepo, type DbHandle } from '@opennote/db';
-import { parseFile, type ParsedNote } from './parse.js';
+import { parseFile } from './parse.js';
 import { normalize } from './normalize.js';
 import { renderMarkdown } from './render.js';
 

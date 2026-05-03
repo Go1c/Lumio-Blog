@@ -18,10 +18,12 @@
     "@opennote/db": "workspace:*",
     "@opennote/sync": "workspace:*",
     "@opennote/web-public": "workspace:*",
+    "better-sqlite3": "^11.1.2",
     "hono": "^4.5.0",
     "yaml": "^2.5.0"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11",
     "tsx": "^4.16.5",
     "typescript": "^5.5.4",
     "vitest": "^2.0.5"

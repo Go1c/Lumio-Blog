@@ -1,0 +1,11 @@
+site:
+  title: Lumio Blog
+  url: https://your-domain.zeabur.app
+  description: A self-hosted notes blog powered by OpenNote
+  language: zh-CN
+author:
+  name: Lumio
+paths:
+  vault: /data/posts
+  out: /data/public
+  db: /data/opennote/index.db

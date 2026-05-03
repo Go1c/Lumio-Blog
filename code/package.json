@@ -7,6 +7,7 @@
   "scripts": {
     "build": "pnpm -r --filter=./packages/* build",
     "dev": "pnpm --filter @opennote/server dev",
+    "start": "pnpm --filter @opennote/server start",
     "sync": "pnpm --filter @opennote/cli start -- sync",
     "test": "pnpm -r test",
     "typecheck": "pnpm -r typecheck",
@@ -20,6 +21,6 @@
   },
   "packageManager": "pnpm@9.7.0",
   "engines": {
-    "node": ">=20.0.0"
+    "node": "20.x"
   }
 }

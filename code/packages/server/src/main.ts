@@ -49,6 +49,7 @@ async function main(): Promise<void> {
   const vault = resolveCfg(config.paths.vault);
   const dbPath = resolveCfg(config.paths.db);
   const out = resolveCfg(config.paths.out);
+  await mkdir(vault, { recursive: true });
   await mkdir(dirname(dbPath), { recursive: true });
   await mkdir(out, { recursive: true });
 
@@ -66,6 +67,8 @@ async function main(): Promise<void> {
     });
     await renderSite({ db, out, config });
   };
+
+  await triggerSync();
 
   startWatcher({
     vault, db,

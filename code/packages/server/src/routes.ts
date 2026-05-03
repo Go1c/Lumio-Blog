@@ -240,10 +240,12 @@ export function buildApp(deps: RouteDeps): Hono {
   // -------------------------------------------------
   async function patchMeta(c: Context): Promise<Response> {
     const slug = c.req.param('slug');
+    if (!slug) return c.json({ error: { code: 'validation_failed', field: 'slug' } }, 400);
     const note = noteRepo.getBySlug(slug);
     if (!note) return c.json({ error: { code: 'not_found' } }, 404);
 
-    const body = await c.req.json<{ visibility?: string; searchable?: boolean }>().catch(() => ({}));
+    const body: { visibility?: string; searchable?: boolean } =
+      await c.req.json<{ visibility?: string; searchable?: boolean }>().catch(() => ({}));
     const allowed: Partial<{ visibility: Visibility; searchable: 0 | 1 }> = {};
     const VALID: Visibility[] = ['public', 'unlisted', 'link-only', 'private'];
 

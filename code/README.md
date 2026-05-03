@@ -122,3 +122,4 @@ pnpm build       # 打包所有 package
 - 需求：[../DevDoc/](../DevDoc/)
 - 设计稿：[../doc/img/](../doc/img/)
 - 高保真 mock：[../index.html](../index.html)
+- Zeabur 部署：[ZEABUR.md](./ZEABUR.md)
