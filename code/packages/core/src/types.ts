@@ -84,7 +84,30 @@ export type SettingsSection =
   | 'theme'
   | 'seo'
   | 'home'
-  | 'features';
+  | 'features'
+  | 'fns';
+
+/**
+ * FastNoteSync(Obsidian → 中央 FNS Service)同步设置。
+ * 之前从 env 读,改放后台管理。token 是敏感字段 → 单独存 fns-config.yaml,
+ * 不进 git、不进 config.yaml。
+ */
+export interface FnsSettings {
+  /** 启用 FNS 同步;关掉就跳过 supervisor */
+  enabled: boolean;
+  /** FastNoteSync Service URL,如 https://fastnode.zeabur.app */
+  api_url: string;
+  /** JWT bearer,从 FNS 后台拿 */
+  token: string;
+  /** vault 名称,与 Obsidian 插件设的一致 */
+  vault: string;
+  /** 上次连接结果(server 写,前端只读) */
+  last_status?: 'connected' | 'disconnected' | 'error' | 'unknown';
+  /** 上次状态时间戳 */
+  last_status_at?: string;
+  /** 最近一次错误信息(只在 last_status='error' 时有) */
+  last_error?: string;
+}
 
 export interface SyncStats {
   added: number;
@@ -262,6 +285,7 @@ export interface AdminSettings {
   seo: SiteConfig['seo'];
   home: SiteConfig['home'];
   features: Features;
+  fns?: FnsSettings;
 }
 
 // ---- Search ----

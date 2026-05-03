@@ -8,7 +8,7 @@ import { WsEStyles } from '../components/ws-e-styles.js';
  * 视觉对齐 hf-extras2 §13 HFSettings
  */
 
-export const SETTINGS_SECTIONS = ['site', 'author', 'theme', 'seo', 'home', 'features'] as const;
+export const SETTINGS_SECTIONS = ['site', 'author', 'theme', 'seo', 'home', 'features', 'fns'] as const;
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number];
 
 const SECTION_META: Record<SettingsSectionId, { icon: string; label: string; hint: string }> = {
@@ -18,6 +18,7 @@ const SECTION_META: Record<SettingsSectionId, { icon: string; label: string; hin
   seo:      { icon: '🔍', label: 'SEO', hint: 'sitemap / robots / og / twitter' },
   home:     { icon: '🏠', label: 'Home', hint: 'hero / 推荐文章数' },
   features: { icon: '🧩', label: 'Features', hint: '开关功能 — 关掉对应 UI 隐藏' },
+  fns:      { icon: '🔄', label: 'FNS 同步', hint: 'Obsidian 通过 FastNoteSync 推上来的笔记 / 鉴权' },
 };
 
 type ToastTone = 'success' | 'error';
@@ -63,6 +64,15 @@ function validateSection(section: SettingsSectionId, draft: AdminSettings): ErrM
       }
     }
   }
+  if (section === 'fns') {
+    const f = draft.fns;
+    if (f?.enabled) {
+      if (!nonEmpty(f.api_url)) errs['fns.api_url'] = 'API URL 必填(启用时)';
+      else if (!URL_RE.test(f.api_url)) errs['fns.api_url'] = '必须是 http(s):// URL';
+      if (!nonEmpty(f.token)) errs['fns.token'] = 'Token 必填(启用时)';
+      if (!nonEmpty(f.vault)) errs['fns.vault'] = 'Vault 名必填';
+    }
+  }
   // seo / features: 无强制校验
   return errs;
 }
@@ -78,6 +88,15 @@ function pickPatch(section: SettingsSectionId, draft: AdminSettings): Partial<Ad
   if (section === 'seo') patch.seo = draft.seo;
   if (section === 'home') patch.home = draft.home;
   if (section === 'features') patch.features = draft.features;
+  if (section === 'fns' && draft.fns) {
+    // server 不让前端写 last_status 等字段;UI 只送可写的 4 个
+    patch.fns = {
+      enabled: draft.fns.enabled,
+      api_url: draft.fns.api_url,
+      token: draft.fns.token,
+      vault: draft.fns.vault,
+    };
+  }
   return patch;
 }
 
@@ -197,6 +216,7 @@ export function SettingsPage({ section }: { section: SettingsSectionId }) {
           {section === 'seo' && <SeoForm draft={draft} update={update} errs={errs} />}
           {section === 'home' && <HomeForm draft={draft} update={update} errs={errs} />}
           {section === 'features' && <FeaturesForm draft={draft} update={update} />}
+          {section === 'fns' && <FnsForm draft={draft} update={update} errs={errs} />}
 
           {/* save bar */}
           <div class="ws-e__save-bar" role="region" aria-label="保存操作">
@@ -692,6 +712,118 @@ function FeaturesForm({ draft, update }: { draft: AdminSettings; update: (n: Adm
               setGroup('agent', { mcp_tools: list });
             }}
           />
+        </div>
+      </section>
+    </>
+  );
+}
+
+// ----------------------------- FnsForm -----------------------------
+function FnsForm({ draft, update, errs }: FormProps) {
+  const fns = draft.fns ?? {
+    enabled: false,
+    api_url: '',
+    token: '',
+    vault: 'notes',
+    last_status: 'unknown' as const,
+  };
+  const set = (k: 'enabled' | 'api_url' | 'token' | 'vault', v: string | boolean): void => {
+    update({ ...draft, fns: { ...fns, [k]: v } });
+  };
+
+  // 状态显示映射
+  const statusBadge: Record<NonNullable<typeof fns.last_status>, { tone: 'ok' | 'warn' | 'danger' | 'muted'; label: string }> = {
+    connected:    { tone: 'ok',     label: '已连接' },
+    disconnected: { tone: 'warn',   label: '断开' },
+    error:        { tone: 'danger', label: '错误' },
+    unknown:      { tone: 'muted',  label: '未知' },
+  };
+  const status = statusBadge[fns.last_status ?? 'unknown'];
+
+  return (
+    <>
+      <section class="ws-e__panel">
+        <header class="ws-e__panel-head">
+          <h2>▸ FastNoteSync 同步</h2>
+          <span class={`ws-e__pill ws-e__pill--${status.tone}`}>{status.label}</span>
+        </header>
+
+        <p class="hf-tiny hf-muted" style={{ padding: '0 16px 8px' }}>
+          这边的笔记来自 Obsidian → FastNoteSync Service。启用后 Lumio-Blog 容器里会跑一个
+          Python 子进程,通过 WebSocket 实时拉取笔记到 vault 目录,再由本站 watcher 渲染发布。
+          token 是敏感字段,只存在服务器本地的 <code>fns-config.yaml</code>,不进 git、不展示给前端。
+        </p>
+
+        {/* 启用开关 */}
+        <div class="ws-e__form">
+          <div class="ws-e__field ws-e__field--inline">
+            <label class="hf-sm" style={{ display: 'flex', alignItems: 'center', gap: 8, minHeight: 24 }}>
+              <input
+                type="checkbox"
+                checked={fns.enabled}
+                onChange={(e) => set('enabled', (e.currentTarget as HTMLInputElement).checked)}
+              />
+              启用 FNS 同步
+            </label>
+            <p class="hf-tiny hf-muted">关掉后 Python 子进程会停,但已经同步到磁盘的笔记不动。</p>
+          </div>
+
+          <div class="ws-e__field">
+            <label htmlFor="fns-api">FastNoteSync Service URL</label>
+            <input
+              id="fns-api"
+              type="url"
+              placeholder="https://fastnode.zeabur.app"
+              value={fns.api_url}
+              disabled={!fns.enabled}
+              onInput={(e) => set('api_url', (e.currentTarget as HTMLInputElement).value)}
+            />
+            {errs['fns.api_url'] && <p class="ws-e__err" role="alert">{errs['fns.api_url']}</p>}
+            <p class="hf-tiny hf-muted">
+              你已经部署的 FastNoteSync 服务地址。CLI 用 wss:// 连这里的 <code>/api/user/sync</code>。
+            </p>
+          </div>
+
+          <div class="ws-e__field">
+            <label htmlFor="fns-token">JWT Token</label>
+            <input
+              id="fns-token"
+              type="password"
+              placeholder="eyJhbGc..."
+              value={fns.token}
+              disabled={!fns.enabled}
+              onInput={(e) => set('token', (e.currentTarget as HTMLInputElement).value)}
+              autoComplete="off"
+            />
+            {errs['fns.token'] && <p class="ws-e__err" role="alert">{errs['fns.token']}</p>}
+            <p class="hf-tiny hf-muted">
+              FNS 后台 → settings → tokens 拿。{fns.token && <span>当前长度: {fns.token.length} 字符</span>}
+            </p>
+          </div>
+
+          <div class="ws-e__field">
+            <label htmlFor="fns-vault">Vault 名称</label>
+            <input
+              id="fns-vault"
+              type="text"
+              placeholder="notes"
+              value={fns.vault}
+              disabled={!fns.enabled}
+              onInput={(e) => set('vault', (e.currentTarget as HTMLInputElement).value)}
+            />
+            {errs['fns.vault'] && <p class="ws-e__err" role="alert">{errs['fns.vault']}</p>}
+            <p class="hf-tiny hf-muted">必须和 Obsidian 插件设置里的 vault 名一致(默认 <code>notes</code>)。</p>
+          </div>
+
+          {fns.last_status_at && (
+            <div class="ws-e__field">
+              <p class="hf-tiny hf-muted">
+                上次状态:<strong>{status.label}</strong>{' '}
+                <time dateTime={fns.last_status_at}>{fns.last_status_at}</time>
+                {fns.last_error && <><br /><span class="ws-e__err">{fns.last_error}</span></>}
+              </p>
+            </div>
+          )}
         </div>
       </section>
     </>

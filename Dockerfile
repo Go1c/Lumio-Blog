@@ -39,6 +39,9 @@ VOLUME /data
 ENV NODE_ENV=production
 ENV OPENNOTE_CONFIG=/app/code/config.yaml
 ENV LUMIO_VAULT_PATH=/data/posts
+ENV OPENNOTE_FNS_CONFIG=/data/fns-config.yaml
+ENV OPENNOTE_FNS_CLI_DIR=/app/fns-sync
+ENV OPENNOTE_FNS_RUNTIME_CONFIG=/data/fns-runtime-config.yaml
 
 EXPOSE 3000
 
