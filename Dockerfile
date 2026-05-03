@@ -14,9 +14,13 @@ COPY code/config.yaml ./config.yaml
 RUN pnpm install --frozen-lockfile --prod=false \
   && pnpm build
 
+RUN mkdir -p /data/posts /data/public /data/opennote
+
 ENV NODE_ENV=production
-ENV OPENNOTE_CONFIG=./config.yaml
+ENV OPENNOTE_CONFIG=/app/code/config.yaml
 
 EXPOSE 3000
 
-CMD ["pnpm", "start"]
+WORKDIR /app/code/packages/server
+
+CMD ["node", "--import", "tsx", "src/main.ts"]

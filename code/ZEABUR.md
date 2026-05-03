@@ -18,7 +18,7 @@ The container runs:
 ```bash
 pnpm install --frozen-lockfile --prod=false
 pnpm build
-pnpm start
+node --import tsx src/main.ts
 ```
 
 `package.json` pins Node.js to `20.x` and pnpm to `9.7.0`.
@@ -61,8 +61,8 @@ OPENNOTE_PASSWORD=<strong admin password>
 NODE_ENV=production
 ```
 
-`OPENNOTE_CONFIG` is optional now. By default the server reads `./config.yaml`
-from the `code` directory. For a custom domain, edit `config.yaml` and replace
+`OPENNOTE_CONFIG` is optional now. The Dockerfile sets it to
+`/app/code/config.yaml`. For a custom domain, edit `config.yaml` and replace
 `site.url` with the public URL Zeabur assigns or your custom domain.
 
 ## First Content
