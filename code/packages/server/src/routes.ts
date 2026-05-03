@@ -17,6 +17,7 @@ import * as mediaRoutes from './routes/media.js';
 import * as backupRoutes from './routes/backup.js';
 import * as ogRoutes from './routes/og.js';
 import * as newsletterRoutes from './routes/newsletter.js';
+import { register as registerWebhooksAdmin } from './routes/webhooks-admin.js';
 import { createMediaStoreFromEnv, LocalMediaStore, type MediaStore } from './media-store.js';
 import type { BackupRunner } from './backup-runner.js';
 
@@ -275,6 +276,10 @@ export function buildApp(deps: RouteDeps): Hono {
   });
 
   newsletterRoutes.register(app, {});
+
+  // WS-E:webhooks-admin (deliveries / redeliver) — 必须在 app.route('/api/admin', admin) 之后,
+  // 但 Hono 内部 trie 仍能匹配子路径。
+  registerWebhooksAdmin(app, deps);
 
   return app;
 
