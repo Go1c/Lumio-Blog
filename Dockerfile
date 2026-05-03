@@ -11,7 +11,7 @@ COPY code/package.json code/pnpm-lock.yaml code/pnpm-workspace.yaml code/tsconfi
 COPY code/packages ./packages
 COPY code/config.yaml ./config.yaml
 
-RUN pnpm install --frozen-lockfile --prod=false \
+RUN pnpm install --no-frozen-lockfile --prod=false \
   && pnpm build
 
 RUN mkdir -p /data/posts /data/public /data/opennote
