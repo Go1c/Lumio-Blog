@@ -50,7 +50,7 @@ export interface AdminShellProps {
   onOpenSearch?: () => void;
 }
 
-const DEFAULT_MENU: AdminMenuGroup[] = [
+export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '仪表盘',
     items: [
@@ -84,6 +84,7 @@ const DEFAULT_MENU: AdminMenuGroup[] = [
       { label: '站点', icon: 'settings', disabled: true },
       { label: '外观', icon: 'star', disabled: true },
       { label: 'SEO', icon: 'search', disabled: true },
+      { label: 'FNS 同步', href: '#/settings/fns', icon: 'sync' },
       { label: 'Tokens', href: '#/tokens', icon: 'lock' },
       { label: 'Webhooks', href: '#/webhooks', icon: 'webhook' },
       { label: '备份', icon: 'database', disabled: true },
@@ -100,7 +101,7 @@ function isActive(item: AdminMenuItem, currentPath: string): boolean {
 export function AdminShell({
   currentPath,
   breadcrumbs,
-  menu = DEFAULT_MENU,
+  menu = DEFAULT_ADMIN_MENU,
   children,
   topbarActions,
   userMenu,
