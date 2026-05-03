@@ -3,6 +3,7 @@ import { join } from 'node:path';
 import type { Database } from 'better-sqlite3';
 import { NoteRepo } from '@opennote/db';
 import type { NoteRow, SiteConfig } from '@opennote/core';
+import { ALL_CSS, publicLayout as publicLayoutFn } from '@opennote/ui/ssg';
 import { renderHome } from './templates/home.js';
 import { renderPost } from './templates/post.js';
 import { renderFeed } from './templates/feed.js';
@@ -71,82 +72,76 @@ function renderSitemap(posts: NoteRow[], tags: string[], config: SiteConfig): st
 }
 
 function render404(config: SiteConfig): string {
-  const lang = config.site.language ?? 'zh-CN';
-  return `<!doctype html><html lang="${lang}"><head><meta charset=utf-8><title>404 · ${config.site.title}</title>
-<link rel=stylesheet href=/styles.css></head>
-<body><a class="skip-link" href="#main-content">跳到正文</a><header><h1><a href=/ style="color:inherit;text-decoration:none">${config.site.title}</a></h1></header>
-<main id="main-content"><h1>404</h1><p>你想找的页面不存在。它可能已被删除、设为私有、或地址敲错了。</p>
-<p><a href="/">← 回首页</a></p></main></body></html>`;
+  const body = `<h1>404</h1>
+<p>你想找的页面不存在。它可能已被删除、设为私有、或地址敲错了。</p>
+<p><a href="/">← 回首页</a></p>`;
+  return publicLayoutFn({
+    title: `404 · ${config.site.title}`,
+    description: '页面未找到',
+    config,
+    body,
+    noindex: true,
+  });
 }
 
-const CSS = `
+/**
+ * 公共站 CSS = ui 设计 token + primitives + 站点专属(article / shiki / katex / post-list 等)
+ */
+const APP_CSS = `
+/* ---- legacy compat aliases for templates that reference older names ---- */
 :root {
-  --bg: #ffffff; --fg: #1a1a1a; --muted: #595959; --accent: #2563eb;
-  --border: #e5e5e5; --code-bg: #f5f5f7;
-  --error-fg: #991b1b; --error-bg: #fee2e2;
+  --fg: var(--ink);
+  --muted: var(--ink-3);
+  --border: var(--line);
+  --error-fg: #991b1b;
+  --error-bg: #fee2e2;
 }
-@media (prefers-color-scheme: dark) {
-  :root { --bg: #0f0f10; --fg: #e8e8e8; --muted: #b8b8b8; --accent: #60a5fa; --border: #2a2a2a; --code-bg: #1a1a1c;
-          --error-fg: #fca5a5; --error-bg: #450a0a; }
+html[data-theme="dark"] {
+  --error-fg: #fca5a5;
+  --error-bg: #450a0a;
 }
-* { box-sizing: border-box; }
-html, body { margin: 0; padding: 0; }
 
-/* Accessibility: visible focus + skip link + reduced motion */
-:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; border-radius: 3px; }
-.skip-link {
-  position: absolute; left: -9999px; top: 8px;
-  padding: 8px 14px; background: var(--accent); color: #fff;
-  text-decoration: none; border-radius: 6px; font-weight: 500; z-index: 1000;
-}
-.skip-link:focus, .skip-link:focus-visible { left: 8px; outline: 2px solid var(--fg); outline-offset: 2px; }
-.sr-only {
-  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
-  overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0;
-}
-@media (prefers-reduced-motion: reduce) {
-  *, *::before, *::after {
-    transition-duration: 0.01ms !important;
-    animation-duration: 0.01ms !important;
-    animation-iteration-count: 1 !important;
-    scroll-behavior: auto !important;
-  }
-}
-body {
-  font: 16px/1.65 -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
-  background: var(--bg); color: var(--fg);
-  max-width: 720px; margin: 0 auto; padding: 48px 24px;
-}
-header { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 48px; padding-bottom: 16px; border-bottom: 1px solid var(--border); }
-header h1 { margin: 0; font-size: 18px; }
-header nav a { color: var(--muted); text-decoration: none; margin-left: 16px; font-size: 14px; }
-header nav a:hover { color: var(--fg); }
+/* ---- typography for article body ---- */
 a { color: var(--accent); }
 article h1 { font-size: 28px; margin-top: 0; }
-article .meta { color: var(--muted); font-size: 14px; margin-bottom: 32px; }
-article .meta .badge { display: inline-block; padding: 2px 8px; border: 1px solid var(--border); border-radius: 999px; margin-right: 8px; font-size: 12px; }
+article .meta { color: var(--ink-3); font-size: 14px; margin-bottom: 32px; }
+article .meta .badge { display: inline-block; padding: 2px 8px; border: 1px solid var(--line); border-radius: 999px; margin-right: 8px; font-size: 12px; }
 .post-list { list-style: none; padding: 0; }
-.post-list li { padding: 16px 0; border-bottom: 1px solid var(--border); }
+.post-list li { padding: 16px 0; border-bottom: 1px solid var(--line); }
 .post-list h2 { margin: 0 0 4px 0; font-size: 18px; }
-.post-list h2 a { color: var(--fg); text-decoration: none; }
+.post-list h2 a { color: var(--ink); text-decoration: none; }
 .post-list h2 a:hover { color: var(--accent); }
-.post-list .summary { margin: 4px 0 0 0; color: var(--muted); font-size: 14px; }
-.post-list .meta { color: var(--muted); font-size: 12px; margin-top: 4px; }
+.post-list .summary { margin: 4px 0 0 0; color: var(--ink-3); font-size: 14px; }
+.post-list .meta { color: var(--ink-3); font-size: 12px; margin-top: 4px; }
 pre { background: var(--code-bg); padding: 16px; overflow: auto; border-radius: 6px; font-size: 13px; }
-code { background: var(--code-bg); padding: 2px 5px; border-radius: 3px; font-size: 0.9em; font-family: ui-monospace, SF Mono, Menlo, monospace; }
+code { background: var(--code-bg); padding: 2px 5px; border-radius: 3px; font-size: 0.9em; font-family: var(--mono); }
 pre code { background: none; padding: 0; font-size: 13px; }
-blockquote { border-left: 3px solid var(--border); margin: 0; padding: 4px 16px; color: var(--muted); }
-.opennote-broken-link { color: var(--muted); text-decoration: line-through dotted; cursor: help; }
+blockquote { border-left: 3px solid var(--line); margin: 0; padding: 4px 16px; color: var(--ink-3); }
+.opennote-broken-link { color: var(--ink-3); text-decoration: line-through dotted; cursor: help; }
+
+/* shiki: keep auto light/dark via CSS variables produced at build */
 .shiki { padding: 16px; border-radius: 6px; overflow: auto; font-size: 13px; }
 .shiki code { background: none; padding: 0; }
+html[data-theme="dark"] .shiki, html[data-theme="dark"] .shiki span {
+  color: var(--shiki-dark) !important; background-color: var(--shiki-dark-bg) !important;
+}
+html[data-theme="light"] .shiki, html[data-theme="light"] .shiki span {
+  color: var(--shiki-light) !important; background-color: var(--shiki-light-bg) !important;
+}
 @media (prefers-color-scheme: dark) {
-  .shiki, .shiki span { color: var(--shiki-dark) !important; background-color: var(--shiki-dark-bg) !important; }
+  html:not([data-theme]) .shiki, html:not([data-theme]) .shiki span {
+    color: var(--shiki-dark) !important; background-color: var(--shiki-dark-bg) !important;
+  }
 }
 @media (prefers-color-scheme: light) {
-  .shiki, .shiki span { color: var(--shiki-light) !important; background-color: var(--shiki-light-bg) !important; }
+  html:not([data-theme]) .shiki, html:not([data-theme]) .shiki span {
+    color: var(--shiki-light) !important; background-color: var(--shiki-light-bg) !important;
+  }
 }
+
 .mermaid { text-align: center; margin: 16px 0; }
 .opennote-math-error { color: var(--error-fg); background: var(--error-bg); padding: 2px 6px; border-radius: 3px; }
 .katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
-footer { margin-top: 64px; padding-top: 24px; border-top: 1px solid var(--border); color: var(--muted); font-size: 13px; }
 `;
+
+const CSS = ALL_CSS + '\n' + APP_CSS;

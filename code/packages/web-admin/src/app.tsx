@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'preact/hooks';
+import { AdminShell, type AdminBreadcrumb } from '@opennote/ui';
 import { api } from './api.js';
 import { Login } from './pages/login.js';
 import { NoteList } from './pages/note-list.js';
@@ -20,6 +21,32 @@ function readRoute(): Route {
   return { name: 'list' };
 }
 
+function currentPath(route: Route): string {
+  switch (route.name) {
+    case 'list': return '#/';
+    case 'detail': return `#/notes/${route.slug}`;
+    case 'tokens': return '#/tokens';
+    case 'webhooks': return '#/webhooks';
+  }
+}
+
+function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
+  switch (route.name) {
+    case 'list':
+      return [{ label: 'opennote', href: '#/' }, { label: '笔记' }];
+    case 'detail':
+      return [
+        { label: 'opennote', href: '#/' },
+        { label: '笔记', href: '#/' },
+        { label: route.slug },
+      ];
+    case 'tokens':
+      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: 'Tokens' }];
+    case 'webhooks':
+      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: 'Webhooks' }];
+  }
+}
+
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [route, setRoute] = useState<Route>(readRoute());
@@ -34,25 +61,22 @@ export function App() {
   if (authed === null) return <main aria-busy="true"><p>loading…</p></main>;
   if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
 
+  const onSync = () => { void api.sync().then(() => location.reload()); };
+  const onLogout = () => { void api.logout().then(() => setAuthed(false)); };
+
   return (
-    <>
-      <a class="skip-link" href="#main-content">跳到主内容</a>
-      <header>
-        <h1><a href="#/" style={{ color: 'inherit', textDecoration: 'none' }}>opennote · admin</a></h1>
-        <nav class="right" aria-label="后台导航">
-          <a href="#/" aria-current={route.name === 'list' ? 'page' : undefined} style={{ color: 'var(--muted)' }}>笔记</a>
-          <a href="#/tokens" aria-current={route.name === 'tokens' ? 'page' : undefined} style={{ color: 'var(--muted)' }}>tokens</a>
-          <a href="#/webhooks" aria-current={route.name === 'webhooks' ? 'page' : undefined} style={{ color: 'var(--muted)' }}>webhooks</a>
-          <button type="button" aria-label="同步内容" onClick={() => api.sync().then(() => location.reload())}><span aria-hidden="true">↻</span> sync</button>
-          <button type="button" aria-label="退出登录" onClick={() => api.logout().then(() => setAuthed(false))}>logout</button>
-        </nav>
-      </header>
-      <main id="main-content">
-        {route.name === 'list' && <NoteList />}
-        {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
-        {route.name === 'tokens' && <TokensPage />}
-        {route.name === 'webhooks' && <WebhooksPage />}
-      </main>
-    </>
+    <AdminShell
+      currentPath={currentPath(route)}
+      breadcrumbs={breadcrumbsFor(route)}
+      onSync={onSync}
+      onLogout={onLogout}
+      siteName="opennote"
+      userInitials="L"
+    >
+      {route.name === 'list' && <NoteList />}
+      {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
+      {route.name === 'tokens' && <TokensPage />}
+      {route.name === 'webhooks' && <WebhooksPage />}
+    </AdminShell>
   );
 }
