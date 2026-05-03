@@ -1,0 +1,8 @@
+ignore:
+  - deploy/fns-sync/
+  - doc/devdoc/
+  - code/packages/db/src/queries.test.ts
+  - code/packages/server/test/
+  - code/packages/web-public/public/comments.js
+  - code/packages/web-public/public/graph.js
+  - code/packages/web-public/public/search.js
