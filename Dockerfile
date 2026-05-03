@@ -1,15 +1,15 @@
 FROM node:20-bookworm-slim
 
-WORKDIR /app
+WORKDIR /app/code
 
 RUN apt-get update \
   && apt-get install -y --no-install-recommends python3 make g++ \
   && rm -rf /var/lib/apt/lists/* \
   && npm install -g pnpm@9.7.0
 
-COPY package.json pnpm-lock.yaml pnpm-workspace.yaml tsconfig.base.json ./
-COPY packages ./packages
-COPY config.yaml ./config.yaml
+COPY code/package.json code/pnpm-lock.yaml code/pnpm-workspace.yaml code/tsconfig.base.json ./
+COPY code/packages ./packages
+COPY code/config.yaml ./config.yaml
 
 RUN pnpm install --frozen-lockfile --prod=false \
   && pnpm build

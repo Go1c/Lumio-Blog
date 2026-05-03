@@ -1,19 +1,17 @@
 # Zeabur Deployment
 
-This project deploys from the Dockerfile in the `code/` directory. Keep the Git
-repository root clean; configure Zeabur to use `code` as the service root.
+This project deploys from the Dockerfile in the repository root.
 
 ## GitHub Service
 
-In Zeabur, set the service **Root Directory** to:
+In Zeabur, keep the service **Root Directory** empty or `/` so the platform sees:
 
 ```text
-code
+Dockerfile
 ```
 
-Zeabur should detect `code/Dockerfile` automatically. Clear any manually set
-build/start command overrides; the Dockerfile owns installation, build, and
-startup.
+Zeabur should detect the root Dockerfile automatically. Clear any manually set
+build/start command overrides; the Dockerfile owns installation, build, and startup.
 
 The container runs:
 
@@ -29,7 +27,7 @@ If Zeabur serves files from the repository root instead of the Node service, set
 the service root manually:
 
 ```text
-Root Directory=code
+Root Directory=/
 Builder=Dockerfile
 ```
 

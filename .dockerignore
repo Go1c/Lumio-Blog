@@ -1,0 +1,16 @@
+code/node_modules
+code/packages/*/node_modules
+code/packages/*/dist
+code/dist
+code/.turbo
+code/.opennote
+code/data
+code/*.log
+code/.env
+code/.env.local
+code/*.db
+code/*.db-journal
+doc/prototype
+doc/img
+.git
+.DS_Store
