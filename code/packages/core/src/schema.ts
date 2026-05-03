@@ -60,6 +60,120 @@ export const siteConfigSchema = z.object({
   }),
 });
 
+// =====================================================================
+// Settings(WS-G1):config.yaml + features.yaml -> AdminSettings
+// =====================================================================
+
+/** 单条社交链接 — config.yaml 里既见 platform/url 也见 kind/handle,二者都接受。 */
+export const socialLinkSchema = z
+  .object({
+    platform: z.string().optional(),
+    kind: z.string().optional(),
+    url: z.string().url().optional(),
+    handle: z.string().optional(),
+  })
+  .refine((s) => s.platform || s.kind, { message: 'platform or kind required' })
+  .refine((s) => s.url || s.handle, { message: 'url or handle required' });
+
+export const siteSectionSchema = z.object({
+  title: z.string().min(1),
+  url: z.string().url(),
+  description: z.string().optional(),
+  timezone: z.string().optional(),
+  language: z.string().optional(),
+  locale: z.string().optional(),
+});
+
+export const authorSectionSchema = z.object({
+  name: z.string().min(1),
+  email: z.string().email().optional(),
+  avatar: z.string().optional(),
+  bio: z.string().optional(),
+  bio_md: z.string().optional(),
+  social: z.array(socialLinkSchema).optional(),
+});
+
+export const themeSectionSchema = z.object({
+  default: z.enum(['light', 'dark', 'auto']).optional(),
+  accent: z.string().optional(),
+  font_serif: z.string().optional(),
+  font_mono: z.string().optional(),
+});
+
+export const seoSectionSchema = z.object({
+  default_og_template: z.string().optional(),
+  twitter_card: z.string().optional(),
+  robots: z.string().optional(),
+  sitemap: z.boolean().optional(),
+});
+
+export const homeSectionSchema = z.object({
+  hero_title_md: z.string().optional(),
+  hero_intro_md: z.string().optional(),
+  hero_cta_primary: z.string().optional(),
+  hero_cta_secondary: z.string().optional(),
+  show_recent_posts: z.number().int().nonnegative().optional(),
+  show_categories: z.boolean().optional(),
+});
+
+/** features.yaml 的 schema(PATCH 时 partial,GET 时填默认值) */
+export const featuresSchema = z.object({
+  content: z.object({
+    comments: z.boolean(),
+    newsletter: z.boolean(),
+    rss: z.boolean(),
+    graph: z.boolean(),
+    search: z.boolean(),
+    short_links: z.boolean(),
+  }),
+  admin: z.object({
+    analytics: z.boolean(),
+    media_library: z.boolean(),
+    api_tokens: z.boolean(),
+    webhooks: z.boolean(),
+    og_generator: z.boolean(),
+  }),
+  agent: z.object({
+    cli_enabled: z.boolean(),
+    mcp_enabled: z.boolean(),
+    mcp_tools: z.array(z.string()),
+  }),
+  webhooks: z.array(z.object({ event: z.string(), url: z.string().url() })),
+});
+
+/** AdminSettings(GET 返回的形态) — 全字段 */
+export const adminSettingsSchema = z.object({
+  site: siteSectionSchema,
+  author: authorSectionSchema,
+  theme: themeSectionSchema,
+  seo: seoSectionSchema,
+  home: homeSectionSchema,
+  features: featuresSchema,
+});
+
+/** PATCH body — 任何顶层 section 都可省略,被传入的 section 内部仍按全 schema 校验。
+ *  TODO: 后续支持 deep partial(目前要求 PATCH 一个 section 时,该 section 是完整对象) */
+export const adminSettingsPatchSchema = z
+  .object({
+    site: siteSectionSchema.partial().optional(),
+    author: authorSectionSchema.partial().optional(),
+    theme: themeSectionSchema.partial().optional(),
+    seo: seoSectionSchema.partial().optional(),
+    home: homeSectionSchema.partial().optional(),
+    features: featuresSchema.partial().optional(),
+  })
+  .strict();
+
+/** features.yaml 缺省 — 全 true,mcp_tools 默认列表,webhooks 空数组 */
+export function defaultFeatures(): z.infer<typeof featuresSchema> {
+  return {
+    content: { comments: true, newsletter: true, rss: true, graph: true, search: true, short_links: true },
+    admin: { analytics: true, media_library: true, api_tokens: true, webhooks: true, og_generator: true },
+    agent: { cli_enabled: true, mcp_enabled: true, mcp_tools: ['blog_search', 'blog_read', 'blog_write', 'blog_patch_meta'] },
+    webhooks: [],
+  };
+}
+
 /**
  * 关键约束：link-only / private 笔记不能 searchable: true
  * 在 normalize 阶段强制纠正，违反时记 warning。

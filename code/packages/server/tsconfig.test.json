@@ -1,0 +1,12 @@
+{
+  "// note": "type-check-only config that mirrors tsconfig.json but also includes test files. Used by CI / agents to verify both src and tests compile.",
+  "extends": "../../tsconfig.base.json",
+  "compilerOptions": {
+    "outDir": "dist-test",
+    "rootDir": ".",
+    "types": ["node", "vitest/globals"],
+    "noEmit": true,
+    "composite": false
+  },
+  "include": ["src/**/*", "test/**/*"]
+}

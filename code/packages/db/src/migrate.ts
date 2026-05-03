@@ -1,4 +1,8 @@
 import type { Database } from 'better-sqlite3';
+import { settingsAuditMigration } from './migrations/004_settings_audit.js';
+import { migration005 } from './migrations/005_search_fts.js';
+import { migration006Analytics } from './migrations/006_analytics.js';
+import { migration007MediaBackup } from './migrations/007_media_backup.js';
 
 interface Migration {
   version: number;
@@ -124,6 +128,10 @@ const MIGRATIONS: Migration[] = [
       CREATE INDEX idx_deliveries_webhook ON webhook_deliveries(webhook_id);
     `,
   },
+  settingsAuditMigration,
+  migration005,
+  migration006Analytics,
+  migration007MediaBackup,
 ];
 
 export function runMigrations(db: Database): void {

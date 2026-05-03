@@ -1,6 +1,7 @@
 import { Hono, type Context, type MiddlewareHandler, type Next } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { Database } from 'better-sqlite3';
+import { resolve } from 'node:path';
 import { NoteRepo, ShortLinkRepo } from '@opennote/db';
 import type { SiteConfig, SyncEvent, Visibility } from '@opennote/core';
 import { AuthService, clearSessionCookie, setSessionCookie, getSessionToken } from './auth.js';
@@ -8,12 +9,29 @@ import { TokenService, requireToken } from './tokens.js';
 import { WebhookService } from './webhooks.js';
 import { AuditLog } from './audit.js';
 import type { EventBus } from './events.js';
+import { register as registerSettings } from './routes/settings.js';
+import { register as registerSearch } from './routes/search.js';
+import { register as registerGraph } from './routes/graph.js';
+import { register as registerAnalytics } from './routes/analytics.js';
+import * as mediaRoutes from './routes/media.js';
+import * as backupRoutes from './routes/backup.js';
+import * as ogRoutes from './routes/og.js';
+import * as newsletterRoutes from './routes/newsletter.js';
+import { register as registerWebhooksAdmin } from './routes/webhooks-admin.js';
+import { createMediaStoreFromEnv, LocalMediaStore, type MediaStore } from './media-store.js';
+import type { BackupRunner } from './backup-runner.js';
 
 export interface RouteDeps {
   db: Database;
   config: SiteConfig;
   bus: EventBus;
   triggerSync: () => Promise<void>;
+  // Optional — main.ts may wire these for full functionality
+  vaultDir?: string;
+  dbPath?: string;
+  dataDir?: string;
+  backupRunner?: BackupRunner;
+  mediaStore?: MediaStore;
 }
 
 export function buildApp(deps: RouteDeps): Hono {
@@ -61,11 +79,7 @@ export function buildApp(deps: RouteDeps): Hono {
     return c.json({ post: row });
   });
 
-  app.get('/api/search', (c) => {
-    const q = c.req.query('q')?.trim();
-    if (!q) return c.json({ results: [] });
-    return c.json({ results: noteRepo.search(q) });
-  });
+  // /api/search is registered by registerSearch (WS-G2) below — provides FTS5 + facets
 
   app.get('/n/:short_id', (c) => {
     const sid = c.req.param('short_id');
@@ -234,6 +248,38 @@ export function buildApp(deps: RouteDeps): Hono {
   // ---------- Agent write API（bearer write scope）----------
   // 共享 patchMeta 实现，权限来自 actorMw('write')
   app.patch('/api/notes/:slug/meta', actorMw('write'), patchMeta);
+
+  // ---------- WS-G register (settings / search / graph / analytics / media / backup / og / newsletter) ----------
+  registerSettings(app, deps);
+  registerSearch(app, { db: deps.db });
+  registerGraph(app, { db: deps.db });
+  registerAnalytics(app, { db: deps.db });
+
+  const dataDir = deps.dataDir ?? './data';
+  const mediaStore = deps.mediaStore ?? createMediaStoreFromEnv({
+    localRoot: resolve(dataDir, 'media'),
+    urlPrefix: '/static/media',
+  });
+  mediaRoutes.register(app, { db: deps.db, store: mediaStore, bus: deps.bus });
+  if (mediaStore instanceof LocalMediaStore) {
+    mediaRoutes.registerLocalMediaStatic(app, mediaStore);
+  }
+
+  if (deps.backupRunner) {
+    backupRoutes.register(app, { db: deps.db, runner: deps.backupRunner });
+  }
+
+  ogRoutes.register(app, {
+    db: deps.db,
+    config: deps.config,
+    cacheDir: resolve(dataDir, 'og'),
+  });
+
+  newsletterRoutes.register(app, {});
+
+  // WS-E:webhooks-admin (deliveries / redeliver) — 必须在 app.route('/api/admin', admin) 之后,
+  // 但 Hono 内部 trie 仍能匹配子路径。
+  registerWebhooksAdmin(app, deps);
 
   return app;
 

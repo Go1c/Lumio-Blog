@@ -13,11 +13,19 @@ import { parseFile } from './parse.js';
 import { normalize } from './normalize.js';
 import { renderMarkdown } from './render.js';
 
+/** 渲染完每篇笔记后,可外部插入的钩子(WS-G4 用于扫 media ref) */
+export interface PostRenderHook {
+  /** slug + 渲染好的 body_html → 由实现去解析 url 并写 media_refs */
+  (slug: string, bodyHtml: string): void | Promise<void>;
+}
+
 export interface SyncOptions {
   vault: string;
   db: DbHandle;
   onEvent?: (e: SyncEvent) => void;
   onLog?: (level: 'info' | 'warn' | 'error', msg: string, meta?: unknown) => void;
+  /** 每篇笔记 render 完之后调用一次。失败不影响主流程,只 warn。 */
+  onNoteRendered?: PostRenderHook;
 }
 
 /** 单文件处理用的上下文。slug 解析表是 db 全量映射 + 本批新增的合并。 */
@@ -27,6 +35,7 @@ interface ProcessCtx {
   resolveSlug: (target: string) => string | null;
   onEvent?: SyncOptions['onEvent'];
   onLog?: SyncOptions['onLog'];
+  onNoteRendered?: SyncOptions['onNoteRendered'];
 }
 
 /**
@@ -94,6 +103,18 @@ async function processNote(
       raw_target: l.raw,
     }));
     ctx.noteRepo.upsert(row, parsed.tags, linkRows);
+
+    // WS-G4 hook:扫 body_html 提取 media URL 并写 media_refs
+    if (ctx.onNoteRendered) {
+      try {
+        await ctx.onNoteRendered(parsed.slug, html);
+      } catch (e) {
+        ctx.onLog?.('warn', 'post.render.hook.failed', {
+          slug: parsed.slug,
+          err: (e as Error).message,
+        });
+      }
+    }
   }
 
   return { changed, isNew, row, rawTargets: links.map((l) => l.raw) };
@@ -159,6 +180,7 @@ export async function syncAll(opts: SyncOptions): Promise<SyncStats> {
     resolveSlug,
     onEvent: opts.onEvent,
     onLog: opts.onLog,
+    onNoteRendered: opts.onNoteRendered,
   };
 
   const existing = new Map(noteRepo.listAll().map((n) => [n.slug, n]));
@@ -232,6 +254,7 @@ export async function syncOne(absPath: string, opts: SyncOptions): Promise<void>
     resolveSlug: buildResolver(noteRepo, overrides),
     onEvent: opts.onEvent,
     onLog: opts.onLog,
+    onNoteRendered: opts.onNoteRendered,
   };
 
   const existing = noteRepo.getBySlug(normalized.slug);
