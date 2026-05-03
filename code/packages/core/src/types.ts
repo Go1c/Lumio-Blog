@@ -69,7 +69,22 @@ export type SyncEvent =
   | { kind: 'note.unpublished'; slug: string; reason: string }
   | { kind: 'sync.started' }
   | { kind: 'sync.completed'; stats: SyncStats }
-  | { kind: 'sync.failed'; err: string };
+  | { kind: 'sync.failed'; err: string }
+  | { kind: 'settings.changed'; sections: SettingsSection[] }
+  | { kind: 'media.uploaded'; id: string; filename: string; mime: string; bytes: number }
+  | { kind: 'media.deleted'; id: string }
+  | { kind: 'backup.started'; job_id: string }
+  | { kind: 'backup.done'; job_id: string; bytes: number }
+  | { kind: 'backup.failed'; job_id: string; error: string };
+
+/** AdminSettings 顶层 section 名,用于 settings.changed 事件 + 审计 diff 划分 */
+export type SettingsSection =
+  | 'site'
+  | 'author'
+  | 'theme'
+  | 'seo'
+  | 'home'
+  | 'features';
 
 export interface SyncStats {
   added: number;
