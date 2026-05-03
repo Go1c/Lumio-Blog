@@ -1,0 +1,27 @@
+# FastNodeSync CLI config — 由 entrypoint.sh 用 envsubst 渲染填环境变量
+server:
+  api: "${FNS_API_URL}"        # https://fastnode.zeabur.app 这种
+  token: "${FNS_TOKEN}"        # 从 FNS 后台 → settings → tokens 拿
+  vault: "${FNS_VAULT}"        # 大概率是 "notes",和 Obsidian 插件里那个 vault 名一致
+
+sync:
+  watch_path: "${LUMIO_VAULT_PATH}"   # /data/posts —— Lumio-Blog config.yaml 里的 paths.vault
+  sync_notes: true
+  sync_files: true
+  sync_config: false                  # .obsidian/ 不同步,Lumio-Blog 不要这些
+  upload_concurrency: 2
+  exclude_patterns:
+    - ".git/**"
+    - ".trash/**"
+    - "*.tmp"
+    - ".DS_Store"
+  file_chunk_size: 524288
+
+client:
+  reconnect_max_retries: 999          # 服务长跑,不要老放弃
+  reconnect_base_delay: 3
+  heartbeat_interval: 30
+
+logging:
+  level: "INFO"
+  file: ""                            # 空字符串 = 写 stdout,Zeabur 日志能看见
