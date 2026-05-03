@@ -2,3 +2,9 @@
 node_modules/
 **/dist/
 .turbo/
+external/
+
+# Vendored FNS CLI internals
+deploy/fns-sync/**/__pycache__/
+*.pyc
+test-touch

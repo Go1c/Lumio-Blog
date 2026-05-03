@@ -141,6 +141,17 @@ export const featuresSchema = z.object({
   webhooks: z.array(z.object({ event: z.string(), url: z.string().url() })),
 });
 
+/** FNS(FastNoteSync)同步设置 — 单独存,token 是敏感字段 */
+export const fnsSettingsSchema = z.object({
+  enabled: z.boolean(),
+  api_url: z.string().refine((s) => s === '' || /^https?:\/\//.test(s), 'must be http(s) URL or empty'),
+  token: z.string(),
+  vault: z.string().min(1, 'vault name required'),
+  last_status: z.enum(['connected', 'disconnected', 'error', 'unknown']).optional(),
+  last_status_at: z.string().optional(),
+  last_error: z.string().optional(),
+});
+
 /** AdminSettings(GET 返回的形态) — 全字段 */
 export const adminSettingsSchema = z.object({
   site: siteSectionSchema,
@@ -149,6 +160,7 @@ export const adminSettingsSchema = z.object({
   seo: seoSectionSchema,
   home: homeSectionSchema,
   features: featuresSchema,
+  fns: fnsSettingsSchema.optional(),
 });
 
 /** PATCH body — 任何顶层 section 都可省略,被传入的 section 内部仍按全 schema 校验。
@@ -161,8 +173,20 @@ export const adminSettingsPatchSchema = z
     seo: seoSectionSchema.partial().optional(),
     home: homeSectionSchema.partial().optional(),
     features: featuresSchema.partial().optional(),
+    fns: fnsSettingsSchema.partial().optional(),
   })
   .strict();
+
+/** FNS 缺省 — disabled,空字符串 */
+export function defaultFns(): z.infer<typeof fnsSettingsSchema> {
+  return {
+    enabled: false,
+    api_url: '',
+    token: '',
+    vault: 'notes',
+    last_status: 'unknown',
+  };
+}
 
 /** features.yaml 缺省 — 全 true,mcp_tools 默认列表,webhooks 空数组 */
 export function defaultFeatures(): z.infer<typeof featuresSchema> {

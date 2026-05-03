@@ -6,10 +6,13 @@ import { parse as parseYaml, stringify as stringifyYaml } from 'yaml';
 import {
   type AdminSettings,
   type Features,
+  type FnsSettings,
   type SettingsSection,
   adminSettingsPatchSchema,
   defaultFeatures,
+  defaultFns,
   featuresSchema,
+  fnsSettingsSchema,
 } from '@opennote/core';
 import type { RouteDeps } from '../routes.js';
 import { AuditLog } from '../audit.js';
@@ -45,6 +48,12 @@ function featuresPath(): string {
   if (env) return resolve(env);
   return resolve(dirname(configPath()), 'features.yaml');
 }
+function fnsConfigPath(): string {
+  // 单独存,token 是敏感字段,不进 config.yaml / features.yaml
+  const env = process.env.OPENNOTE_FNS_CONFIG;
+  if (env) return resolve(env);
+  return resolve(dirname(configPath()), 'fns-config.yaml');
+}
 
 // ---------------- features.yaml 加载/保存 ----------------
 export async function loadFeaturesYaml(path = featuresPath()): Promise<Features> {
@@ -65,6 +74,22 @@ export async function saveFeaturesYaml(features: Features, path = featuresPath()
   await writeFile(path, yaml, 'utf-8');
 }
 
+// ---------------- fns-config.yaml 加载/保存 ----------------
+export async function loadFnsYaml(path = fnsConfigPath()): Promise<FnsSettings> {
+  if (!existsSync(path)) return defaultFns() as FnsSettings;
+  const raw = await readFile(path, 'utf-8');
+  const data = parseYaml(raw) ?? {};
+  const merged = mergeWithDefaults(data, defaultFns());
+  const parsed = fnsSettingsSchema.safeParse(merged);
+  if (!parsed.success) {
+    throw new Error(`fns-config.yaml invalid: ${parsed.error.message}`);
+  }
+  return parsed.data as FnsSettings;
+}
+export async function saveFnsYaml(fns: FnsSettings, path = fnsConfigPath()): Promise<void> {
+  await writeFile(path, stringifyYaml(fns), 'utf-8');
+}
+
 // ---------------- config.yaml 加载/保存(全量,保留未知字段) ----------------
 async function loadConfigYamlRaw(path = configPath()): Promise<Record<string, unknown>> {
   if (!existsSync(path)) return {};
@@ -79,12 +104,13 @@ async function saveConfigYamlRaw(data: Record<string, unknown>, path = configPat
 async function readAdminSettings(): Promise<AdminSettings> {
   const cfg = await loadConfigYamlRaw();
   const features = await loadFeaturesYaml();
+  const fns = await loadFnsYaml();
   const site = (cfg.site as AdminSettings['site']) ?? { title: '', url: '' };
   const author = (cfg.author as AdminSettings['author']) ?? { name: '' };
   const theme = (cfg.theme as AdminSettings['theme']) ?? {};
   const seo = (cfg.seo as AdminSettings['seo']) ?? {};
   const home = (cfg.home as AdminSettings['home']) ?? {};
-  return { site, author, theme, seo, home, features };
+  return { site, author, theme, seo, home, features, fns };
 }
 
 // ---------------- 浅 merge(用于 PATCH 一个 section 内若干字段时,与现有 yaml 合并) ----------------
@@ -177,7 +203,9 @@ export function register(app: Hono, deps: RouteDeps): void {
     return withLock(async () => {
       const cfg = await loadConfigYamlRaw();
       let features = await loadFeaturesYaml();
+      let fns = await loadFnsYaml();
       let featuresChanged = false;
+      let fnsChanged = false;
 
       // site / author / theme / seo / home -> config.yaml
       const cfgKeys: SettingsSection[] = ['site', 'author', 'theme', 'seo', 'home'];
@@ -205,6 +233,27 @@ export function register(app: Hono, deps: RouteDeps): void {
         sections.push('features');
       }
 
+      // fns -> fns-config.yaml(避免 last_status / last_error 被前端 PATCH 覆盖)
+      if (patch.fns) {
+        const incoming = { ...patch.fns };
+        // 不允许前端写 server-managed 字段
+        delete (incoming as Partial<FnsSettings>).last_status;
+        delete (incoming as Partial<FnsSettings>).last_status_at;
+        delete (incoming as Partial<FnsSettings>).last_error;
+        const merged = mergeWithDefaults(incoming, fns);
+        const v = fnsSettingsSchema.safeParse(merged);
+        if (!v.success) {
+          const issue = v.error.issues[0];
+          return c.json(
+            { error: { code: 'validation_failed', field: `fns.${issue?.path.join('.')}`, message: issue?.message } },
+            400,
+          );
+        }
+        fns = v.data as FnsSettings;
+        fnsChanged = true;
+        sections.push('fns');
+      }
+
       if (sections.length === 0) {
         return c.json({ error: { code: 'validation_failed', message: 'no fields' } }, 400);
       }
@@ -212,6 +261,7 @@ export function register(app: Hono, deps: RouteDeps): void {
       // 写盘
       await saveConfigYamlRaw(cfg);
       if (featuresChanged) await saveFeaturesYaml(features);
+      if (fnsChanged) await saveFnsYaml(fns);
 
       // 审计
       const actor = c.get('actor') ?? 'owner';

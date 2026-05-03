@@ -17,6 +17,7 @@ import { startAnalyticsRollup } from './cron/analytics-rollup.js';
 import { BackupRunner } from './backup-runner.js';
 import { createMediaStoreFromEnv, LocalMediaStore } from './media-store.js';
 import { MediaRefExtractor } from './media-ref-extractor.js';
+import { FnsSupervisor, defaultFnsCliDir, defaultFnsConfigOutPath } from './fns-supervisor.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -108,6 +109,18 @@ async function main(): Promise<void> {
 
   startScheduler(db, bus, triggerSync);
   startAnalyticsRollup({ db, log });
+
+  // FastNoteSync supervisor — 从 fns-config.yaml 启动 Python fns_cli 子进程
+  const fnsSupervisor = new FnsSupervisor({
+    vaultDir: vault,
+    configOutPath: defaultFnsConfigOutPath(),
+    cliDir: defaultFnsCliDir(),
+    bus,
+    log,
+  });
+  void fnsSupervisor.start();
+  process.on('SIGTERM', () => { void fnsSupervisor.stop(); });
+  process.on('SIGINT', () => { void fnsSupervisor.stop(); });
 
   const api = buildApp({
     db, config, bus, triggerSync,
