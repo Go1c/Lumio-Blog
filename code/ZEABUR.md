@@ -19,16 +19,25 @@ pnpm start
 ```
 
 `package.json` pins Node.js to `20.x` and pnpm to `9.7.0`.
+The `code/zbpack.json` file also pins the build and start commands for Zeabur:
+
+```bash
+pnpm install --frozen-lockfile --prod=false && pnpm build
+pnpm start
+```
 
 If Zeabur serves files from the repository root instead of the Node service, set
 these variables manually on the service:
 
 ```text
 ZBPACK_APP_DIR=code
-ZBPACK_BUILD_COMMAND=pnpm build
+ZBPACK_BUILD_COMMAND=pnpm install --frozen-lockfile --prod=false && pnpm build
 ZBPACK_START_COMMAND=pnpm start
 ZBPACK_CACHE_DEPENDENCIES=false
 ```
+
+The runtime logs should contain `opennote v0.5 -> http://localhost:<port>`. If
+you only see Caddy logs, Zeabur is not running the Node service entrypoint yet.
 
 ## Persistent Data
 
