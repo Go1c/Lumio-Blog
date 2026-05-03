@@ -54,11 +54,11 @@ Set these in Zeabur:
 
 ```text
 OPENNOTE_PASSWORD=<strong admin password>
-OPENNOTE_CONFIG=./config.zeabur.example.yaml
 NODE_ENV=production
 ```
 
-For a real domain, edit `config.zeabur.example.yaml` and replace
+`OPENNOTE_CONFIG` is optional now. By default the server reads `./config.yaml`
+from the `code` directory. For a custom domain, edit `config.yaml` and replace
 `site.url` with the public URL Zeabur assigns or your custom domain.
 
 ## First Content
