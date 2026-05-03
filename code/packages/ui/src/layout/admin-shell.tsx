@@ -81,9 +81,12 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '设置',
     items: [
-      { label: '站点', icon: 'settings', disabled: true },
-      { label: '外观', icon: 'star', disabled: true },
-      { label: 'SEO', icon: 'search', disabled: true },
+      {
+        label: '设置',
+        href: '#/settings',
+        icon: 'settings',
+        match: (p) => p.startsWith('#/settings/') && p !== '#/settings/fns',
+      },
       { label: 'FNS 同步', href: '#/settings/fns', icon: 'sync' },
       { label: 'Tokens', href: '#/tokens', icon: 'lock' },
       { label: 'Webhooks', href: '#/webhooks', icon: 'webhook' },
