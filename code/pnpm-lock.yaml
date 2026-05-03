@@ -101,6 +101,9 @@ importers:
       hono:
         specifier: ^4.5.0
         version: 4.12.16
+      tsx:
+        specifier: ^4.16.5
+        version: 4.21.0
       yaml:
         specifier: ^2.5.0
         version: 2.8.4
@@ -108,9 +111,6 @@ importers:
       '@types/better-sqlite3':
         specifier: ^7.6.11
         version: 7.6.13
-      tsx:
-        specifier: ^4.16.5
-        version: 4.21.0
       typescript:
         specifier: ^5.5.4
         version: 5.9.3

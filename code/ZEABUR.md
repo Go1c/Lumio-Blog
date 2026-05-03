@@ -1,11 +1,12 @@
 # Zeabur Deployment
 
-This project deploys as a Node.js service from the `code/` workspace.
+This project deploys as a Node.js service. The repository root contains a small
+deployment wrapper that installs and starts the real app in `code/`.
 
 ## GitHub Service
 
-The repository includes `../zbpack.json`, so Zeabur should deploy the `code/`
-directory with these commands:
+The repository includes `../zbpack.json`, so Zeabur should deploy the repository
+root as a Node.js service with these commands:
 
 ```bash
 pnpm build
@@ -13,6 +14,16 @@ pnpm start
 ```
 
 `package.json` pins Node.js to `20.x` and pnpm to `9.7.0`.
+
+If Zeabur still serves the repository root `index.html` static mockup instead
+of the Node service, set these variables manually on the service:
+
+```text
+ZBPACK_APP_DIR=/
+ZBPACK_BUILD_COMMAND=pnpm build
+ZBPACK_START_COMMAND=pnpm start
+ZBPACK_CACHE_DEPENDENCIES=false
+```
 
 ## Persistent Data
 
