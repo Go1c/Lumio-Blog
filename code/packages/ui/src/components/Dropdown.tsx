@@ -1,9 +1,9 @@
-import type { JSX, ComponentChildren } from 'preact';
+import type { JSX, ComponentChildren, Ref } from 'preact';
 import { useState, useEffect, useRef } from 'preact/hooks';
 
 export interface DropdownProps {
   /** 触发器(必须是真按钮) */
-  trigger: (props: { onClick: () => void; 'aria-expanded': 'true' | 'false' }) => JSX.Element;
+  trigger: (props: { onClick: () => void; 'aria-expanded': 'true' | 'false'; ref: Ref<HTMLElement> }) => JSX.Element;
   /** 弹层内容(用 DropdownItem 组合) */
   children: ComponentChildren;
   label?: string;
@@ -12,14 +12,19 @@ export interface DropdownProps {
 export function Dropdown({ trigger, children, label = '菜单' }: DropdownProps): JSX.Element {
   const [open, setOpen] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
+  const triggerRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     if (!open) return;
+    const closeAndRestoreFocus = () => {
+      setOpen(false);
+      triggerRef.current?.focus();
+    };
     const onDocClick = (e: MouseEvent) => {
-      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+      if (ref.current && !ref.current.contains(e.target as Node)) closeAndRestoreFocus();
     };
     const onEsc = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') setOpen(false);
+      if (e.key === 'Escape') closeAndRestoreFocus();
     };
     document.addEventListener('mousedown', onDocClick);
     document.addEventListener('keydown', onEsc);
@@ -34,6 +39,7 @@ export function Dropdown({ trigger, children, label = '菜单' }: DropdownProps)
       {trigger({
         onClick: () => setOpen((v) => !v),
         'aria-expanded': open ? 'true' : 'false',
+        ref: triggerRef,
       })}
       {open && (
         <div class="ui-dropdown__menu" aria-label={label}>
