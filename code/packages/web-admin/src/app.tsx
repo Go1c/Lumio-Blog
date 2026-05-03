@@ -14,6 +14,10 @@ import { MediaPage } from './pages/media.js';
 import { OgPage } from './pages/og.js';
 import { BackupPage } from './pages/backup.js';
 import { ConfigDocsPage } from './pages/config-docs.js';
+import { TagsPage } from './pages/tags.js';
+import { CommentsPage } from './pages/comments.js';
+import { SubscriptionsPage } from './pages/subscriptions.js';
+import { AnalyticsOverviewPage } from './pages/analytics-overview.js';
 
 type Route =
   | { name: 'dashboard' }
@@ -27,7 +31,11 @@ type Route =
   | { name: 'media' }
   | { name: 'og' }
   | { name: 'backup' }
-  | { name: 'config-docs' };
+  | { name: 'config-docs' }
+  | { name: 'tags'; tag?: string }
+  | { name: 'comments' }
+  | { name: 'subscriptions' }
+  | { name: 'analytics-overview' };
 
 function readRoute(): Route {
   const hash = location.hash.replace(/^#\/?/, '');
@@ -47,6 +55,11 @@ function readRoute(): Route {
   if (hash === 'og') return { name: 'og' };
   if (hash === 'backup') return { name: 'backup' };
   if (hash === 'config-docs') return { name: 'config-docs' };
+  if (hash === 'tags') return { name: 'tags' };
+  if (hash.startsWith('tags/')) return { name: 'tags', tag: decodeURIComponent(hash.slice(5)) };
+  if (hash === 'comments') return { name: 'comments' };
+  if (hash === 'subscriptions') return { name: 'subscriptions' };
+  if (hash === 'analytics') return { name: 'analytics-overview' };
   if (hash === 'settings' || hash.startsWith('settings/')) {
     const section = hash.split('/')[1] ?? 'site';
     const valid = (SETTINGS_SECTIONS as readonly string[]).includes(section)
@@ -71,6 +84,10 @@ function currentPath(route: Route): string {
     case 'og': return '#/og';
     case 'backup': return '#/backup';
     case 'config-docs': return '#/config-docs';
+    case 'tags': return route.tag ? `#/tags/${encodeURIComponent(route.tag)}` : '#/tags';
+    case 'comments': return '#/comments';
+    case 'subscriptions': return '#/subscriptions';
+    case 'analytics-overview': return '#/analytics';
   }
 }
 
@@ -109,6 +126,21 @@ function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
       return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: '备份与导出' }];
     case 'config-docs':
       return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: '配置文档' }];
+    case 'tags':
+      return route.tag
+        ? [
+            { label: 'opennote', href: '#/' },
+            { label: '内容' },
+            { label: '标签', href: '#/tags' },
+            { label: route.tag },
+          ]
+        : [{ label: 'opennote', href: '#/' }, { label: '内容' }, { label: '标签' }];
+    case 'comments':
+      return [{ label: 'opennote', href: '#/' }, { label: '互动' }, { label: '评论' }];
+    case 'subscriptions':
+      return [{ label: 'opennote', href: '#/' }, { label: '互动' }, { label: '订阅' }];
+    case 'analytics-overview':
+      return [{ label: 'opennote', href: '#/' }, { label: '分析' }, { label: '文章数据' }];
   }
 }
 
@@ -150,6 +182,10 @@ export function App() {
       {route.name === 'og' && <OgPage />}
       {route.name === 'backup' && <BackupPage />}
       {route.name === 'config-docs' && <ConfigDocsPage />}
+      {route.name === 'tags' && <TagsPage {...(route.tag !== undefined ? { tag: route.tag } : {})} />}
+      {route.name === 'comments' && <CommentsPage />}
+      {route.name === 'subscriptions' && <SubscriptionsPage />}
+      {route.name === 'analytics-overview' && <AnalyticsOverviewPage />}
     </AdminShell>
   );
 }

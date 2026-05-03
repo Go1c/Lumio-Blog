@@ -60,22 +60,22 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '内容',
     items: [
-      { label: '笔记', href: '#/', icon: 'note', match: (p) => p === '#/' || p === '' || p.startsWith('#/notes') },
-      { label: '标签', icon: 'tag', disabled: true },
-      { label: '媒体', icon: 'image', disabled: true },
+      { label: '笔记', href: '#/notes', icon: 'note', match: (p) => p.startsWith('#/notes') },
+      { label: '标签', href: '#/tags', icon: 'tag' },
+      { label: '媒体', href: '#/media', icon: 'image' },
     ],
   },
   {
     label: '互动',
     items: [
-      { label: '评论', icon: 'comment', disabled: true },
-      { label: '订阅', icon: 'mail', disabled: true },
+      { label: '评论', href: '#/comments', icon: 'comment' },
+      { label: '订阅', href: '#/subscriptions', icon: 'mail' },
     ],
   },
   {
     label: '分析',
     items: [
-      { label: '文章数据', icon: 'chart', disabled: true },
+      { label: '文章数据', href: '#/analytics', icon: 'chart' },
     ],
   },
   {
@@ -90,7 +90,7 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
       { label: 'FNS 同步', href: '#/settings/fns', icon: 'sync' },
       { label: 'Tokens', href: '#/tokens', icon: 'lock' },
       { label: 'Webhooks', href: '#/webhooks', icon: 'webhook' },
-      { label: '备份', icon: 'database', disabled: true },
+      { label: '备份', href: '#/backup', icon: 'database' },
     ],
   },
 ];
