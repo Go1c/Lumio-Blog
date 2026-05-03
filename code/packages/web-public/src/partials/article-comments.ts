@@ -32,8 +32,11 @@ export interface CommentsConfig {
  * 渲染文章评论侧栏。
  *
  * 调用方需:
- *  1. 检查 `config.features?.comments !== false`
+ *  1. 检查 `config.features?.comments === true`(默认关闭,opt-in)
  *  2. 把返回的 HTML 嵌入到 `<aside id="comments">` 容器
+ *
+ * 当 giscus repo 没配置时,渲染一个清晰的 "未配置" 状态而不是半破的空 widget,
+ * 避免出现 "登录 GitHub" 跳到 # 这种 dead link。
  */
 export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig): string {
   const repo = opts.repo ?? '';
@@ -41,6 +44,26 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
   const category = opts.category ?? 'Comments';
   const categoryId = opts.categoryId ?? '';
   const mapping = opts.mapping ?? 'pathname';
+
+  const configured = !!(repo && repoId && categoryId);
+
+  // 未配置 → 极简空状态
+  if (!configured) {
+    return `
+    <div class="wsb-comments wsb-comments--unconfigured" data-component="comments" data-slug="${esc(opts.slug)}">
+      <div class="wsb-comments__sticky">
+        <header class="wsb-comments__head">
+          <h2 class="wsb-comments__title">
+            <span aria-hidden="true">💬</span> 评论
+          </h2>
+        </header>
+        <p class="hf-tiny hf-muted" style="margin-top:8px">
+          评论后端未配置。在 <code>config.yaml</code> 的 <code>features.comments</code>
+          里填上 Giscus repo / repoId / categoryId 后会出现完整的评论侧栏。
+        </p>
+      </div>
+    </div>`;
+  }
 
   // 把 giscus 配置作为 data-* 属性,客户端 JS 读取
   const dataAttrs = [
@@ -52,6 +75,12 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
     `data-giscus-mapping="${esc(mapping)}"`,
     `data-slug="${esc(opts.slug)}"`,
   ].join(' ');
+
+  // GitHub OAuth 走 giscus 自己的回调。SSR 拿不到 location.href,所以
+  // href 给一个根 URL,onclick 在客户端拼上当前页 → 登录后准确回到这一篇。
+  const loginHref = 'https://giscus.app/api/oauth/authorize';
+  const loginOnclick =
+    'event.preventDefault();window.location.href=this.href+\'?redirect_uri=\'+encodeURIComponent(location.href)';
 
   return `
     <div class="wsb-comments" ${dataAttrs}>
@@ -77,7 +106,7 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
         </div>
 
         <form class="wsb-comments__compose" data-compose aria-label="发表评论" novalidate>
-          <span class="wsb-comments__avatar" aria-hidden="true">?</span>
+          <span class="wsb-comments__avatar" aria-hidden="true" data-avatar>?</span>
           <label for="wsb-comments-input" class="sr-only">写下你的评论</label>
           <input
             id="wsb-comments-input"
@@ -92,7 +121,7 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
 
         <footer class="wsb-comments__foot hf-tiny hf-faint">
           后端:GitHub Discussions ·
-          <a id="wsb-comments-login" href="#" rel="nofollow noopener">登录 GitHub</a>
+          <a id="wsb-comments-login" href="${esc(loginHref)}" onclick="${loginOnclick}" rel="nofollow noopener" target="_blank">登录 GitHub</a>
         </footer>
       </div>
     </div>

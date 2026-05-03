@@ -1,10 +1,10 @@
-import { createHash } from 'node:crypto';
-import { Hono, type Context, type MiddlewareHandler, type Next } from 'hono';
+import { Hono } from 'hono';
 import type { Database } from 'better-sqlite3';
 import { CommentsRepo, NoteRepo, type CommentStatus } from '@opennote/db';
-import { AuthService, getSessionToken } from '../auth.js';
-import { TokenService, requireToken } from '../tokens.js';
+import { AuthService } from '../auth.js';
+import { TokenService } from '../tokens.js';
 import { AuditLog } from '../audit.js';
+import { actorMw, clientIp, hashIp, parseLimit, RateLimiter } from '../route-utils.js';
 
 export interface CommentsDeps {
   db: Database;
@@ -23,7 +23,7 @@ export function register(app: Hono, deps: CommentsDeps): void {
   const tokens = new TokenService(deps.db);
   const audit = new AuditLog(deps.db);
   const salt = deps.ipSalt ?? process.env.OPENNOTE_COMMENTS_SALT ?? 'opennote-default-salt';
-  const limiter = new RateLimiter(10, 60_000);
+  const submitLimiter = new RateLimiter(10, 60_000);
 
   // ---------------- public ----------------
   // 公开列表(仅 approved)
@@ -44,7 +44,7 @@ export function register(app: Hono, deps: CommentsDeps): void {
       return c.json({ error: { code: 'not_found' } }, 404);
     }
     const ip = clientIp(c);
-    if (!limiter.allow(ip)) {
+    if (!submitLimiter.allow(ip)) {
       return c.json({ error: { code: 'rate_limited' } }, 429);
     }
     const body = (await c.req.json().catch(() => null)) as
@@ -81,7 +81,7 @@ export function register(app: Hono, deps: CommentsDeps): void {
   adm.get('/', (c) => {
     const status = c.req.query('status') as CommentStatus | undefined;
     const slug = c.req.query('slug') ?? undefined;
-    const limit = Math.min(Number(c.req.query('limit') ?? 100), 500);
+    const limit = parseLimit(c.req.query('limit'), 100, 500);
     const opts: Parameters<CommentsRepo['list']>[0] = { limit };
     if (status && VALID_STATUS.includes(status)) opts.status = status;
     if (slug) opts.slug = slug;
@@ -125,54 +125,4 @@ export function register(app: Hono, deps: CommentsDeps): void {
   });
 
   app.route('/api/admin/comments', adm);
-}
-
-// ---------------------------------------------------------------------
-function clientIp(c: Context): string {
-  const xf = c.req.header('x-forwarded-for');
-  if (xf) {
-    const first = xf.split(',')[0]?.trim();
-    if (first) return first;
-  }
-  return c.req.header('x-real-ip') ?? '0.0.0.0';
-}
-
-function hashIp(ip: string, salt: string): string {
-  return createHash('sha256').update(`${salt}|${ip}`).digest('hex').slice(0, 32);
-}
-
-class RateLimiter {
-  private buckets = new Map<string, number[]>();
-  constructor(private limit: number, private windowMs: number) {}
-  allow(key: string): boolean {
-    const now = Date.now();
-    const bucket = this.buckets.get(key) ?? [];
-    const fresh = bucket.filter((t) => now - t < this.windowMs);
-    if (fresh.length >= this.limit) {
-      this.buckets.set(key, fresh);
-      return false;
-    }
-    fresh.push(now);
-    this.buckets.set(key, fresh);
-    if (this.buckets.size > 5000) this.buckets.clear();
-    return true;
-  }
-}
-
-function actorMw(
-  auth: AuthService,
-  tokens: TokenService,
-  minScope: 'read' | 'write' | 'admin',
-): MiddlewareHandler {
-  return async (c: Context, next: Next) => {
-    const cookie = getSessionToken(c);
-    if (cookie && auth.isValidSession(cookie)) {
-      c.set('actor', 'owner');
-      return next();
-    }
-    return requireToken(tokens, minScope)(c, async () => {
-      c.set('actor', `token:${c.get('tokenScope')}`);
-      await next();
-    });
-  };
 }

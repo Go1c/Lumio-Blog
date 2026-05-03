@@ -1,5 +1,13 @@
 import type { Database } from 'better-sqlite3';
 
+function clampLimit(raw: number | undefined, fallback: number, max: number): number {
+  if (raw === undefined) return fallback;
+  if (!Number.isFinite(raw)) return fallback;
+  const i = Math.floor(raw);
+  if (i < 1) return fallback;
+  return Math.min(i, max);
+}
+
 export interface SubscriberRow {
   email: string;
   source: string;

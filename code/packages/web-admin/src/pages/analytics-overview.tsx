@@ -36,24 +36,27 @@ export function AnalyticsOverviewPage(): JSX.Element {
   const [series, setSeries] = useState<TimeSeriesPoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  // 概览 + 时序的 range 切换都触发拉取
+  // overview 只依赖 range — metric 切换不需要重拉
   useEffect(() => {
     let cancelled = false;
     setOverview(null);
-    setSeries(null);
     setError(null);
-    void Promise.all([api.analytics.overview(range), api.analytics.timeseries(range, metric)])
-      .then(([ov, ts]) => {
-        if (cancelled) return;
-        setOverview(ov);
-        setSeries(ts.points);
-      })
-      .catch((e: unknown) => {
-        if (!cancelled) setError(e instanceof Error ? e.message : String(e));
-      });
-    return () => {
-      cancelled = true;
-    };
+    api.analytics
+      .overview(range)
+      .then((ov) => { if (!cancelled) setOverview(ov); })
+      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); });
+    return () => { cancelled = true; };
+  }, [range]);
+
+  // timeseries 依赖 range + metric
+  useEffect(() => {
+    let cancelled = false;
+    setSeries(null);
+    api.analytics
+      .timeseries(range, metric)
+      .then((ts) => { if (!cancelled) setSeries(ts.points); })
+      .catch((e: unknown) => { if (!cancelled) setError(e instanceof Error ? e.message : String(e)); });
+    return () => { cancelled = true; };
   }, [range, metric]);
 
   const total = overview?.total_views ?? 0;

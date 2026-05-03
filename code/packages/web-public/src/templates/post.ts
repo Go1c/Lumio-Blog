@@ -151,13 +151,13 @@ export function renderPost(data: PostData, config: SiteConfig): string {
           </aside>
         </article>
 
-        <!-- RIGHT — comments rail (WS-B) -->
+        <!-- RIGHT — comments rail (WS-B):默认关闭,需要在 config.features.comments = true 显式开 -->
         ${
-          config.features?.comments === false
-            ? ''
-            : `<aside class="wsa-post__right" id="comments" aria-label="评论">
+          config.features?.comments === true
+            ? `<aside class="wsa-post__right" id="comments" aria-label="评论">
             ${renderArticleComments({ slug: note.slug }, config)}
           </aside>`
+            : ''
         }
       </div>
 

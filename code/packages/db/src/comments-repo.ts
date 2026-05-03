@@ -1,5 +1,14 @@
 import type { Database } from 'better-sqlite3';
 
+/** 防御 NaN / 负数 / 超大 limit:repo 层兜底,路由层应再做一次 parseLimit。 */
+function clampLimit(raw: number | undefined, fallback: number, max: number): number {
+  if (raw === undefined) return fallback;
+  if (!Number.isFinite(raw)) return fallback;
+  const i = Math.floor(raw);
+  if (i < 1) return fallback;
+  return Math.min(i, max);
+}
+
 export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'spam';
 
 export interface CommentRow {
@@ -73,7 +82,7 @@ export class CommentsRepo {
       where.push('slug = ?');
       params.push(opts.slug);
     }
-    const limit = Math.min(opts.limit ?? 200, 500);
+    const limit = clampLimit(opts.limit, 200, 500);
     const sql = `SELECT * FROM comments
                  ${where.length ? `WHERE ${where.join(' AND ')}` : ''}
                  ORDER BY created_at DESC
@@ -102,7 +111,7 @@ export class CommentsRepo {
          ORDER BY created_at ASC
          LIMIT ?`,
       )
-      .all(slug, limit);
+      .all(slug, clampLimit(limit, 200, 500));
   }
 
   counts(): Record<CommentStatus, number> {

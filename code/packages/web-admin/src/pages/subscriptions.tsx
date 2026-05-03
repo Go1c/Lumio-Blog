@@ -74,11 +74,16 @@ export function SubscriptionsPage() {
 
   const exportCsv = () => {
     if (!list) return;
-    const rows = ['email,source,subscribed_at,unsubscribed_at'];
+    // RFC 4180:含逗号 / 引号 / 换行 / CR 的字段需要包在双引号里,内层引号 → 双引号转义。
+    const esc = (v: string) => /[",\r\n]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+    const row = (cells: string[]) => cells.map(esc).join(',');
+    const rows = [row(['email', 'source', 'subscribed_at', 'unsubscribed_at'])];
     for (const s of list) {
-      rows.push([s.email, s.source, s.subscribed_at, s.unsubscribed_at ?? ''].join(','));
+      rows.push(row([s.email, s.source, s.subscribed_at, s.unsubscribed_at ?? '']));
     }
-    const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+    // CRLF 是 RFC 4180 的行分隔符;Excel / Numbers 都识别。
+    const csv = '﻿' + rows.join('\r\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;

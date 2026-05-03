@@ -1,8 +1,9 @@
-import { Hono, type Context, type MiddlewareHandler, type Next } from 'hono';
+import { Hono } from 'hono';
 import type { Database } from 'better-sqlite3';
 import { TagsRepo } from '@opennote/db';
-import { AuthService, getSessionToken } from '../auth.js';
-import { TokenService, requireToken } from '../tokens.js';
+import { AuthService } from '../auth.js';
+import { TokenService } from '../tokens.js';
+import { actorMw } from '../route-utils.js';
 
 export interface TagsDeps {
   db: Database;
@@ -27,22 +28,4 @@ export function register(app: Hono, deps: TagsDeps): void {
   });
 
   app.route('/api/admin/tags', r);
-}
-
-function actorMw(
-  auth: AuthService,
-  tokens: TokenService,
-  minScope: 'read' | 'write' | 'admin',
-): MiddlewareHandler {
-  return async (c: Context, next: Next) => {
-    const cookie = getSessionToken(c);
-    if (cookie && auth.isValidSession(cookie)) {
-      c.set('actor', 'owner');
-      return next();
-    }
-    return requireToken(tokens, minScope)(c, async () => {
-      c.set('actor', `token:${c.get('tokenScope')}`);
-      await next();
-    });
-  };
 }
