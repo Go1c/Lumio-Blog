@@ -6,13 +6,17 @@ import { serve } from '@hono/node-server';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
-import { openDb } from '@opennote/db';
+import { openDb, MediaRepo } from '@opennote/db';
 import { startWatcher, syncAll } from '@opennote/sync';
 import { renderSite } from '@opennote/web-public';
 import { loadConfig } from './config.js';
 import { buildApp } from './routes.js';
 import { EventBus } from './events.js';
 import { startScheduler } from './scheduler.js';
+import { startAnalyticsRollup } from './cron/analytics-rollup.js';
+import { BackupRunner } from './backup-runner.js';
+import { createMediaStoreFromEnv, LocalMediaStore } from './media-store.js';
+import { MediaRefExtractor } from './media-ref-extractor.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -59,11 +63,33 @@ async function main(): Promise<void> {
   const log = (level: string, msg: string, meta?: unknown): void =>
     console.log(JSON.stringify({ ts: new Date().toISOString(), level, event: msg, ...(meta as object | undefined) }));
 
+  // WS-G4 — media + backup wiring
+  const dataDir = resolveCfg('./data');
+  const mediaDir = resolveCfg(process.env.OPENNOTE_MEDIA_DIR ?? './data/media');
+  await mkdir(dataDir, { recursive: true });
+  await mkdir(mediaDir, { recursive: true });
+
+  const mediaStore = createMediaStoreFromEnv({
+    localRoot: mediaDir,
+    urlPrefix: '/static/media',
+  });
+  const mediaRefExtractor = new MediaRefExtractor({
+    repo: new MediaRepo(db),
+    prefixes: [
+      '/static/media',
+      ...(mediaStore instanceof LocalMediaStore ? [] : []),
+    ],
+  });
+  const backupRunner = new BackupRunner({
+    db, bus, vaultDir: vault, dbPath, outDir: resolve(dataDir, 'backups'),
+  });
+
   const triggerSync = async (): Promise<void> => {
     await syncAll({
       vault, db,
       onLog: (lvl, m, meta) => log(lvl, m, meta),
       onEvent: (e) => bus.emit(e),
+      onNoteRendered: mediaRefExtractor.hook,
     });
     await renderSite({ db, out, config });
   };
@@ -77,11 +103,17 @@ async function main(): Promise<void> {
       bus.emit(e);
       if (e.kind === 'sync.completed') await renderSite({ db, out, config });
     },
+    onNoteRendered: mediaRefExtractor.hook,
   });
 
   startScheduler(db, bus, triggerSync);
+  startAnalyticsRollup({ db, log });
 
-  const api = buildApp({ db, config, bus, triggerSync });
+  const api = buildApp({
+    db, config, bus, triggerSync,
+    dataDir, vaultDir: vault, dbPath,
+    backupRunner, mediaStore,
+  });
 
   const root = new Hono();
   root.use('*', logger());
