@@ -1,5 +1,6 @@
-import { mkdir, writeFile } from 'node:fs/promises';
-import { join } from 'node:path';
+import { mkdir, writeFile, copyFile, access } from 'node:fs/promises';
+import { join, dirname } from 'node:path';
+import { fileURLToPath } from 'node:url';
 import type { Database } from 'better-sqlite3';
 import { NoteRepo } from '@opennote/db';
 import type { NoteRow, SiteConfig } from '@opennote/core';
@@ -10,6 +11,14 @@ import { renderFeed } from './templates/feed.js';
 import { renderTagIndex, renderTagPage } from './templates/tag.js';
 import { renderNotFound } from './templates/notfound.js';
 import { renderAbout } from './templates/about.js';
+import { renderRssReader, RSS_READER_CSS } from './templates/rss-reader.js';
+import { renderCliDocs } from './templates/cli-docs.js';
+import { renderSearch } from './templates/search.js';
+import { renderGraph } from './templates/graph.js';
+import { renderNewsletter } from './templates/newsletter.js';
+import { HOME_MOBILE_CSS } from './templates/home.js';
+import { POST_MOBILE_CSS } from './templates/post.js';
+import { TAG_MOBILE_CSS } from './templates/tag.js';
 
 export interface RenderOptions {
   db: Database;
@@ -25,6 +34,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   await mkdir(opts.out, { recursive: true });
   await mkdir(join(opts.out, 'posts'), { recursive: true });
   await mkdir(join(opts.out, 'tags'), { recursive: true });
+  await mkdir(join(opts.out, 'feed'), { recursive: true });
 
   const publicNotes = visible.filter((n) => n.visibility === 'public');
 
@@ -90,8 +100,50 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   // about
   await writeFile(join(opts.out, 'about.html'), renderAbout(opts.config), 'utf-8');
 
+  // WS-B — search / graph / newsletter
+  await mkdir(join(opts.out, 'search'), { recursive: true });
+  await writeFile(
+    join(opts.out, 'search', 'index.html'),
+    renderSearch(opts.config),
+    'utf-8',
+  );
+  if (opts.config.features?.graph !== false) {
+    await mkdir(join(opts.out, 'graph'), { recursive: true });
+    await writeFile(
+      join(opts.out, 'graph', 'index.html'),
+      renderGraph(opts.config),
+      'utf-8',
+    );
+  }
+  if (opts.config.features?.newsletter !== false) {
+    await mkdir(join(opts.out, 'newsletter'), { recursive: true });
+    await writeFile(
+      join(opts.out, 'newsletter', 'index.html'),
+      renderNewsletter(opts.config),
+      'utf-8',
+    );
+  }
+
+  // CLI docs (WS-H) — /cli/index.html
+  await mkdir(join(opts.out, 'cli'), { recursive: true });
+  await writeFile(
+    join(opts.out, 'cli', 'index.html'),
+    renderCliDocs(opts.config),
+    'utf-8',
+  );
+
+  // RSS 美化阅读页(WS-C)
+  await writeFile(
+    join(opts.out, 'feed', 'index.html'),
+    renderRssReader(opts.config),
+    'utf-8',
+  );
+
   // 静态产物
   await writeFile(join(opts.out, 'feed.xml'), renderFeed(publicNotes, opts.config), 'utf-8');
+
+  // 复制 public/feed.xsl(WS-C — 浏览器直接打开 feed.xml 时美化渲染)
+  await copyStaticAssets(opts.out);
   await writeFile(
     join(opts.out, 'sitemap.xml'),
     renderSitemap(publicNotes, [...byTag.keys()], opts.config),
@@ -114,6 +166,38 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   await writeFile(join(opts.out, 'styles.css'), CSS, 'utf-8');
 }
 
+/**
+ * 复制 public/ 下的静态资源:
+ *  - feed.xsl    (WS-C)
+ *  - search.js   (WS-B)
+ *  - graph.js    (WS-B)
+ *  - comments.js (WS-B)
+ *
+ * 容忍 dev 环境下 public/ 不存在(silent skip)。
+ */
+async function copyStaticAssets(out: string): Promise<void> {
+  // 这个文件位于 src/ 或 dist/。public/ 是包根的兄弟目录。
+  // import.meta.url -> .../packages/web-public/src/render-site.ts (开发) 或 .../dist/render-site.js (build)
+  const here = dirname(fileURLToPath(import.meta.url));
+  const ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js'];
+  for (const name of ASSETS) {
+    const candidates = [
+      join(here, '..', 'public', name),         // src/  -> ../public
+      join(here, '..', '..', 'public', name),   // dist/ -> ../../public
+    ];
+    for (const src of candidates) {
+      try {
+        await access(src);
+        await copyFile(src, join(out, name));
+        break;
+      } catch {
+        // try next candidate
+      }
+    }
+    // 没找到 → silent skip(build 仍然能跑通)
+  }
+}
+
 function primaryTagOf(byTag: Map<string, NoteRow[]>, slug: string): string | null {
   for (const [tag, notes] of byTag) {
     if (notes.some((n) => n.slug === slug)) return tag;
@@ -127,6 +211,7 @@ function renderSitemap(posts: NoteRow[], tags: string[], config: SiteConfig): st
     url('/'),
     url('/about.html'),
     url('/tags/index.html'),
+    url('/feed/'),
     ...posts.map((p) => url(`/posts/${p.slug}.html`)),
     ...tags.map((t) => url(`/tags/${encodeURIComponent(t)}.html`)),
   ].join('');
@@ -660,4 +745,467 @@ body.ui-public { background: var(--bg); }
 }
 `;
 
-const CSS = ALL_CSS + '\n' + APP_CSS;
+// ====================================================================== /
+// WS-B — public 交互页样式(search / graph / comments / newsletter)         /
+// ====================================================================== /
+const WSB_CSS = `
+/* ---- SEARCH ---- */
+.wsb-search { width: 100%; }
+.wsb-search__bar {
+  padding: 24px 28px;
+  border-bottom: 1px solid var(--line);
+  background: var(--bg-soft);
+}
+.wsb-search__bar-inner { max-width: 1100px; margin: 0 auto; position: relative; }
+.wsb-search__form {
+  display: flex; align-items: center; gap: 10px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+}
+.wsb-search__form:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.wsb-search__icon { color: var(--ink-3); display: inline-flex; }
+.wsb-search__form:focus-within .wsb-search__icon { color: var(--accent); }
+.wsb-search__input {
+  flex: 1; min-width: 0;
+  border: 0; outline: none;
+  background: transparent;
+  font: inherit; font-size: 16px;
+  color: var(--ink);
+}
+.wsb-search__kbd { white-space: nowrap; }
+.wsb-search__status { margin-top: 8px; min-height: 18px; }
+.wsb-search__suggest {
+  position: absolute; left: 0; right: 0; top: calc(100% + 4px);
+  list-style: none; padding: 4px; margin: 0;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-2, 0 8px 24px rgba(0,0,0,.08));
+  z-index: 20;
+  max-height: 320px; overflow: auto;
+}
+.wsb-search__suggest li {
+  padding: 8px 12px;
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  min-height: 32px;
+  display: flex; align-items: center;
+}
+.wsb-search__suggest li:hover { background: var(--bg-soft); color: var(--accent); }
+
+.wsb-search__grid {
+  display: grid;
+  grid-template-columns: 200px 1fr;
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 24px 28px;
+  gap: 24px;
+}
+.wsb-search__filters { min-width: 0; }
+.wsb-search__facet { margin-bottom: 22px; }
+.wsb-search__facet-h {
+  color: var(--ink-4);
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  letter-spacing: .05em;
+}
+.wsb-search__facet-list { display: flex; flex-direction: column; gap: 2px; }
+.wsb-search__facet-item {
+  display: flex; align-items: center; gap: 8px;
+  padding: 5px 10px;
+  font-size: 13px;
+  border-radius: 4px;
+  cursor: pointer;
+  color: var(--ink-2);
+  min-height: 28px;
+}
+.wsb-search__facet-item input {
+  appearance: none; -webkit-appearance: none;
+  width: 12px; height: 12px;
+  border: 1.5px solid var(--line-strong);
+  border-radius: 50%;
+  display: inline-block;
+  position: relative;
+  flex-shrink: 0;
+}
+.wsb-search__facet-item input:checked { border-color: var(--accent); }
+.wsb-search__facet-item input:checked::after {
+  content: ''; position: absolute; inset: 2px;
+  background: var(--accent); border-radius: 50%;
+}
+.wsb-search__facet-item.is-active {
+  background: var(--accent-soft); color: var(--accent); font-weight: 600;
+}
+.wsb-search__facet-item span:nth-of-type(1) { flex: 1; }
+
+.wsb-search__main { min-width: 0; }
+.wsb-search__sort { margin-bottom: 12px; }
+.wsb-search__empty {
+  padding: 64px 24px; text-align: center;
+}
+.wsb-search__empty-icon { color: var(--ink-4); margin-bottom: 12px; opacity: .55; }
+.wsb-search__list { list-style: none; padding: 0; margin: 0; }
+.wsb-search__result {
+  padding: 14px 0; border-bottom: 1px solid var(--line);
+}
+.wsb-search__result-meta { display: flex; align-items: center; gap: 8px; margin-bottom: 4px; flex-wrap: wrap; }
+.wsb-search__result-title { font-size: 16px; font-weight: 600; margin: 0; line-height: 1.4; }
+.wsb-search__result-title a { color: inherit; text-decoration: none; }
+.wsb-search__result-title a:hover { color: var(--accent); }
+.wsb-search__result-title em,
+.wsb-search__result-excerpt em {
+  font-style: normal;
+  background: var(--accent-soft); color: var(--accent);
+  padding: 0 2px; border-radius: 2px;
+}
+.wsb-search__result-excerpt { margin: 6px 0 8px; line-height: 1.6; }
+.wsb-search__result-tags { display: flex; gap: 4px; flex-wrap: wrap; }
+
+/* ---- GRAPH ---- */
+.wsb-graph {
+  width: 100%;
+  height: calc(100vh - 56px);
+  min-height: 500px;
+  position: relative;
+}
+.wsb-graph__noscript {
+  padding: 64px 24px; text-align: center; max-width: 720px; margin: 0 auto;
+}
+.wsb-graph__layout {
+  display: grid;
+  grid-template-columns: 1fr 280px;
+  height: 100%;
+}
+.wsb-graph__canvas {
+  position: relative;
+  background: radial-gradient(circle at 50% 50%, var(--bg-soft) 0%, var(--bg-sunk) 100%);
+  overflow: hidden;
+}
+html[data-theme="dark"] .wsb-graph__canvas {
+  background: radial-gradient(circle at 50% 50%, #0f0f0f 0%, #000 100%);
+}
+.wsb-graph__grid {
+  position: absolute; inset: 0;
+  background-image:
+    linear-gradient(var(--line) 1px, transparent 1px),
+    linear-gradient(90deg, var(--line) 1px, transparent 1px);
+  background-size: 40px 40px;
+  opacity: .25;
+  pointer-events: none;
+}
+.wsb-graph__svg {
+  position: absolute; inset: 0;
+  width: 100%; height: 100%;
+}
+.wsb-graph__node { cursor: pointer; }
+.wsb-graph__node:focus { outline: none; }
+.wsb-graph__node:focus-visible circle {
+  stroke: var(--accent); stroke-width: 3px;
+}
+.wsb-graph__legend {
+  position: absolute; top: 16px; left: 16px;
+  padding: 10px 14px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow-2, 0 4px 12px rgba(0,0,0,.06));
+  min-width: 200px;
+}
+.wsb-graph__legend-h {
+  color: var(--ink-4);
+  text-transform: uppercase;
+  margin-bottom: 6px;
+  letter-spacing: .05em;
+}
+.wsb-graph__legend-list { display: flex; flex-direction: column; gap: 4px; }
+.wsb-graph__legend-row {
+  display: flex; align-items: center; gap: 8px;
+  font-size: 12px;
+  background: transparent; border: 0; padding: 4px 6px;
+  text-align: left; cursor: pointer; color: inherit;
+  border-radius: 4px;
+  min-height: 24px;
+}
+.wsb-graph__legend-row:hover { background: var(--bg-soft); }
+.wsb-graph__legend-row.is-off { opacity: .35; }
+.wsb-graph__legend-dot {
+  width: 10px; height: 10px; border-radius: 50%; display: inline-block;
+  flex-shrink: 0;
+}
+.wsb-graph__legend-name { flex: 1; }
+.wsb-graph__zoom {
+  position: absolute; bottom: 16px; left: 16px;
+  display: flex; flex-direction: column; gap: 4px;
+  padding: 4px;
+  background: var(--bg);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  box-shadow: var(--shadow-2, 0 4px 12px rgba(0,0,0,.06));
+}
+.wsb-graph__overlay {
+  position: absolute; left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  pointer-events: none;
+}
+.wsb-graph__side {
+  border-left: 1px solid var(--line);
+  overflow: auto;
+  padding: 18px;
+  background: var(--bg);
+}
+.wsb-graph__side-h {
+  color: var(--ink-4);
+  text-transform: uppercase;
+  margin: 18px 0 8px;
+  letter-spacing: .05em;
+}
+.wsb-graph__side-h:first-child { margin-top: 0; }
+.wsb-graph__side-empty { padding: 24px 0; }
+.wsb-graph__side-title-row { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.wsb-graph__side-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+.wsb-graph__side-title { font-size: 16px; font-weight: 700; margin: 0; line-height: 1.3; }
+.wsb-graph__side-meta { margin-bottom: 10px; }
+.wsb-graph__side-desc { color: var(--ink-2); line-height: 1.6; margin-top: 0; }
+.wsb-graph__side-actions { display: flex; gap: 6px; margin-top: 12px; }
+.wsb-graph__side-actions > * { flex: 1; justify-content: center; }
+.wsb-graph__neighbors { list-style: none; padding: 0; margin: 0; }
+.wsb-graph__neighbor {
+  display: flex; align-items: center; gap: 8px;
+  padding: 6px 0; border-top: 1px solid var(--line);
+  font-size: 12px;
+}
+.wsb-graph__neighbor:first-child { border-top: 0; }
+.wsb-graph__neighbor a { flex: 1; color: inherit; text-decoration: none; }
+.wsb-graph__neighbor a:hover { color: var(--accent); }
+
+/* ---- ARTICLE COMMENTS (WS-B 替换 stub) ---- */
+.wsb-comments { min-width: 0; }
+.wsb-comments__sticky { position: sticky; top: 80px; }
+.wsb-comments__head {
+  display: flex; align-items: center; gap: 8px;
+  margin-bottom: 12px;
+}
+.wsb-comments__title { font-size: 14px; font-weight: 700; margin: 0; display: flex; align-items: center; gap: 6px; }
+.wsb-comments__hint {
+  padding: 6px 10px;
+  background: var(--bg-soft);
+  border: 1px dashed var(--line-strong);
+  border-radius: 6px;
+  margin-bottom: 12px;
+  line-height: 1.5;
+}
+.wsb-comments__list { list-style: none; padding: 0; margin: 0 0 12px; }
+.wsb-comments__card {
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  margin-bottom: 8px;
+  background: var(--bg);
+}
+.wsb-comments__card.is-active {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.wsb-comments__card-head {
+  display: flex; align-items: center; gap: 6px; margin-bottom: 6px;
+}
+.wsb-comments__avatar {
+  width: 22px; height: 22px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  color: #fff; font-family: var(--mono); font-weight: 700; font-size: 11px;
+  flex-shrink: 0;
+  background: var(--ink-3);
+}
+.wsb-comments__author { font-weight: 600; font-size: 12px; flex: 1; }
+.wsb-comments__quote {
+  border-left: 2px solid var(--accent);
+  padding: 4px 8px;
+  margin: 4px 0 6px;
+  font-size: 12px;
+  color: var(--ink-3);
+  background: var(--accent-soft);
+  border-radius: 0 4px 4px 0;
+}
+.wsb-comments__body { line-height: 1.6; color: var(--ink-2); }
+.wsb-comments__empty { padding: 18px 0; text-align: center; }
+.wsb-comments__compose {
+  display: flex; align-items: center; gap: 6px;
+  padding: 8px;
+  background: var(--bg-soft);
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  flex-wrap: wrap;
+}
+.wsb-comments__input {
+  flex: 1; min-width: 100px;
+  border: 0; background: transparent; font: inherit;
+  color: inherit; padding: 6px;
+  outline: none;
+  min-height: 24px;
+}
+.wsb-comments__input[aria-invalid="true"] { color: var(--danger-text, #b91c1c); }
+.wsb-comments__error { color: var(--danger-text, #b91c1c); width: 100%; margin: 4px 0 0; }
+.wsb-comments__foot { margin-top: 10px; text-align: right; }
+
+/* highlight in article body */
+.wsb-comments__hl {
+  background: #fde68a;
+  color: inherit;
+  padding: 0 2px;
+  border-radius: 2px;
+  cursor: pointer;
+  transition: background .15s;
+}
+html[data-theme="dark"] .wsb-comments__hl { background: rgba(253, 230, 138, .25); }
+.wsb-comments__hl.is-active { background: var(--accent); color: #fff; }
+
+/* selection bubble */
+.wsb-selbubble {
+  position: absolute; z-index: 50;
+  display: flex; align-items: center; gap: 4px;
+  padding: 6px 8px;
+  background: #1f2937;
+  color: #fff;
+  border-radius: 6px;
+  box-shadow: 0 8px 24px rgba(0,0,0,.25);
+  font-size: 12px;
+}
+.wsb-selbubble button {
+  background: transparent; border: 0; color: inherit;
+  font: inherit; padding: 4px 6px; cursor: pointer;
+  display: inline-flex; align-items: center; gap: 4px;
+  min-height: 24px;
+}
+.wsb-selbubble button:hover { color: #93c5fd; }
+.wsb-selbubble__sep { width: 1px; height: 14px; background: rgba(255,255,255,.2); }
+.wsb-selbubble__swatch {
+  width: 10px; height: 10px; border-radius: 2px;
+  background: #fde68a; display: inline-block;
+}
+
+/* ---- NEWSLETTER ---- */
+.wsb-news {
+  max-width: 720px; margin: 0 auto;
+  padding: 64px 24px;
+}
+.wsb-news__head { text-align: center; margin-bottom: 32px; }
+.wsb-news__title {
+  font-size: 44px; font-weight: 900;
+  line-height: 1.1; margin: 12px 0 14px;
+  letter-spacing: -0.02em;
+}
+.wsb-news__accent { color: var(--accent); }
+.wsb-news__intro {
+  font-size: 16px; color: var(--ink-3);
+  max-width: 480px; margin: 0 auto;
+  line-height: 1.65;
+}
+.wsb-news__intro b { color: var(--ink); }
+
+.wsb-news__formwrap {
+  padding: 24px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: var(--bg);
+  margin-bottom: 24px;
+}
+.wsb-news__form {
+  display: flex; gap: 8px; align-items: flex-start;
+  flex-wrap: wrap;
+}
+.wsb-news__field {
+  flex: 1; min-width: 220px; position: relative;
+  display: flex; align-items: center;
+}
+.wsb-news__field-icon {
+  position: absolute; left: 12px; top: 50%;
+  transform: translateY(-50%);
+  color: var(--ink-4);
+  pointer-events: none;
+}
+.wsb-news__input {
+  width: 100%;
+  height: 42px;
+  padding: 0 12px 0 36px;
+  border: 1px solid var(--line-strong);
+  border-radius: 6px;
+  background: var(--bg);
+  font: inherit; font-size: 14px;
+  color: var(--ink);
+}
+.wsb-news__input:focus {
+  outline: none; border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
+}
+.wsb-news__input[aria-invalid="true"] { border-color: var(--danger, #b91c1c); }
+.wsb-news__submit { height: 42px; padding: 0 22px; font-size: 14px; }
+.wsb-news__error {
+  width: 100%;
+  color: var(--danger-text, #b91c1c);
+  margin: 6px 0 0;
+}
+.wsb-news__success {
+  width: 100%;
+  color: var(--ok-text, #16a34a);
+  margin: 6px 0 0;
+}
+.wsb-news__check {
+  display: inline-flex; align-items: center; gap: 6px;
+  margin-top: 12px;
+  cursor: pointer;
+  min-height: 24px;
+}
+.wsb-news__check input { width: 14px; height: 14px; }
+.wsb-news__check b { color: var(--ink); }
+
+.wsb-news__past-h {
+  color: var(--ink-4); text-transform: uppercase;
+  margin: 0 0 12px; letter-spacing: .05em;
+  font-size: 11px; font-weight: 700;
+}
+.wsb-news__past-list { list-style: none; padding: 0; margin: 0; }
+.wsb-news__past-row {
+  border-bottom: 1px solid var(--line);
+  border-radius: 8px;
+}
+.wsb-news__past-link {
+  display: flex; align-items: center; gap: 14px;
+  padding: 12px 14px;
+  text-decoration: none; color: inherit;
+  border-radius: 8px;
+}
+.wsb-news__past-date { width: 60px; flex-shrink: 0; }
+.wsb-news__past-body { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.wsb-news__past-title { font-size: 14px; font-weight: 500; }
+.wsb-news__past-loading { padding: 12px 14px; }
+
+/* responsive */
+@media (max-width: 900px) {
+  .wsb-search__grid { grid-template-columns: 1fr; }
+  .wsb-graph__layout { grid-template-columns: 1fr; }
+  .wsb-graph__side { border-left: 0; border-top: 1px solid var(--line); max-height: 200px; }
+  .wsb-news__title { font-size: 32px; }
+}
+`;
+
+// WS-C — 各模板携带的 mobile-only CSS 在末尾注入。不动 WS-A 桌面样式。
+const CSS =
+  ALL_CSS +
+  '\n' +
+  APP_CSS +
+  '\n' +
+  RSS_READER_CSS +
+  '\n' +
+  WSB_CSS +
+  '\n' +
+  HOME_MOBILE_CSS +
+  '\n' +
+  POST_MOBILE_CSS +
+  '\n' +
+  TAG_MOBILE_CSS;

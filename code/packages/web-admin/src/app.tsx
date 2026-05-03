@@ -13,6 +13,7 @@ import { AuditPage } from './pages/audit.js';
 import { MediaPage } from './pages/media.js';
 import { OgPage } from './pages/og.js';
 import { BackupPage } from './pages/backup.js';
+import { ConfigDocsPage } from './pages/config-docs.js';
 
 type Route =
   | { name: 'dashboard' }
@@ -25,7 +26,8 @@ type Route =
   | { name: 'audit' }
   | { name: 'media' }
   | { name: 'og' }
-  | { name: 'backup' };
+  | { name: 'backup' }
+  | { name: 'config-docs' };
 
 function readRoute(): Route {
   const hash = location.hash.replace(/^#\/?/, '');
@@ -44,6 +46,7 @@ function readRoute(): Route {
   if (hash === 'media') return { name: 'media' };
   if (hash === 'og') return { name: 'og' };
   if (hash === 'backup') return { name: 'backup' };
+  if (hash === 'config-docs') return { name: 'config-docs' };
   if (hash === 'settings' || hash.startsWith('settings/')) {
     const section = hash.split('/')[1] ?? 'site';
     const valid = (SETTINGS_SECTIONS as readonly string[]).includes(section)
@@ -67,6 +70,7 @@ function currentPath(route: Route): string {
     case 'media': return '#/media';
     case 'og': return '#/og';
     case 'backup': return '#/backup';
+    case 'config-docs': return '#/config-docs';
   }
 }
 
@@ -103,6 +107,8 @@ function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
       return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: 'OG 生成器' }];
     case 'backup':
       return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: '备份与导出' }];
+    case 'config-docs':
+      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: '配置文档' }];
   }
 }
 
@@ -143,6 +149,7 @@ export function App() {
       {route.name === 'media' && <MediaPage />}
       {route.name === 'og' && <OgPage />}
       {route.name === 'backup' && <BackupPage />}
+      {route.name === 'config-docs' && <ConfigDocsPage />}
     </AdminShell>
   );
 }
