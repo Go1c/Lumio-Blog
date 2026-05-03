@@ -54,7 +54,7 @@ const DEFAULT_MENU: AdminMenuGroup[] = [
   {
     label: '仪表盘',
     items: [
-      { label: '概览', href: '#/', icon: 'home' },
+      { label: '概览', icon: 'home', disabled: true },
     ],
   },
   {

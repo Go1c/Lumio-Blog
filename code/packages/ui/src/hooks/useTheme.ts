@@ -8,8 +8,12 @@ const KEY = 'theme';
 
 function detectInitial(): ThemeMode {
   if (typeof localStorage === 'undefined') return 'auto';
-  const stored = localStorage.getItem(KEY);
-  if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored;
+  try {
+    const stored = localStorage.getItem(KEY);
+    if (stored === 'light' || stored === 'dark' || stored === 'auto') return stored;
+  } catch {
+    return 'auto';
+  }
   return 'auto';
 }
 
