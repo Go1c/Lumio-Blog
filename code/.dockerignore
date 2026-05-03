@@ -1,0 +1,12 @@
+node_modules
+packages/*/node_modules
+packages/*/dist
+dist
+.turbo
+.opennote
+data
+*.log
+.env
+.env.local
+*.db
+*.db-journal

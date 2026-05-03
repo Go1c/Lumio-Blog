@@ -1,7 +1,7 @@
 # Zeabur Deployment
 
-This project deploys as a Node.js service from the `code/` directory. Keep the
-Git repository root clean; configure Zeabur to use `code` as the service root.
+This project deploys from the Dockerfile in the `code/` directory. Keep the Git
+repository root clean; configure Zeabur to use `code` as the service root.
 
 ## GitHub Service
 
@@ -11,33 +11,30 @@ In Zeabur, set the service **Root Directory** to:
 code
 ```
 
-Then use these commands:
+Zeabur should detect `code/Dockerfile` automatically. Clear any manually set
+build/start command overrides; the Dockerfile owns installation, build, and
+startup.
+
+The container runs:
 
 ```bash
+pnpm install --frozen-lockfile --prod=false
 pnpm build
 pnpm start
 ```
 
 `package.json` pins Node.js to `20.x` and pnpm to `9.7.0`.
-The `code/zbpack.json` file also pins the build and start commands for Zeabur:
-
-```bash
-pnpm install --frozen-lockfile --prod=false && pnpm build
-pnpm start
-```
 
 If Zeabur serves files from the repository root instead of the Node service, set
-these variables manually on the service:
+the service root manually:
 
 ```text
-ZBPACK_APP_DIR=code
-ZBPACK_BUILD_COMMAND=pnpm install --frozen-lockfile --prod=false && pnpm build
-ZBPACK_START_COMMAND=pnpm start
-ZBPACK_CACHE_DEPENDENCIES=false
+Root Directory=code
+Builder=Dockerfile
 ```
 
 The runtime logs should contain `opennote v0.5 -> http://localhost:<port>`. If
-you only see Caddy logs, Zeabur is not running the Node service entrypoint yet.
+you only see Caddy logs, Zeabur is not using the Dockerfile yet.
 
 ## Persistent Data
 

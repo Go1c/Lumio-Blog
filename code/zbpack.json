@@ -1,5 +1,0 @@
-{
-  "build_command": "pnpm install --frozen-lockfile --prod=false && pnpm build",
-  "start_command": "pnpm start",
-  "cache_dependencies": false
-}
