@@ -3,8 +3,8 @@ import { useState, useEffect, useRef } from 'preact/hooks';
 
 export interface DropdownProps {
   /** 触发器(必须是真按钮) */
-  trigger: (props: { onClick: () => void; 'aria-expanded': 'true' | 'false'; 'aria-haspopup': 'menu' }) => JSX.Element;
-  /** menu 内容(用 DropdownItem 组合) */
+  trigger: (props: { onClick: () => void; 'aria-expanded': 'true' | 'false' }) => JSX.Element;
+  /** 弹层内容(用 DropdownItem 组合) */
   children: ComponentChildren;
   label?: string;
 }
@@ -34,10 +34,9 @@ export function Dropdown({ trigger, children, label = '菜单' }: DropdownProps)
       {trigger({
         onClick: () => setOpen((v) => !v),
         'aria-expanded': open ? 'true' : 'false',
-        'aria-haspopup': 'menu',
       })}
       {open && (
-        <div class="ui-dropdown__menu" role="menu" aria-label={label}>
+        <div class="ui-dropdown__menu" aria-label={label}>
           {children}
         </div>
       )}
@@ -61,13 +60,13 @@ export function DropdownItem({
     .filter(Boolean).join(' ');
   if (href) {
     return (
-      <a href={href} role="menuitem" class={cls}>
+      <a href={href} class={cls}>
         {children}
       </a>
     );
   }
   return (
-    <button type="button" role="menuitem" class={cls} {...rest}>
+    <button type="button" class={cls} {...rest}>
       {children}
     </button>
   );

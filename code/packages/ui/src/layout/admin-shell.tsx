@@ -111,6 +111,7 @@ export function AdminShell({
   onOpenSearch,
 }: AdminShellProps): JSX.Element {
   const { effective, toggle } = useTheme();
+  const brandInitial = siteName.trim()[0] ?? userInitials.trim()[0] ?? 'L';
 
   return (
     <div class="ui-admin">
@@ -118,7 +119,7 @@ export function AdminShell({
 
       <aside class="ui-admin__sidebar" aria-label="后台导航">
         <div class="ui-admin__brand">
-          <div class="ui-admin__logo" aria-hidden="true">L</div>
+          <div class="ui-admin__logo" aria-hidden="true">{brandInitial}</div>
           <div style={{ fontWeight: 700, fontSize: '13px' }}>
             {siteName}
             <span class="hf-mono hf-tiny hf-faint" style={{ marginLeft: '4px' }}>admin</span>
