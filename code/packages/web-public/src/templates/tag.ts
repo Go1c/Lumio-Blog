@@ -175,3 +175,57 @@ function computeRelatedTags(
   }
   return [...counts.entries()].sort((a, b) => b[1] - a[1]);
 }
+
+/**
+ * WS-C — Tag 索引页 + 单标签详情页 mobile-only CSS。
+ */
+export const TAG_MOBILE_CSS = `
+/* ====================================================================== */
+/* WS-C — Tag 移动端 (max-width: 768px)                                      */
+/* ====================================================================== */
+@media (max-width: 768px) {
+  /* 标签详情页 */
+  .wsa-tag__head { padding: 28px 16px 18px; }
+  .wsa-tag__h { font-size: 32px; }
+  .wsa-tag__desc { font-size: 14px; margin-top: 8px; }
+  .wsa-tag__blob { display: none; }
+  .wsa-tag__grid {
+    grid-template-columns: 1fr;
+    padding: 20px 16px;
+    gap: 24px;
+  }
+  .wsa-tag__row {
+    grid-template-columns: 52px 1fr;
+    gap: 10px;
+    padding: 12px 0;
+  }
+  .wsa-tag__meta {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: left;
+    padding-top: 0;
+    padding-left: 62px;
+  }
+  .wsa-tag__year-h { font-size: 16px; }
+
+  /* 标签索引页 */
+  .wsa-tagindex { padding: 32px 16px; }
+  .wsa-tagindex__title { font-size: 28px; }
+
+  /* About */
+  .wsa-about { padding: 36px 16px; }
+  .wsa-about__title { font-size: 28px; }
+  .wsa-about__avatar { width: 72px; height: 72px; font-size: 30px; }
+
+  /* 404 */
+  .wsa-404 { padding: 48px 16px; }
+  .wsa-404__big { font-size: 96px; }
+  .wsa-404__title { font-size: 22px; }
+
+  body, html { overflow-x: hidden; }
+}
+@media (max-width: 380px) {
+  .wsa-tag__grid { padding-left: 14px; padding-right: 14px; }
+  .wsa-tag__h { font-size: 28px; }
+}
+`;

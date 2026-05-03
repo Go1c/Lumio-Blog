@@ -231,3 +231,79 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
     active: 'home',
   });
 }
+
+/**
+ * WS-C — Home 页 mobile-only CSS。由 render-site 拼接到 styles.css 末尾。
+ * 不动 WS-A 桌面样式;只在 max-width: 768px 下覆写关键布局。
+ */
+export const HOME_MOBILE_CSS = `
+/* ====================================================================== */
+/* WS-C — Home 移动端 (max-width: 768px)                                     */
+/* ====================================================================== */
+@media (max-width: 768px) {
+  /* 三栏 → 单栏:中流在前,右栏作者下移,左目录折叠到底部 */
+  .wsa-grid {
+    grid-template-columns: 1fr;
+    padding: 20px 16px;
+    gap: 24px;
+  }
+  .wsa-cat {
+    order: 3;
+    border-right: 0;
+    border-top: 1px solid var(--line);
+    padding: 16px 0 0;
+  }
+  .wsa-cat__list { display: flex; flex-wrap: wrap; gap: 6px; }
+  .wsa-cat__row {
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    padding: 8px 12px;
+    min-height: 36px;
+    font-size: 13px;
+  }
+  .wsa-feed { order: 1; padding: 0; }
+  .wsa-feed__h { font-size: 20px; }
+  .wsa-side {
+    order: 2;
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--line);
+    padding-top: 20px;
+  }
+
+  /* hero — 简化、去 blob */
+  .wsa-hero { padding: 32px 16px 28px; }
+  .wsa-hero__title { font-size: 30px; line-height: 1.15; }
+  .wsa-hero__intro { font-size: 15px; margin-top: 12px; }
+  .wsa-hero__cta { gap: 8px; margin-top: 18px; }
+  .wsa-hero__cta .ui-btn { min-height: 44px; padding-left: 14px; padding-right: 14px; }
+  .wsa-hero__blob-a, .wsa-hero__blob-b { display: none; }
+
+  /* 文章流 */
+  .wsa-pinned { padding: 16px; }
+  .wsa-pinned__title { font-size: 18px; }
+  .wsa-row {
+    grid-template-columns: 52px 1fr;
+    gap: 10px;
+    padding: 14px 0;
+  }
+  .wsa-row__meta {
+    grid-column: 1 / -1;
+    grid-row: 2;
+    text-align: left;
+    padding-top: 0;
+    padding-left: 62px;
+  }
+  .wsa-row__title { font-size: 15px; }
+
+  /* 全局触控目标 */
+  body, html { overflow-x: hidden; }
+  img, pre, table { max-width: 100%; }
+  pre { overflow-x: auto; }
+}
+@media (max-width: 380px) {
+  .wsa-hero { padding: 24px 14px 22px; }
+  .wsa-hero__title { font-size: 26px; }
+  .wsa-grid { padding-left: 14px; padding-right: 14px; }
+}
+`;
