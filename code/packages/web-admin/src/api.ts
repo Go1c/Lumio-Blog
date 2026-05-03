@@ -135,6 +135,48 @@ export interface BackupJob {
   finished_at: string | null;
 }
 
+export interface TagCount { tag: string; count: number }
+export interface TaggedNote {
+  slug: string;
+  title: string;
+  visibility: Visibility;
+  updated_at: string;
+}
+
+export type CommentStatus = 'pending' | 'approved' | 'rejected' | 'spam';
+export interface CommentRow {
+  id: number;
+  slug: string;
+  author: string;
+  email: string | null;
+  website: string | null;
+  body: string;
+  status: CommentStatus;
+  ip_hash: string | null;
+  ua: string | null;
+  created_at: string;
+  moderated_at: string | null;
+}
+export interface CommentCounts {
+  pending: number;
+  approved: number;
+  rejected: number;
+  spam: number;
+}
+
+export interface SubscriberRow {
+  email: string;
+  source: string;
+  subscribed_at: string;
+  unsubscribed_at: string | null;
+  ip_hash: string | null;
+}
+export interface SubscriberCounts {
+  total: number;
+  active: number;
+  unsubscribed: number;
+}
+
 async function req(path: string, init?: RequestInit): Promise<Response> {
   const res = await fetch(path, { credentials: 'same-origin', ...init });
   return res;
@@ -346,6 +388,72 @@ export const api = {
     },
     downloadUrl(jobId: string): string {
       return `/api/admin/backup/${encodeURIComponent(jobId)}/download`;
+    },
+  },
+
+  // ---- tags ----
+  tags: {
+    async list(): Promise<{ tags: TagCount[] }> {
+      return jsonOrThrow(await req('/api/admin/tags'));
+    },
+    async notesForTag(tag: string): Promise<{ tag: string; notes: TaggedNote[] }> {
+      return jsonOrThrow(await req(`/api/admin/tags/${encodeURIComponent(tag)}`));
+    },
+  },
+
+  // ---- comments ----
+  comments: {
+    async list(opts: { status?: CommentStatus; slug?: string; limit?: number } = {}): Promise<{
+      counts: CommentCounts;
+      comments: CommentRow[];
+    }> {
+      const qs = new URLSearchParams();
+      if (opts.status) qs.set('status', opts.status);
+      if (opts.slug) qs.set('slug', opts.slug);
+      if (opts.limit) qs.set('limit', String(opts.limit));
+      const q = qs.toString();
+      return jsonOrThrow(await req(`/api/admin/comments${q ? `?${q}` : ''}`));
+    },
+    async setStatus(id: number, status: CommentStatus): Promise<void> {
+      await jsonOrThrow(
+        await req(`/api/admin/comments/${id}`, {
+          method: 'PATCH',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ status }),
+        }),
+      );
+    },
+    async delete(id: number): Promise<void> {
+      await jsonOrThrow(await req(`/api/admin/comments/${id}`, { method: 'DELETE' }));
+    },
+  },
+
+  // ---- subscribers ----
+  subscribers: {
+    async list(activeOnly = false): Promise<{ counts: SubscriberCounts; subscribers: SubscriberRow[] }> {
+      const qs = activeOnly ? '?active=1' : '';
+      return jsonOrThrow(await req(`/api/admin/subscribers${qs}`));
+    },
+    async add(email: string, source = 'admin'): Promise<{ ok: true; already: boolean }> {
+      return jsonOrThrow(
+        await req('/api/admin/subscribers', {
+          method: 'POST',
+          headers: { 'content-type': 'application/json' },
+          body: JSON.stringify({ email, source }),
+        }),
+      );
+    },
+    async unsubscribe(email: string): Promise<void> {
+      await jsonOrThrow(
+        await req(`/api/admin/subscribers/${encodeURIComponent(email)}/unsubscribe`, {
+          method: 'POST',
+        }),
+      );
+    },
+    async delete(email: string): Promise<void> {
+      await jsonOrThrow(
+        await req(`/api/admin/subscribers/${encodeURIComponent(email)}`, { method: 'DELETE' }),
+      );
     },
   },
 };

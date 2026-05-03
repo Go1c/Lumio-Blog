@@ -3,6 +3,7 @@ import { settingsAuditMigration } from './migrations/004_settings_audit.js';
 import { migration005 } from './migrations/005_search_fts.js';
 import { migration006Analytics } from './migrations/006_analytics.js';
 import { migration007MediaBackup } from './migrations/007_media_backup.js';
+import { migration008CommentsSubscribers } from './migrations/008_comments_subscribers.js';
 
 interface Migration {
   version: number;
@@ -132,6 +133,7 @@ const MIGRATIONS: Migration[] = [
   migration005,
   migration006Analytics,
   migration007MediaBackup,
+  migration008CommentsSubscribers,
 ];
 
 export function runMigrations(db: Database): void {
