@@ -1,6 +1,7 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { isoDate, tagsForSlug } from '../partials/shared.js';
+import { renderArticleComments } from '../partials/article-comments.js';
 
 export interface PostData {
   note: NoteRow;
@@ -150,16 +151,41 @@ export function renderPost(data: PostData, config: SiteConfig): string {
           </aside>
         </article>
 
-        <!-- RIGHT — comments placeholder (WS-B fills in) -->
-        <aside class="wsa-post__right" id="comments" aria-label="评论(待启用)">
-          <div class="wsa-comments-stub">
-            <div class="wsa-side__h hf-mono hf-tiny"><span aria-hidden="true">💬</span> 评论</div>
-            <p class="hf-tiny hf-muted wsa-comments-stub__msg">评论功能筹备中。</p>
-          </div>
-        </aside>
+        <!-- RIGHT — comments rail (WS-B) -->
+        ${
+          config.features?.comments === false
+            ? ''
+            : `<aside class="wsa-post__right" id="comments" aria-label="评论">
+            ${renderArticleComments({ slug: note.slug }, config)}
+          </aside>`
+        }
+      </div>
+
+      <!-- WS-C — 移动端浮动操作 pill(桌面隐藏) -->
+      <div class="wsc-pill" role="toolbar" aria-label="文章操作">
+        <button type="button" class="wsc-pill__btn" id="wsc-pill-fav" aria-label="收藏"><span aria-hidden="true">★</span></button>
+        <button type="button" class="wsc-pill__btn" id="wsc-pill-link" aria-label="复制链接"><span aria-hidden="true">🔗</span></button>
+        <button type="button" class="wsc-pill__btn" id="wsc-pill-share" aria-label="分享"><span aria-hidden="true">↗</span></button>
+        <button type="button" class="wsc-pill__btn wsc-pill__btn--accent" id="wsc-pill-feedback" aria-label="反馈"><span aria-hidden="true">✎</span></button>
       </div>
     </div>
-    ${progressScript}`;
+    ${progressScript}
+    <script>
+      (function(){
+        var lk = document.getElementById('wsc-pill-link');
+        if (lk) lk.addEventListener('click', function(){
+          try { navigator.clipboard.writeText(location.href); lk.setAttribute('aria-label','已复制链接'); } catch (e) {}
+        });
+        var sh = document.getElementById('wsc-pill-share');
+        if (sh) sh.addEventListener('click', function(){
+          if (navigator.share) {
+            navigator.share({ title: document.title, url: location.href }).catch(function(){});
+          } else if (navigator.clipboard) {
+            try { navigator.clipboard.writeText(location.href); sh.setAttribute('aria-label','已复制链接(浏览器不支持原生分享)'); } catch (e) {}
+          }
+        });
+      })();
+    </script>`;
 
   return layout({
     title: `${note.title} · ${config.site.title}`,
@@ -206,3 +232,87 @@ function extractOutline(html: string): OutlineEntry[] {
   }
   return out.slice(0, 12);
 }
+
+/**
+ * WS-C — Post 页 mobile-only CSS + 浮动操作 pill 样式。
+ * pill 在桌面默认隐藏(display: none),移动端 sticky bottom 显示。
+ */
+export const POST_MOBILE_CSS = `
+/* ====================================================================== */
+/* WS-C — Post 移动端 (max-width: 768px) + 浮动操作 pill                    */
+/* ====================================================================== */
+
+/* 默认桌面隐藏 pill */
+.wsc-pill { display: none; }
+
+@media (max-width: 768px) {
+  .wsa-post__grid {
+    grid-template-columns: 1fr;
+    padding: 20px 16px 100px; /* 底部留空给 sticky pill */
+    gap: 20px;
+  }
+  .wsa-post__left { order: 2; }
+  .wsa-post__main { order: 1; padding: 0; }
+  .wsa-post__right { order: 3; }
+  .wsa-post__title { font-size: 26px; line-height: 1.25; }
+  .wsa-post__summary { font-size: 16px; }
+  .wsa-prose, .hf-prose { font-size: 16px; line-height: 1.8; }
+  .hf-prose h2 { font-size: 20px; }
+  .hf-prose h3 { font-size: 16px; }
+
+  /* 桌面操作栏 → 移动端隐藏(由底部浮动 pill 替代) */
+  .wsa-actbar { display: none; }
+  /* 评论 stub 取消 sticky */
+  .wsa-comments-stub { position: static; }
+
+  /* CTA 在窄屏堆叠 */
+  .wsa-cta { flex-wrap: wrap; }
+  .wsa-cta__avatar { flex-shrink: 0; }
+
+  /* 浮动操作 pill — sticky(不要 fixed,避免某些浏览器 z 轴问题) */
+  .wsc-pill {
+    display: flex;
+    position: sticky;
+    bottom: 16px;
+    z-index: 20;
+    margin: 24px auto 0;
+    gap: 4px;
+    padding: 6px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: 999px;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, .08), 0 2px 6px rgba(0, 0, 0, .06);
+    width: max-content;
+    max-width: 100%;
+  }
+  .wsc-pill__btn {
+    width: 44px; height: 44px;
+    min-width: 44px; min-height: 44px;
+    border: 0; background: transparent;
+    border-radius: 50%;
+    cursor: pointer;
+    color: var(--ink);
+    display: inline-flex; align-items: center; justify-content: center;
+    font-size: 16px;
+    padding: 0;
+  }
+  .wsc-pill__btn:hover, .wsc-pill__btn:focus-visible {
+    background: var(--bg-soft);
+  }
+  .wsc-pill__btn--accent { color: var(--accent); }
+
+  /* 防溢出 */
+  body, html { overflow-x: hidden; }
+  img, pre, table { max-width: 100%; }
+  pre { overflow-x: auto; }
+
+  /* 全局触控目标 */
+  .ui-btn { min-height: 40px; }
+  .ui-btn--sm { min-height: 36px; }
+  .ui-btn--icon { min-width: 40px; min-height: 40px; }
+}
+@media (max-width: 380px) {
+  .wsa-post__grid { padding-left: 14px; padding-right: 14px; }
+  .wsa-post__title { font-size: 22px; }
+}
+`;
