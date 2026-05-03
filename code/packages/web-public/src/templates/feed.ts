@@ -17,7 +17,6 @@ export function renderFeed(posts: NoteRow[], config: SiteConfig): string {
     .join('');
 
   return `<?xml version="1.0" encoding="UTF-8"?>
-<?xml-stylesheet type="text/xsl" href="/feed.xsl"?>
 <rss version="2.0">
   <channel>
     <title>${esc(config.site.title)}</title>
