@@ -1,6 +1,0 @@
-{
-  "app_dir": "/",
-  "cache_dependencies": false,
-  "build_command": "pnpm build",
-  "start_command": "pnpm start"
-}

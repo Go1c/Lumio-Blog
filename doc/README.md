@@ -5,8 +5,8 @@
 >
 > **特别为 AI agent 友好而设计**：CLI 一等公民、MCP server、Webhook、纯文件存储、原子写入。
 
-设计稿（高保真，浅 / 深 / 跟随系统三档主题）见本仓库的 `index.html`。
-线框版（白纸黑笔风）在 `wireframes.html`。
+设计稿（高保真，浅 / 深 / 跟随系统三档主题）见 `doc/prototype/index.html`。
+线框版（白纸黑笔风）在 `doc/prototype/wireframes.html`。
 
 > 站点示例数据用的是 `LumioGames`（作者本人的游戏品牌）。代码里 `LumioGames` 是 sample author，
 > `Lumio` 是项目本身。
@@ -123,28 +123,28 @@ blog query "tag:游戏 AI && month:2025-04"  # JSON-Path 查询
 ## 文件结构
 
 ```
-index.html             # 主设计稿（design canvas，所有 artboard）
-wireframes.html        # 低保真线框版
-screenshot.html        # 单组件截图工具
+doc/prototype/index.html             # 主设计稿（design canvas，所有 artboard）
+doc/prototype/wireframes.html        # 低保真线框版
+doc/prototype/screenshot.html        # 单组件截图工具
 
-app-hifi.jsx           # 主入口：设计画布装载 + 主题
-design-canvas.jsx      # 画布组件（pan/zoom/focus）
-tweaks-panel.jsx       # 右下角 Tweaks 面板
+doc/prototype/app-hifi.jsx           # 主入口：设计画布装载 + 主题
+doc/prototype/design-canvas.jsx      # 画布组件（pan/zoom/focus）
+doc/prototype/tweaks-panel.jsx       # 右下角 Tweaks 面板
 
-hf-shared.jsx          # 共享组件（Frame, Header, Footer, Tag, ...）
-hf-home.jsx            # 前台首页
-hf-article.jsx         # 文章详情
-hf-admin.jsx           # 后台核心（仪表盘 / 笔记 / 设置 / 媒体 / Tokens / Analytics）
-hf-extras.jsx          # 评论 / Newsletter / 搜索 / 标签 / 404 / 关系图
-hf-extras2.jsx         # 关于 / RSS
-hf-og.jsx              # OG 图生成器
-hf-config.jsx          # 配置文件参考（开源用户文档）
-hf-cli.jsx             # CLI / MCP 文档
-hf-mobile.jsx          # 移动端
-ios-frame.jsx          # iOS 设备框
+doc/prototype/hf-shared.jsx          # 共享组件（Frame, Header, Footer, Tag, ...）
+doc/prototype/hf-home.jsx            # 前台首页
+doc/prototype/hf-article.jsx         # 文章详情
+doc/prototype/hf-admin.jsx           # 后台核心（仪表盘 / 笔记 / 设置 / 媒体 / Tokens / Analytics）
+doc/prototype/hf-extras.jsx          # 评论 / Newsletter / 搜索 / 标签 / 404 / 关系图
+doc/prototype/hf-extras2.jsx         # 关于 / RSS
+doc/prototype/hf-og.jsx              # OG 图生成器
+doc/prototype/hf-config.jsx          # 配置文件参考（开源用户文档）
+doc/prototype/hf-cli.jsx             # CLI / MCP 文档
+doc/prototype/hf-mobile.jsx          # 移动端
+doc/prototype/ios-frame.jsx          # iOS 设备框
 
-styles.css             # 线框版样式
-styles-hifi.css        # 高保真样式
+doc/prototype/styles.css             # 线框版样式
+doc/prototype/styles-hifi.css        # 高保真样式
 
 doc/                   # 本目录
   README.md

@@ -50,7 +50,7 @@ pnpm dev
 设计稿是独立的 HTML 项目（你正在看的这个）。本地预览：
 
 ```bash
-# 直接拿浏览器打开 index.html 就行；
+# 直接拿浏览器打开 doc/prototype/index.html 就行；
 # 或者起个静态 server 避免 file:// 跨域：
 python3 -m http.server 8000
 ```
@@ -104,7 +104,7 @@ pnpm lint
 ### 如果加了新 UI
 
 - 设计稿（这个仓库）也要加一个对应的 artboard
-- 在 `app-hifi.jsx` 里塞进对应的 `DCSection`
+- 在 `doc/prototype/app-hifi.jsx` 里塞进对应的 `DCSection`
 - 截图丢到 `doc/img/`，README.md 加一行
 
 ---
