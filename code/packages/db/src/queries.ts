@@ -195,7 +195,8 @@ export class NoteRepo {
       .prepare<[string], { src_slug: string; title: string }>(
         `SELECT l.src_slug, n.title
          FROM links l JOIN notes n ON n.slug = l.src_slug
-         WHERE l.dst_slug = ?`,
+         WHERE l.dst_slug = ?
+         ORDER BY n.title COLLATE NOCASE, l.src_slug`,
       )
       .all(slug);
   }
@@ -205,7 +206,8 @@ export class NoteRepo {
       .prepare<[string], { dst_slug: string; title: string }>(
         `SELECT l.dst_slug, COALESCE(n.title, l.dst_slug) AS title
          FROM links l LEFT JOIN notes n ON n.slug = l.dst_slug
-         WHERE l.src_slug = ?`,
+         WHERE l.src_slug = ?
+         ORDER BY title COLLATE NOCASE, l.dst_slug`,
       )
       .all(slug);
   }
