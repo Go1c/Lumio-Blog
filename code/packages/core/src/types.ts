@@ -296,6 +296,14 @@ export interface Features {
   webhooks: Array<{ event: string; url: string }>;
 }
 
+/** 已知的导出外站平台 key */
+export type ExportPlatform = 'wechat' | 'zhihu' | 'csdn' | 'twitter';
+
+/** config.yaml 里的 export_targets 段;每个平台可以是 boolean 简写或对象。 */
+export type ExportPlatformValue = boolean | { enabled: boolean; [key: string]: unknown };
+
+export type ExportTargets = Partial<Record<ExportPlatform, ExportPlatformValue>>;
+
 export interface AdminSettings {
   site: SiteConfig['site'];
   author: SiteConfig['author'];
@@ -304,6 +312,8 @@ export interface AdminSettings {
   home: SiteConfig['home'];
   features: Features;
   fns?: FnsSettings;
+  /** N-5:导出到外站的连接状态;未设置 = 全部未连接 */
+  export_targets?: ExportTargets;
 }
 
 // ---- Search ----

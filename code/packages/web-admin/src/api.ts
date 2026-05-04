@@ -3,6 +3,7 @@ import type {
   AnalyticsOverview,
   AnalyticsRange,
   ArticleAnalytics,
+  ExportPlatform,
   TimeSeriesPoint,
 } from '@opennote/core';
 
@@ -288,6 +289,17 @@ export const api = {
         body: JSON.stringify(patch),
       }),
     );
+  },
+  /**
+   * N-5(stub):一键导出到外站。当前没有真实后端,统一返回
+   * `{ ok: false, reason: 'not_implemented' }`,前端展示 toast。
+   * 之后某 PR 接入真实 OAuth/API 时,把这里改成调 server。
+   */
+  async exportToPlatform(
+    _slug: string,
+    _platform: ExportPlatform,
+  ): Promise<{ ok: false; reason: 'not_implemented' }> {
+    return Promise.resolve({ ok: false, reason: 'not_implemented' as const });
   },
   async rotateShortLink(slug: string): Promise<void> {
     await jsonOrThrow(

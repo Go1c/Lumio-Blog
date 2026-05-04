@@ -110,7 +110,9 @@ async function readAdminSettings(): Promise<AdminSettings> {
   const theme = (cfg.theme as AdminSettings['theme']) ?? {};
   const seo = (cfg.seo as AdminSettings['seo']) ?? {};
   const home = (cfg.home as AdminSettings['home']) ?? {};
-  return { site, author, theme, seo, home, features, fns };
+  // N-5:export_targets 是可选段;原样透传(schema 在 core 已声明,前端按对象/布尔兼容读)
+  const export_targets = cfg.export_targets as AdminSettings['export_targets'] | undefined;
+  return { site, author, theme, seo, home, features, fns, ...(export_targets ? { export_targets } : {}) };
 }
 
 // ---------------- 浅 merge(用于 PATCH 一个 section 内若干字段时,与现有 yaml 合并) ----------------

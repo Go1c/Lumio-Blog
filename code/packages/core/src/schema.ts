@@ -155,6 +155,28 @@ export const fnsSettingsSchema = z.object({
   last_error: z.string().optional(),
 });
 
+/**
+ * 导出到外站(微信公众号 / 知乎 / CSDN / Twitter)的连接状态。
+ * 当前 PR-D 只渲染 UI 壳;真正的平台 OAuth / API 集成留给后续。
+ * 字段写入 config.yaml -> export_targets.{wechat|zhihu|csdn|twitter};
+ * 没设 = 未连接。每个平台支持两种写法:
+ *   - `wechat: true`(简写,等同 `enabled: true`)
+ *   - `wechat: { enabled: true }`(完整对象,留扩展空间)
+ */
+export const exportPlatformValueSchema = z.union([
+  z.boolean(),
+  z.object({ enabled: z.boolean() }).passthrough(),
+]);
+
+export const exportTargetsSchema = z
+  .object({
+    wechat: exportPlatformValueSchema.optional(),
+    zhihu: exportPlatformValueSchema.optional(),
+    csdn: exportPlatformValueSchema.optional(),
+    twitter: exportPlatformValueSchema.optional(),
+  })
+  .partial();
+
 /** AdminSettings(GET 返回的形态) — 全字段 */
 export const adminSettingsSchema = z.object({
   site: siteSectionSchema,
@@ -164,6 +186,7 @@ export const adminSettingsSchema = z.object({
   home: homeSectionSchema,
   features: featuresSchema,
   fns: fnsSettingsSchema.optional(),
+  export_targets: exportTargetsSchema.optional(),
 });
 
 /** PATCH body — 任何顶层 section 都可省略,被传入的 section 内部仍按全 schema 校验。

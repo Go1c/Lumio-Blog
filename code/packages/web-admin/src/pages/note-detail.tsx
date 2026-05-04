@@ -1,6 +1,7 @@
 import type { JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import { Button, HfIcon, Tag, Toggle } from '@opennote/ui';
+import { Button, HfIcon, type HfIconName, Tag, Toggle } from '@opennote/ui';
+import type { ArticleAnalytics, ExportPlatform, ExportPlatformValue, ExportTargets } from '@opennote/core';
 import { api, type NoteDetail, type ShortLinkInfo, type Visibility } from '../api.js';
 
 const VISIBILITIES: { id: Visibility; label: string; sub: string }[] = [
@@ -29,6 +30,11 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
   const [scheduledAt, setScheduledAt] = useState('');
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [pwInput, setPwInput] = useState('');
+  // N-5:外站连接状态(从 settings.export_targets 读;失败 = 全部未连接)
+  const [exportTargets, setExportTargets] = useState<ExportTargets>({});
+  // N-6:近 7 天单篇 analytics(loading=null,无数据=0/0/0)
+  const [stats, setStats] = useState<ArticleAnalytics | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
 
   const load = (): Promise<void> =>
     api.getNote(slug).then((r) => {
@@ -47,6 +53,43 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
 
   useEffect(() => {
     void load();
+  }, [slug]);
+
+  // N-5:拉一次 settings 拿 export_targets;失败保持 {}(全部未连接)
+  useEffect(() => {
+    let cancelled = false;
+    void api.settings
+      .get()
+      .then((s) => {
+        if (!cancelled) setExportTargets(s.export_targets ?? {});
+      })
+      .catch(() => {
+        /* 没拿到就当全部未连接,不打扰用户 */
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  // N-6:拉单篇 analytics(复用现成 endpoint;不带 range,后端默认 7d)
+  useEffect(() => {
+    let cancelled = false;
+    setStatsLoading(true);
+    setStats(null);
+    void api.analytics
+      .article(slug)
+      .then((d) => {
+        if (!cancelled) {
+          setStats(d);
+          setStatsLoading(false);
+        }
+      })
+      .catch(() => {
+        if (!cancelled) setStatsLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
   }, [slug]);
 
   if (!note) return <p role="status" aria-live="polite">载入中…</p>;
@@ -161,6 +204,19 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
       setPwModalOpen(false);
       setPwInput('');
       await load();
+    } catch (e) {
+      setToast({ msg: (e as Error).message, err: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const handleExport = async (platform: ExportPlatform): Promise<void> => {
+    setBusy(true);
+    try {
+      await api.exportToPlatform(slug, platform);
+      // 后端目前是 stub,统一展示「即将上线」
+      setToast({ msg: '导出功能即将上线' });
     } catch (e) {
       setToast({ msg: (e as Error).message, err: true });
     } finally {
@@ -427,6 +483,16 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
         </div>
       </div>
 
+      {/* N-5 + N-6:外站导出 + 7 天数据预览 */}
+      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 12, marginBottom: 16 }}>
+        <ExportPanel
+          targets={exportTargets}
+          busy={busy}
+          onExport={(p) => void handleExport(p)}
+        />
+        <InlineStatsCard slug={slug} loading={statsLoading} data={stats} />
+      </div>
+
       {/* metadata + backlinks */}
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
         <div class="ui-card" style={{ padding: 16 }}>
@@ -612,6 +678,212 @@ function toLocalInput(iso: string): string {
   } catch {
     return '';
   }
+}
+
+// =====================================================================
+// N-5 — 导出到外站 panel
+// =====================================================================
+
+interface PlatformMeta {
+  id: ExportPlatform;
+  label: string;
+  icon: HfIconName;
+  /** logo 颜色,跟着品牌走但不挑剔 */
+  color: string;
+}
+
+const EXPORT_PLATFORMS: PlatformMeta[] = [
+  { id: 'wechat', label: '微信公众号', icon: 'wechat', color: '#07C160' },
+  { id: 'zhihu', label: '知乎', icon: 'zhihu', color: '#0084FF' },
+  { id: 'csdn', label: 'CSDN', icon: 'csdn', color: '#C8232C' },
+  { id: 'twitter', label: 'Twitter / X', icon: 'twitter', color: 'var(--ink)' },
+];
+
+function isPlatformConnected(value: ExportPlatformValue | undefined): boolean {
+  if (value === undefined) return false;
+  if (typeof value === 'boolean') return value;
+  return value.enabled === true;
+}
+
+function ExportPanel({
+  targets,
+  busy,
+  onExport,
+}: {
+  targets: ExportTargets;
+  busy: boolean;
+  onExport: (platform: ExportPlatform) => void;
+}): JSX.Element {
+  return (
+    <div class="ui-card" style={{ padding: 16 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+        <HfIcon name="upload" size={14} color="var(--accent-2)" />
+        <span style={{ fontWeight: 600, fontSize: 13 }}>导出到外站</span>
+        <div class="hf-grow" />
+        <span class="hf-tiny hf-muted">未连接的平台请到「设置」配置</span>
+      </div>
+      <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+        {EXPORT_PLATFORMS.map((p) => {
+          const connected = isPlatformConnected(targets[p.id]);
+          return (
+            <li
+              key={p.id}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '8px 0',
+                borderTop: '1px solid var(--line)',
+              }}
+            >
+              <span
+                aria-hidden="true"
+                style={{
+                  width: 24,
+                  height: 24,
+                  borderRadius: 6,
+                  background: 'var(--bg-sunk)',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  flexShrink: 0,
+                }}
+              >
+                <HfIcon name={p.icon} size={14} color={p.color} />
+              </span>
+              <span class="hf-sm" style={{ fontWeight: 500, flex: 1 }}>
+                {p.label}
+              </span>
+              <span
+                class="hf-tiny"
+                style={{
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  background: connected ? 'var(--ok-soft, var(--accent-soft))' : 'var(--bg-sunk)',
+                  color: connected ? 'var(--ok)' : 'var(--ink-3)',
+                  border: '1px solid var(--line)',
+                  whiteSpace: 'nowrap',
+                }}
+                aria-label={`${p.label} 状态:${connected ? '已连接' : '未连接'}`}
+              >
+                {connected ? '已连接' : '未连接'}
+              </span>
+              <button
+                type="button"
+                class="ui-btn ui-btn--sm"
+                disabled={!connected || busy}
+                onClick={() => onExport(p.id)}
+                aria-label={`一键导出到 ${p.label}`}
+                title={connected ? '一键导出' : '该平台尚未连接'}
+              >
+                <HfIcon name="upload" size={11} /> 一键导出
+              </button>
+            </li>
+          );
+        })}
+      </ul>
+    </div>
+  );
+}
+
+// =====================================================================
+// N-6 — 单篇近 7 天 inline 统计卡
+// =====================================================================
+
+function InlineStatsCard({
+  slug,
+  loading,
+  data,
+}: {
+  slug: string;
+  loading: boolean;
+  data: ArticleAnalytics | null;
+}): JSX.Element {
+  const pv = data?.views ?? 0;
+  const uv = data?.unique_visitors ?? 0;
+  const dwell = data?.avg_dwell_seconds ?? 0;
+  const empty = !loading && data !== null && pv === 0 && uv === 0 && dwell === 0;
+  const analyticsHref = `#/notes/${encodeURIComponent(slug)}/analytics`;
+
+  return (
+    <div class="ui-card" style={{ padding: 16, display: 'flex', flexDirection: 'column' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+        <HfIcon name="chart" size={14} color="var(--accent)" />
+        <span style={{ fontWeight: 600, fontSize: 13 }}>近 7 天数据</span>
+      </div>
+      {loading ? (
+        <div
+          class="hf-tiny hf-muted"
+          aria-busy="true"
+          style={{ padding: '24px 0', textAlign: 'center' }}
+        >
+          载入中…
+        </div>
+      ) : empty ? (
+        <div
+          class="hf-tiny hf-muted"
+          style={{ padding: '24px 0', textAlign: 'center' }}
+        >
+          无数据
+        </div>
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, flex: 1 }}>
+          <MiniKpi label="PV" value={formatStatNum(pv)} />
+          <MiniKpi label="UV" value={formatStatNum(uv)} />
+          <MiniKpi label="平均停留" value={formatDwellShort(dwell)} />
+        </div>
+      )}
+      <div style={{ marginTop: 12, textAlign: 'right' }}>
+        <a
+          class="hf-tiny"
+          href={analyticsHref}
+          style={{ color: 'var(--accent)', textDecoration: 'none' }}
+          aria-label="查看完整数据"
+        >
+          查看全部 →
+        </a>
+      </div>
+    </div>
+  );
+}
+
+function MiniKpi({ label, value }: { label: string; value: string }): JSX.Element {
+  return (
+    <div
+      style={{
+        background: 'var(--bg-sunk)',
+        border: '1px solid var(--line)',
+        borderRadius: 6,
+        padding: '8px 10px',
+        textAlign: 'center',
+      }}
+    >
+      <div class="hf-mono hf-tiny hf-muted" style={{ marginBottom: 2 }}>{label}</div>
+      <div
+        class="hf-mono"
+        style={{ fontSize: 20, fontWeight: 700, lineHeight: 1, color: 'var(--ink)' }}
+        aria-label={`${label}: ${value}`}
+      >
+        {value}
+      </div>
+    </div>
+  );
+}
+
+function formatStatNum(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '0';
+  if (n >= 10_000) return `${(n / 1000).toFixed(0)}k`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.round(n));
+}
+
+function formatDwellShort(seconds: number): string {
+  const s = Math.max(0, Math.round(seconds));
+  if (s < 60) return `${s}s`;
+  const m = Math.floor(s / 60);
+  const rest = s - m * 60;
+  if (rest === 0) return `${m}m`;
+  return `${m}m${rest.toString().padStart(2, '0')}s`;
 }
 
 function timeAgoZh(iso: string): string {

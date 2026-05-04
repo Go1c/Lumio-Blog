@@ -6,7 +6,8 @@ export type HfIconName =
   | 'pin' | 'rss' | 'sun' | 'moon' | 'arrowR' | 'layers' | 'bell' | 'dots'
   | 'copy' | 'book' | 'note' | 'home' | 'settings' | 'flame' | 'activity'
   | 'lock' | 'unlock' | 'image' | 'mail' | 'webhook' | 'download' | 'upload'
-  | 'comment' | 'graph' | 'users' | 'database';
+  | 'comment' | 'graph' | 'users' | 'database'
+  | 'wechat' | 'zhihu' | 'csdn' | 'twitter';
 
 export interface HfIconProps extends Omit<JSX.SVGAttributes<SVGSVGElement>, 'name' | 'width' | 'height'> {
   name: HfIconName;
@@ -64,6 +65,29 @@ const PATHS: Record<HfIconName, JSX.Element[]> = {
   graph:   [<circle cx="4" cy="12" r="2" />, <circle cx="12" cy="4" r="2" />, <circle cx="12" cy="12" r="2" />, <path d="M5 11 L11 5 M6 12 H10" />],
   users:   [<circle cx="6" cy="6" r="2.5" />, <circle cx="12" cy="6" r="2" />, <path d="M2 14 Q2 10, 6 10 Q10 10, 10 14 M11 14 Q11 11, 14 11" />],
   database:[<ellipse cx="8" cy="4" rx="5" ry="2" />, <path d="M3 4 V8 Q3 10, 8 10 Q13 10, 13 8 V4 M3 8 V12 Q3 14, 8 14 Q13 14, 13 12 V8" />],
+  // 平台 logo — 单色简化 SVG,够辨识即可。
+  wechat:  [
+    <path d="M6 3 Q2 3, 2 6.5 Q2 8.5, 4 9.5 L3.5 11 L5.5 10 Q6 10.1, 6.5 10.1" />,
+    <circle cx="4.7" cy="6" r=".7" fill="currentColor" stroke="none" />,
+    <circle cx="7.3" cy="6" r=".7" fill="currentColor" stroke="none" />,
+    <path d="M10.5 6.5 Q14.5 6.5, 14.5 10 Q14.5 12, 12.5 13 L13 14.5 L11 13.5 Q10.5 13.6, 10 13.6 Q6 13.6, 6 10 Q6 6.5, 10.5 6.5 Z" />,
+    <circle cx="9.2" cy="9.7" r=".6" fill="currentColor" stroke="none" />,
+    <circle cx="11.5" cy="9.7" r=".6" fill="currentColor" stroke="none" />,
+  ],
+  zhihu:   [
+    // 知 — 字形化简
+    <path d="M2 4 H7 M4.5 4 V13 M2.5 8 H6.5 M3 13 L4.5 11 L6 13" />,
+    <path d="M9 4 H14 V13 H11.5 L9.5 14.5 V13 H9 Z M9 7 H14 M9 10 H14" />,
+  ],
+  csdn:    [
+    // C 圈 + 短横,致敬 csdn 的 C 形
+    <path d="M13 5 Q11 3, 8 3 Q3 3, 3 8 Q3 13, 8 13 Q11 13, 13 11" />,
+    <path d="M6 8 H10" />,
+  ],
+  twitter: [
+    // X (Twitter)
+    <path d="M3 3 L13 13 M13 3 L3 13" />,
+  ],
 };
 
 export function HfIcon({
