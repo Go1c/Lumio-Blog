@@ -152,6 +152,14 @@ export interface WebhookDelivery {
   next_attempt_at: string | null;
 }
 
+export interface VaultAttachment {
+  rel_path: string;
+  filename: string;
+  bytes: number;
+  mime: string;
+  modified_at: string;
+}
+
 export interface MediaItem {
   id: string;
   filename: string;
@@ -303,10 +311,21 @@ export const api = {
       }),
     );
   },
-  async rotateShortLink(slug: string): Promise<void> {
-    await jsonOrThrow(
-      await req(`/api/admin/notes/${encodeURIComponent(slug)}/short-link`, { method: 'POST' }),
+  /** 生成短链(若已存在则原样返回);用 rotate=true 强制旋转。返回 short_id。 */
+  async createShortLink(
+    slug: string,
+    opts: { rotate?: boolean } = {},
+  ): Promise<{ short_id: string; rotated: boolean }> {
+    return jsonOrThrow(
+      await req(`/api/admin/notes/${encodeURIComponent(slug)}/short-link`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ rotate: !!opts.rotate }),
+      }),
     );
+  },
+  async rotateShortLink(slug: string): Promise<{ short_id: string; rotated: boolean }> {
+    return this.createShortLink(slug, { rotate: true });
   },
   async idleShortLinks(days = 30): Promise<IdleShortLinksResponse> {
     return jsonOrThrow(await req(`/api/admin/short-links/idle?days=${days}`));
@@ -451,6 +470,13 @@ export const api = {
     },
     async refs(id: string): Promise<{ refs: MediaReference[] }> {
       return jsonOrThrow(await req(`/api/admin/media/${encodeURIComponent(id)}/refs`));
+    },
+    async vault(): Promise<{
+      enabled: boolean;
+      vault: string | null;
+      items: VaultAttachment[];
+    }> {
+      return jsonOrThrow(await req('/api/admin/media/vault'));
     },
   },
 

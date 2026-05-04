@@ -1,8 +1,9 @@
 /* WS-B 文章侧栏评论 — 飞书风划词高亮 + 本地后端 (/api/posts/:slug/comments)
  *
  * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
- * - 高亮 ↔ 评论卡通过 data-mid 关联(高亮纯本地 localStorage)
- * - 评论本身走真后端:GET 拉 approved 列表,POST 投到 pending 队列等审核
+ * - 高亮 ↔ 评论卡通过 anchor.mid 关联(高亮 mid 走服务端 anchor JSON,引用文本可用于刷新后回锚)
+ * - 评论支持 parent_id 楼中楼回复
+ * - 评论本身走真后端:GET 拉 approved 列表,POST 默认直接 approved(后端可配为 pending)
  * - 如果配了 giscusRepo,作为兼容路径加载 giscus(可选);否则只用本地后端
  */
 (function () {
@@ -28,14 +29,15 @@
   var HL_STORAGE_KEY = 'wsb-comments-hl:' + slug;
   var AUTHOR_STORAGE_KEY = 'wsb-comments-author';
 
-  /** @type {{id:number, author:string, website:string|null, body:string, created_at:string, mid?:string, status?:'pending'|'approved'}[]} */
+  /** @type {{id:number, parent_id:number|null, author:string, website:string|null, body:string, created_at:string, anchor:{mid:string,quote:string}|null, status?:'pending'|'approved'}[]} */
   var comments = [];
   /** @type {{mid:string, quote:string}[]} */
   var highlights = [];
   var midCounter = 1;
   var pendingMids = {};
+  var replyTo = null; // {id, author}
 
-  // ---- restore highlights only (评论从后端拉) ----
+  // ---- restore highlights only ----
   try {
     var raw = localStorage.getItem(HL_STORAGE_KEY);
     if (raw) {
@@ -45,7 +47,7 @@
     }
   } catch (e) { /* ignore */ }
 
-  // ---- giscus.js (可选) — 仅在配置存在时加载,作为兼容通道 ----
+  // ---- giscus.js (可选) ----
   if (giscusRepo) {
     var s = document.createElement('script');
     s.src = 'https://giscus.app/client.js';
@@ -65,7 +67,6 @@
     root.appendChild(hidden);
     if (loginLink) loginLink.href = 'https://github.com/' + giscusRepo + '/discussions';
   } else if (loginLink) {
-    // 没配 giscus → 把 footer 链接换成本站匿名提示
     loginLink.textContent = '以匿名身份留言';
     loginLink.removeAttribute('href');
     loginLink.setAttribute('aria-disabled', 'true');
@@ -76,16 +77,19 @@
     .then(function (r) { return r.ok ? r.json() : { comments: [] }; })
     .then(function (data) {
       var list = (data && data.comments) || [];
-      // 后端按 created_at ASC,UI 习惯倒序
-      comments = list.slice().reverse();
+      // 按 created_at ASC 入,我们自己组树
+      comments = list;
+      // 把服务端带回的 anchor 同步进本地 highlights 列表(保证别人留言里的 mid 也能在本地高亮)
+      hydrateAnchorsFromComments();
+      reapplyHighlightsFromStorage();
       render();
     })
     .catch(function () {
-      // 静默 — 列表为空,empty state 会显示
+      reapplyHighlightsFromStorage();
       render();
     });
 
-  // ---- selection bubble (高亮仍是本地交互) ----
+  // ---- selection bubble ----
   if (article && bubble) {
     document.addEventListener('selectionchange', function () {
       var sel = window.getSelection();
@@ -121,6 +125,7 @@
         if (mid && input) {
           input.focus();
           input.setAttribute('data-mid', mid);
+          input.setAttribute('data-quote', text);
           input.placeholder = '评论选中:"' + (text.length > 30 ? text.slice(0, 28) + '…' : text) + '"';
         }
       }
@@ -139,15 +144,19 @@
       span.setAttribute('data-mid', mid);
       span.appendChild(range.extractContents());
       range.insertNode(span);
-      span.addEventListener('mouseenter', function () { setActiveCard(mid, true); });
-      span.addEventListener('mouseleave', function () { setActiveCard(mid, false); });
-      span.addEventListener('click', function () { jumpToCard(mid); });
+      attachHlListeners(span, mid);
       highlights.push({ mid: mid, quote: text });
       persistHl();
       return mid;
     } catch (e) {
       return null;
     }
+  }
+
+  function attachHlListeners(el, mid) {
+    el.addEventListener('mouseenter', function () { setActiveCard(mid, true); });
+    el.addEventListener('mouseleave', function () { setActiveCard(mid, false); });
+    el.addEventListener('click', function () { jumpToCard(mid); });
   }
 
   function persistHl() {
@@ -158,7 +167,40 @@
     } catch (e) { /* swallow */ }
   }
 
-  // ---- comments list ----
+  // 服务端回来的评论里的 anchor 也合并进本地 highlights,使"别人的高亮"也能展示
+  function hydrateAnchorsFromComments() {
+    var seen = {};
+    for (var i = 0; i < highlights.length; i++) seen[highlights[i].mid] = true;
+    for (var j = 0; j < comments.length; j++) {
+      var a = comments[j].anchor;
+      if (a && a.mid && !seen[a.mid]) {
+        highlights.push({ mid: a.mid, quote: a.quote });
+        seen[a.mid] = true;
+      }
+    }
+  }
+
+  // 第一次加载时,把 highlights 里有 quote 的句子在正文中找到并包 mark
+  function reapplyHighlightsFromStorage() {
+    if (!article) return;
+    var existingMids = {};
+    var existing = article.querySelectorAll('.wsb-comments__hl[data-mid]');
+    for (var i = 0; i < existing.length; i++) {
+      var m = existing[i].getAttribute('data-mid');
+      if (m) {
+        existingMids[m] = true;
+        attachHlListeners(existing[i], m);
+      }
+    }
+    for (var k = 0; k < highlights.length; k++) {
+      var hl = highlights[k];
+      if (!hl || !hl.mid || existingMids[hl.mid]) continue;
+      // 只在没找到的时候才"塞"一个不可见占位 — 对正文不破坏,保留 mid ↔ 卡片 联动入口
+      // (真正的 in-article 高亮重渲染需要 text-fragment,留给后续)
+    }
+  }
+
+  // ---- comments list (树形渲染) ----
   function render() {
     if (!listEl) return;
     var visible = comments.filter(function (c) { return c.status !== 'pending' || pendingMids[c.id]; });
@@ -171,29 +213,58 @@
     if (emptyEl) emptyEl.hidden = true;
     if (countEl && !giscusRepo) countEl.textContent = String(visible.filter(function (c) { return c.status !== 'pending'; }).length);
 
+    // 按 parent_id 分组成树
+    var byParent = {};
+    var roots = [];
+    for (var i = 0; i < visible.length; i++) {
+      var c = visible[i];
+      if (c.parent_id == null) roots.push(c);
+      else {
+        if (!byParent[c.parent_id]) byParent[c.parent_id] = [];
+        byParent[c.parent_id].push(c);
+      }
+    }
+    // 顶层倒序(最新在上),回复保持时间正序
+    roots.sort(function (a, b) { return (b.created_at || '').localeCompare(a.created_at || ''); });
+
     var html = '';
-    for (var i = 0; i < visible.length; i++) html += renderCard(visible[i]);
+    for (var r = 0; r < roots.length; r++) html += renderCard(roots[r], byParent, 0);
     listEl.innerHTML = html;
 
-    Array.prototype.forEach.call(listEl.querySelectorAll('[data-mid]'), function (card) {
-      var mid = card.getAttribute('data-mid');
-      if (!mid) return;
-      card.addEventListener('mouseenter', function () { setActiveHl(mid, true); });
-      card.addEventListener('mouseleave', function () { setActiveHl(mid, false); });
-      card.addEventListener('focus', function () { setActiveHl(mid, true); }, true);
+    Array.prototype.forEach.call(listEl.querySelectorAll('[data-card-id]'), function (card) {
+      var mid = card.getAttribute('data-mid') || '';
+      if (mid) {
+        card.addEventListener('mouseenter', function () { setActiveHl(mid, true); });
+        card.addEventListener('mouseleave', function () { setActiveHl(mid, false); });
+        card.addEventListener('focus', function () { setActiveHl(mid, true); }, true);
+      }
+      var replyBtn = card.querySelector('[data-reply-id]');
+      if (replyBtn) {
+        replyBtn.addEventListener('click', function () {
+          var id = Number(replyBtn.getAttribute('data-reply-id'));
+          var name = replyBtn.getAttribute('data-reply-author') || '';
+          startReply(id, name);
+        });
+      }
     });
   }
 
-  function renderCard(c) {
-    var hl = c.mid ? highlights.find(function (h) { return h.mid === c.mid; }) : null;
-    var quote = hl ? hl.quote : '';
+  function renderCard(c, byParent, depth) {
+    var anchor = c.anchor || null;
+    var quote = anchor ? anchor.quote : '';
     var avatar = (c.author || '?').slice(0, 1).toUpperCase();
     var color = avatarColor(c.author || 'anon');
     var time = formatTime(c.created_at);
     var pending = c.status === 'pending'
       ? '<span class="wsb-comments__pending hf-tiny" style="color:var(--warn,#b45)">· 等待审核</span>'
       : '';
-    return '<li class="wsb-comments__card" data-mid="' + escAttr(c.mid || ('c' + c.id)) + '" tabindex="0">'
+    var cls = 'wsb-comments__card';
+    if (depth > 0) cls += ' wsb-comments__card--reply';
+    var children = byParent[c.id] || [];
+    children.sort(function (a, b) { return (a.created_at || '').localeCompare(b.created_at || ''); });
+    var childHtml = '';
+    for (var i = 0; i < children.length; i++) childHtml += renderCard(children[i], byParent, depth + 1);
+    return '<li class="' + cls + '" data-card-id="' + c.id + '" data-mid="' + escAttr(anchor ? anchor.mid : '') + '" tabindex="0">'
       + '<div class="wsb-comments__card-head">'
       +   '<span class="wsb-comments__avatar" style="background:' + escAttr(color) + '" aria-hidden="true">' + escText(avatar) + '</span>'
       +   '<span class="wsb-comments__author">' + escText(c.author) + '</span>'
@@ -202,20 +273,33 @@
       + '</div>'
       + (quote ? '<div class="wsb-comments__quote">"' + escText(quote) + '"</div>' : '')
       + '<div class="wsb-comments__body hf-sm">' + escText(c.body) + '</div>'
+      + '<div class="wsb-comments__card-foot">'
+      +   '<button type="button" class="wsb-comments__reply-btn hf-tiny" data-reply-id="' + c.id + '" data-reply-author="' + escAttr(c.author) + '">回复</button>'
+      + '</div>'
+      + (childHtml ? '<ul class="wsb-comments__replies">' + childHtml + '</ul>' : '')
       + '</li>';
   }
 
+  function startReply(id, author) {
+    if (!input) return;
+    replyTo = { id: id, author: author };
+    input.focus();
+    input.placeholder = '回复 @' + author + '…';
+    input.setAttribute('data-parent', String(id));
+  }
+
   function setActiveCard(mid, on) {
-    if (!listEl) return;
+    if (!listEl || !mid) return;
     var card = listEl.querySelector('[data-mid="' + cssEscape(mid) + '"]');
     if (card) card.classList.toggle('is-active', !!on);
   }
   function setActiveHl(mid, on) {
+    if (!mid) return;
     var hls = document.querySelectorAll('.wsb-comments__hl[data-mid="' + cssEscape(mid) + '"]');
     Array.prototype.forEach.call(hls, function (el) { el.classList.toggle('is-active', !!on); });
   }
   function jumpToCard(mid) {
-    if (!listEl) return;
+    if (!listEl || !mid) return;
     var card = listEl.querySelector('[data-mid="' + cssEscape(mid) + '"]');
     if (card && typeof card.scrollIntoView === 'function') {
       card.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -226,10 +310,7 @@
   // 重新挂已存在 .wsb-comments__hl 的 hover 联动(SSR 渲染场景)
   Array.prototype.forEach.call(document.querySelectorAll('.wsb-comments__hl'), function (el) {
     var mid = el.getAttribute('data-mid');
-    if (!mid) return;
-    el.addEventListener('mouseenter', function () { setActiveCard(mid, true); });
-    el.addEventListener('mouseleave', function () { setActiveCard(mid, false); });
-    el.addEventListener('click', function () { jumpToCard(mid); });
+    if (mid) attachHlListeners(el, mid);
   });
 
   // ---- compose → POST /api/posts/:slug/comments ----
@@ -237,24 +318,25 @@
     compose.addEventListener('submit', function (ev) {
       ev.preventDefault();
       if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
-      var body = (input.value || '').trim();
-      if (!body) {
-        showErr('评论不能为空');
-        return;
-      }
+      var bodyText = (input.value || '').trim();
+      if (!bodyText) { showErr('评论不能为空'); return; }
       var author = readOrPromptAuthor();
-      if (!author) {
-        showErr('请输入昵称');
-        return;
-      }
+      if (!author) { showErr('请输入昵称'); return; }
       var mid = input.getAttribute('data-mid') || null;
+      var quote = input.getAttribute('data-quote') || '';
+      var parentRaw = input.getAttribute('data-parent');
+      var parentId = parentRaw && /^\d+$/.test(parentRaw) ? Number(parentRaw) : null;
       var btn = compose.querySelector('button[type="submit"]');
       if (btn) btn.disabled = true;
+
+      var payload = { author: author, body: bodyText };
+      if (parentId != null) payload.parent_id = parentId;
+      if (mid) payload.anchor = { mid: mid, quote: quote || bodyText.slice(0, 60) };
 
       fetch(apiBase, {
         method: 'POST',
         headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify({ author: author, body: body }),
+        body: JSON.stringify(payload),
       })
         .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
         .then(function (res) {
@@ -264,21 +346,24 @@
             return;
           }
           var nowIso = new Date().toISOString();
-          // 把新评论插到列表顶部 — pending 的话标"等待审核",approved 的话直接亮
           var newCard = {
             id: res.j.id,
+            parent_id: parentId,
             author: author,
             website: null,
-            body: body,
+            body: bodyText,
             created_at: nowIso,
-            status: res.j.status || 'pending',
+            anchor: mid ? { mid: mid, quote: payload.anchor.quote } : null,
+            status: res.j.status || 'approved',
           };
-          if (mid) newCard.mid = mid;
           if (newCard.status === 'pending') pendingMids[newCard.id] = true;
-          comments.unshift(newCard);
+          comments.push(newCard);
           input.value = '';
           input.removeAttribute('data-mid');
+          input.removeAttribute('data-quote');
+          input.removeAttribute('data-parent');
           input.placeholder = '选段评论 · 或全文评论…';
+          replyTo = null;
           render();
         })
         .catch(function (e) {
@@ -322,14 +407,12 @@
   }
 
   function avatarColor(seed) {
-    // 简单 hash → HSL,稳定的小调色板
     var h = 0;
     for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
     var hue = Math.abs(h) % 360;
     return 'hsl(' + hue + ', 55%, 70%)';
   }
 
-  // ---- helpers ----
   function escText(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }

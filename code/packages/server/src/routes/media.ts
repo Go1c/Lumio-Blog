@@ -1,5 +1,6 @@
 import { createHash } from 'node:crypto';
-import { extname } from 'node:path';
+import { extname, join, relative, sep } from 'node:path';
+import { readdir, stat } from 'node:fs/promises';
 import { Hono, type Context, type MiddlewareHandler, type Next } from 'hono';
 import type { Database } from 'better-sqlite3';
 import { MediaRepo } from '@opennote/db';
@@ -14,6 +15,8 @@ export interface MediaDeps {
   db: Database;
   store: MediaStore;
   bus: EventBus;
+  /** vault 根目录(FNS 同步进来的笔记 + 附件都在这下面);设了才暴露 /vault 扫描端点 */
+  vaultDir?: string;
 }
 
 /**
@@ -137,8 +140,70 @@ export function register(app: Hono, deps: MediaDeps): MediaRepo {
     return c.json({ refs: repo.listRefs(id) });
   });
 
+  // FNS / vault 附件扫描 — 列出 vaultDir 里所有非 .md 文件
+  // 这就是 "媒体库链接 FNS 附件库" 的来源:vaultDir 是 FNS 推同步进来的根目录
+  r.get('/vault', async (c) => {
+    if (!deps.vaultDir) {
+      return c.json({ enabled: false, vault: null, items: [] });
+    }
+    try {
+      const items = await scanVaultAttachments(deps.vaultDir, 2000);
+      return c.json({
+        enabled: true,
+        vault: deps.vaultDir,
+        items,
+      });
+    } catch (e) {
+      return c.json({ error: { code: 'scan_failed', message: (e as Error).message } }, 500);
+    }
+  });
+
   app.route('/api/admin/media', r);
   return repo;
+}
+
+interface VaultAttachment {
+  rel_path: string;
+  filename: string;
+  bytes: number;
+  mime: string;
+  modified_at: string;
+}
+
+async function scanVaultAttachments(root: string, max: number): Promise<VaultAttachment[]> {
+  const out: VaultAttachment[] = [];
+  async function walk(dir: string): Promise<void> {
+    if (out.length >= max) return;
+    let entries;
+    try {
+      entries = await readdir(dir, { withFileTypes: true });
+    } catch {
+      return;
+    }
+    for (const e of entries) {
+      if (out.length >= max) return;
+      if (e.name.startsWith('.')) continue;
+      const full = join(dir, e.name);
+      if (e.isDirectory()) {
+        await walk(full);
+      } else if (e.isFile()) {
+        // 跳过 .md(那是笔记本身)
+        if (e.name.toLowerCase().endsWith('.md')) continue;
+        const st = await stat(full).catch(() => null);
+        if (!st) continue;
+        out.push({
+          rel_path: relative(root, full).split(sep).join('/'),
+          filename: e.name,
+          bytes: st.size,
+          mime: guessMime(extname(e.name).slice(1)),
+          modified_at: st.mtime.toISOString(),
+        });
+      }
+    }
+  }
+  await walk(root);
+  out.sort((a, b) => b.modified_at.localeCompare(a.modified_at));
+  return out;
 }
 
 /** 注册 LocalMediaStore 的静态文件读出路由(在 prefix 下) */

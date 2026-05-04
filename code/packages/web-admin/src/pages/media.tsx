@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
 import { Button, Tag } from '@opennote/ui';
-import { api, type MediaItem, type MediaReference } from '../api.js';
+import { api, type MediaItem, type MediaReference, type VaultAttachment } from '../api.js';
 import { Uploader } from '../components/uploader.js';
 
 type ViewMode = 'grid' | 'list';
+type SourceTab = 'media' | 'vault';
 
 export function MediaPage(): JSX.Element {
   const [items, setItems] = useState<MediaItem[] | null>(null);
@@ -17,6 +18,12 @@ export function MediaPage(): JSX.Element {
   const [activeRefs, setActiveRefs] = useState<MediaReference[] | null>(null);
   const [busy, setBusy] = useState(false);
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null);
+  const [tab, setTab] = useState<SourceTab>('media');
+  const [vault, setVault] = useState<{
+    enabled: boolean;
+    vault: string | null;
+    items: VaultAttachment[];
+  } | null>(null);
 
   const load = async () => {
     setBusy(true);
@@ -46,6 +53,14 @@ export function MediaPage(): JSX.Element {
   };
 
   useEffect(() => { void load(); }, []);
+
+  useEffect(() => {
+    if (tab !== 'vault' || vault) return;
+    api.media
+      .vault()
+      .then(setVault)
+      .catch((e: Error) => setToast({ msg: e.message, err: true }));
+  }, [tab, vault]);
 
   // 详情侧栏 — 拉引用
   useEffect(() => {
@@ -139,11 +154,32 @@ export function MediaPage(): JSX.Element {
 
   return (
     <div>
-      <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+      <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
         <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>媒体库</h2>
-        <Tag>{items.length} 个文件</Tag>
-        <Tag>{formatBytes(totalBytes)}</Tag>
-        <Tag tone="ok">引用 {totalRefs}</Tag>
+        <div role="tablist" aria-label="来源" style={{ display: 'inline-flex', gap: 4 }}>
+          <Button
+            size="sm"
+            variant={tab === 'media' ? 'primary' : 'default'}
+            onClick={() => setTab('media')}
+            aria-pressed={tab === 'media'}
+          >
+            上传
+          </Button>
+          <Button
+            size="sm"
+            variant={tab === 'vault' ? 'primary' : 'default'}
+            onClick={() => setTab('vault')}
+            aria-pressed={tab === 'vault'}
+          >
+            FNS / Vault 附件
+          </Button>
+        </div>
+        {tab === 'media' && <Tag>{items.length} 个文件</Tag>}
+        {tab === 'media' && <Tag>{formatBytes(totalBytes)}</Tag>}
+        {tab === 'media' && <Tag tone="ok">引用 {totalRefs}</Tag>}
+        {tab === 'vault' && vault && (
+          <Tag>{vault.items.length} 个附件</Tag>
+        )}
         <div class="hf-grow" />
         <input
           type="search"
@@ -163,14 +199,20 @@ export function MediaPage(): JSX.Element {
         </div>
       </header>
 
-      {/* 顶部上传区 */}
-      <Uploader
-        accept="image/*,video/*,audio/*,.pdf,.svg,.webp"
-        onUploaded={onUploaded}
-        pageOverlay={true}
-        label="拖入或点击上传到媒体库"
-      />
+      {tab === 'vault' && (
+        <VaultPanel data={vault} onReload={() => { setVault(null); }} />
+      )}
 
+      {tab === 'media' && (
+        <Uploader
+          accept="image/*,video/*,audio/*,.pdf,.svg,.webp"
+          onUploaded={onUploaded}
+          pageOverlay={true}
+          label="拖入或点击上传到媒体库"
+        />
+      )}
+
+      {tab === 'media' && (
       <div style={{ display: 'grid', gridTemplateColumns: activeId ? '1fr 360px' : '1fr', gap: 16, marginTop: 18 }}>
         <section aria-label="媒体列表">
           {view === 'grid' ? (
@@ -275,9 +317,10 @@ export function MediaPage(): JSX.Element {
           />
         )}
       </div>
+      )}
 
       {/* 底部批量操作栏 */}
-      {selected.size > 0 && (
+      {tab === 'media' && selected.size > 0 && (
         <div
           role="region"
           aria-label="批量操作"
@@ -606,4 +649,71 @@ function parseFromName(item: MediaItem): [string, string][] {
   const dim = item.filename.match(/(\d{2,5})x(\d{2,5})/);
   if (dim) out.push(['尺寸', `${dim[1]} × ${dim[2]} px`]);
   return out;
+}
+
+// ---- VaultPanel ---------------------------------------------------------
+// "媒体库链接 FNS 附件库" — vaultDir 是 FNS 同步进来的笔记 + 附件根。
+// 这里只读地列出 vaultDir 下的非 .md 文件。
+function VaultPanel({
+  data,
+  onReload,
+}: {
+  data: { enabled: boolean; vault: string | null; items: VaultAttachment[] } | null;
+  onReload: () => void;
+}): JSX.Element {
+  if (!data) {
+    return <p role="status" aria-live="polite" style={{ padding: '24px 0' }}>扫描中…</p>;
+  }
+  if (!data.enabled) {
+    return (
+      <div class="ui-card" style={{ padding: 18, marginTop: 8 }}>
+        <h3 style={{ margin: '0 0 6px', fontSize: 14, fontWeight: 700 }}>未启用 Vault 扫描</h3>
+        <p class="hf-tiny hf-muted" style={{ margin: 0, lineHeight: 1.6 }}>
+          后端没拿到 vaultDir(通常是因为 OPENNOTE_CONFIG / paths.vault 没配)。FNS 同步来的笔记 + 附件应该写到这个目录。
+          配上之后,这里会列出所有同步进来的非 .md 文件。
+        </p>
+      </div>
+    );
+  }
+  return (
+    <section aria-label="Vault 附件" style={{ marginTop: 8 }}>
+      <p class="hf-tiny hf-muted" style={{ margin: '0 0 12px' }}>
+        来源:<code>{data.vault}</code> · 共 {data.items.length} 个附件 ·{' '}
+        <button
+          type="button"
+          class="ui-btn ui-btn--sm ui-btn--ghost"
+          onClick={onReload}
+          style={{ minHeight: 24, padding: '2px 8px' }}
+        >
+          刷新
+        </button>
+      </p>
+      {data.items.length === 0 ? (
+        <p class="hf-muted" style={{ padding: '24px 0' }}>vault 里还没有附件。</p>
+      ) : (
+        <table aria-label="Vault 附件列表" style={{ fontSize: 13, width: '100%' }}>
+          <thead>
+            <tr>
+              <th scope="col" style={{ textAlign: 'left' }}>路径</th>
+              <th scope="col" style={{ textAlign: 'left', width: 110 }}>类型</th>
+              <th scope="col" style={{ textAlign: 'right', width: 90 }}>大小</th>
+              <th scope="col" style={{ textAlign: 'right', width: 150 }}>修改时间</th>
+            </tr>
+          </thead>
+          <tbody>
+            {data.items.map((it) => (
+              <tr key={it.rel_path}>
+                <td style={{ wordBreak: 'break-all' }}>{it.rel_path}</td>
+                <td class="hf-mono hf-tiny">{it.mime}</td>
+                <td class="hf-mono hf-tiny" style={{ textAlign: 'right' }}>{formatBytes(it.bytes)}</td>
+                <td class="hf-mono hf-tiny hf-muted" style={{ textAlign: 'right' }}>
+                  {it.modified_at.slice(0, 16).replace('T', ' ')}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </section>
+  );
 }

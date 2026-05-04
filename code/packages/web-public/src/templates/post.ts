@@ -70,7 +70,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
 
   const avatarChar = (author.name || 'L').charAt(0).toUpperCase();
 
-  // 阅读进度条 — JS 计算
+  // 阅读进度条 + analytics view ping
   const progressScript = `<script>
     (function(){
       var bar = document.getElementById('wsa-progress-bar');
@@ -88,11 +88,41 @@ export function renderPost(data: PostData, config: SiteConfig): string {
       update();
     })();
     (function(){
-      // 复制链接
-      var btn = document.getElementById('wsa-act-link');
-      if (btn) btn.addEventListener('click', function(){
-        try { navigator.clipboard.writeText(location.href); btn.setAttribute('aria-label','已复制链接'); }
-        catch(e) {}
+      // analytics: 上报 view + 离开时 dwell/scroll
+      var slug = ${JSON.stringify(note.slug)};
+      var startMs = Date.now();
+      var maxScrollPct = 0;
+      function snapshot(){
+        var doc = document.documentElement;
+        var h = doc.scrollHeight - doc.clientHeight;
+        if (h > 0) {
+          var pct = Math.round(Math.max(0, Math.min(100, (window.scrollY / h) * 100)));
+          if (pct > maxScrollPct) maxScrollPct = pct;
+        }
+      }
+      window.addEventListener('scroll', snapshot, { passive: true });
+      function send(payload){
+        try {
+          if (navigator.sendBeacon) {
+            var blob = new Blob([JSON.stringify(payload)], { type: 'application/json' });
+            navigator.sendBeacon('/api/track', blob);
+            return;
+          }
+        } catch (e) {}
+        try {
+          fetch('/api/track', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(payload), keepalive: true }).catch(function(){});
+        } catch (e) {}
+      }
+      send({ slug: slug, event: 'view', meta: { referrer: document.referrer || '' } });
+      function flushDwell(){
+        var dwell = Math.max(0, Math.round((Date.now() - startMs) / 1000));
+        snapshot();
+        send({ slug: slug, event: 'dwell', meta: { dwell_seconds: dwell, scroll_pct: maxScrollPct } });
+      }
+      window.addEventListener('pagehide', flushDwell);
+      window.addEventListener('beforeunload', flushDwell);
+      document.addEventListener('visibilitychange', function(){
+        if (document.visibilityState === 'hidden') flushDwell();
       });
     })();
   </script>`;
@@ -121,12 +151,6 @@ export function renderPost(data: PostData, config: SiteConfig): string {
           }
           ${minigraphHtml}
 
-          <div class="wsa-actbar" role="toolbar" aria-label="文章操作">
-            <button type="button" class="ui-btn ui-btn--icon" aria-label="收藏" id="wsa-act-fav"><span aria-hidden="true">★</span></button>
-            <button type="button" class="ui-btn ui-btn--icon" aria-label="复制链接" id="wsa-act-link"><span aria-hidden="true">🔗</span></button>
-            <button type="button" class="ui-btn ui-btn--icon" aria-label="分享" id="wsa-act-share"><span aria-hidden="true">↗</span></button>
-            <button type="button" class="ui-btn ui-btn--icon" aria-label="更多操作" aria-haspopup="menu"><span aria-hidden="true">⋯</span></button>
-          </div>
         </aside>
 
         <!-- MIDDLE — article body -->

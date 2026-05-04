@@ -9,6 +9,8 @@ import { AuditLog } from '../audit.js';
 export interface CommentsDeps {
   db: Database;
   ipSalt?: string;
+  /** 新评论入库时的默认状态。不传 = 'approved'(无需审核直接公开)。 */
+  defaultStatus?: CommentStatus;
 }
 
 const VALID_STATUS: CommentStatus[] = ['pending', 'approved', 'rejected', 'spam'];
@@ -48,7 +50,14 @@ export function register(app: Hono, deps: CommentsDeps): void {
       return c.json({ error: { code: 'rate_limited' } }, 429);
     }
     const body = (await c.req.json().catch(() => null)) as
-      | { author?: string; email?: string; website?: string; body?: string }
+      | {
+          author?: string;
+          email?: string;
+          website?: string;
+          body?: string;
+          parent_id?: number | null;
+          anchor?: { mid?: string; quote?: string } | null;
+        }
       | null;
     if (!body) return c.json({ error: { code: 'validation_failed' } }, 400);
 
@@ -62,14 +71,34 @@ export function register(app: Hono, deps: CommentsDeps): void {
     }
     const website = body.website?.trim().slice(0, MAX_WEBSITE);
 
+    // parent_id:必须是同一篇下已存在的 approved 评论 id,否则忽略
+    let parentId: number | null = null;
+    if (typeof body.parent_id === 'number' && Number.isFinite(body.parent_id)) {
+      const parent = repo.getById(body.parent_id);
+      if (parent && parent.slug === slug && parent.status === 'approved') {
+        parentId = parent.id;
+      }
+    }
+
+    // anchor:可选 {mid,quote},mid/quote 都是字符串才接受
+    let anchor: { mid: string; quote: string } | null = null;
+    if (body.anchor && typeof body.anchor.mid === 'string' && typeof body.anchor.quote === 'string') {
+      const mid = body.anchor.mid.trim().slice(0, 64);
+      const quote = body.anchor.quote.trim().slice(0, 500);
+      if (mid && quote) anchor = { mid, quote };
+    }
+
     const row = repo.insert({
       slug,
       author,
       email: email || null,
       website: website || null,
       body: text,
+      parent_id: parentId,
+      anchor,
       ip_hash: hashIp(ip, salt),
       ua: c.req.header('user-agent')?.slice(0, 256) ?? null,
+      status: deps.defaultStatus ?? 'approved',
     });
     return c.json({ ok: true, id: row.id, status: row.status });
   });

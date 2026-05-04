@@ -36,6 +36,7 @@ interface NavItem {
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: '首页', href: '/' },
   { id: 'tags', label: '标签', href: '/tags/index.html' },
+  { id: 'search', label: '搜索', href: '/search/index.html' },
 ];
 
 /**
@@ -79,6 +80,9 @@ export function publicLayout(o: PublicLayoutOpts): string {
       ${NAV_ITEMS.map((it) => `<li><a class="ui-public__nav-link" href="${it.href}"${o.active === it.id ? ' aria-current="page"' : ''}>${it.label}</a></li>`).join('\n      ')}
     </ul>
     <div class="hf-grow"></div>
+    <a href="/search/index.html" class="ui-btn ui-btn--icon" aria-label="全站搜索">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+    </a>
     <button type="button" class="ui-btn ui-btn--icon" id="ui-theme-toggle" aria-label="切换主题">
       <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><path d="M8 1 V3 M8 13 V15 M1 8 H3 M13 8 H15 M3 3 L4.5 4.5 M11.5 11.5 L13 13 M3 13 L4.5 11.5 M11.5 4.5 L13 3"></path></svg>
     </button>

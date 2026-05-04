@@ -106,12 +106,25 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
     }
   };
 
+  const generateLink = async (): Promise<void> => {
+    setBusy(true);
+    try {
+      const r = await api.createShortLink(slug, { rotate: false });
+      setToast({ msg: `已生成短链 /n/${r.short_id}` });
+      await load();
+    } catch (e) {
+      setToast({ msg: (e as Error).message, err: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const rotateLink = async (): Promise<void> => {
     if (!confirm('旋转短链会让旧链接 404,确定?')) return;
     setBusy(true);
     try {
-      await api.rotateShortLink(slug);
-      setToast({ msg: '已旋转短链' });
+      const r = await api.rotateShortLink(slug);
+      setToast({ msg: `已旋转短链 /n/${r.short_id}` });
       await load();
     } catch (e) {
       setToast({ msg: (e as Error).message, err: true });
@@ -386,34 +399,46 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
             {note.short_id ? `/n/${note.short_id}` : '尚未生成短链'}
           </div>
           <div style={{ display: 'flex', gap: 6, marginTop: 8, flexWrap: 'wrap' }}>
-            <button
-              type="button"
-              class="ui-btn ui-btn--sm"
-              disabled={!note.short_id}
-              onClick={() => void copyShort()}
-            >
-              <HfIcon name="copy" size={11} /> 复制
-            </button>
-            <button
-              type="button"
-              class="ui-btn ui-btn--sm"
-              disabled={!note.short_id || busy}
-              onClick={() => {
-                setPwInput('');
-                setPwModalOpen(true);
-              }}
-              aria-label="设置短链密码"
-            >
-              <HfIcon name="lock" size={11} /> {shortLink?.has_password ? '改密码' : '设密码'}
-            </button>
-            <button
-              type="button"
-              class="ui-btn ui-btn--sm ui-btn--danger"
-              disabled={busy}
-              onClick={() => void rotateLink()}
-            >
-              <HfIcon name="sync" size={11} /> 旋转
-            </button>
+            {note.short_id ? (
+              <>
+                <button
+                  type="button"
+                  class="ui-btn ui-btn--sm"
+                  onClick={() => void copyShort()}
+                >
+                  <HfIcon name="copy" size={11} /> 复制
+                </button>
+                <button
+                  type="button"
+                  class="ui-btn ui-btn--sm"
+                  disabled={busy}
+                  onClick={() => {
+                    setPwInput('');
+                    setPwModalOpen(true);
+                  }}
+                  aria-label="设置短链密码"
+                >
+                  <HfIcon name="lock" size={11} /> {shortLink?.has_password ? '改密码' : '设密码'}
+                </button>
+                <button
+                  type="button"
+                  class="ui-btn ui-btn--sm ui-btn--danger"
+                  disabled={busy}
+                  onClick={() => void rotateLink()}
+                >
+                  <HfIcon name="sync" size={11} /> 旋转
+                </button>
+              </>
+            ) : (
+              <button
+                type="button"
+                class="ui-btn ui-btn--sm ui-btn--primary"
+                disabled={busy}
+                onClick={() => void generateLink()}
+              >
+                <HfIcon name="link" size={11} /> 生成短链
+              </button>
+            )}
           </div>
           {note.short_id && shortLink && (
             <p class="hf-tiny hf-muted" style={{ marginTop: 8 }}>
@@ -422,7 +447,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
             </p>
           )}
           <p class="hf-tiny hf-muted" style={{ marginTop: 4 }}>
-            旋转后,旧链接立即 404 (会留墓碑)。
+            {note.short_id ? '旋转后,旧链接立即 404 (会留墓碑)。' : '生成后会得到一个 5 字符短链 /n/xxxxx,旋转可换新。'}
           </p>
         </div>
       </div>

@@ -109,6 +109,12 @@ export class NoteRepo {
       .run(new Date().toISOString(), slug);
   }
 
+  setShortId(slug: string, shortId: string | null): void {
+    this.db
+      .prepare('UPDATE notes SET short_id = ?, updated_at = ? WHERE slug = ?')
+      .run(shortId, new Date().toISOString(), slug);
+  }
+
   patchMeta(
     slug: string,
     patch: Partial<
