@@ -9,6 +9,9 @@ export const frontmatterSchema = z
     summary: z.string().optional(),
     visibility: visibilitySchema.optional(),
     searchable: z.boolean().optional(),
+    seo_indexable: z.boolean().optional(),
+    rss_includable: z.boolean().optional(),
+    featured_on_home: z.boolean().optional(),
     short_id: z.string().length(5).optional(),
     tags: z.array(z.string()).optional(),
     cover: z.string().optional(),
@@ -199,8 +202,8 @@ export function defaultFeatures(): z.infer<typeof featuresSchema> {
 }
 
 /**
- * 关键约束：link-only / private 笔记不能 searchable: true
- * 在 normalize 阶段强制纠正，违反时记 warning。
+ * 关键约束：link-only / private 笔记的 4 个 visibility 维度必须全是 false
+ * (站内搜索 / SEO / RSS / 首页推荐)。在 normalize 阶段强制纠正，违反时记 warning。
  */
 export function enforceVisibilityRules(
   visibility: z.infer<typeof visibilitySchema>,
@@ -214,3 +217,16 @@ export function enforceVisibilityRules(
   }
   return { searchable, warning: null };
 }
+
+/** PATCH /api/admin/notes/:slug/meta 接受的字段 */
+export const noteMetaPatchSchema = z
+  .object({
+    visibility: visibilitySchema.optional(),
+    searchable: z.boolean().optional(),
+    seo_indexable: z.boolean().optional(),
+    rss_includable: z.boolean().optional(),
+    featured_on_home: z.boolean().optional(),
+    scheduled_at: z.string().nullable().optional(),
+  })
+  .strict();
+export type NoteMetaPatch = z.infer<typeof noteMetaPatchSchema>;

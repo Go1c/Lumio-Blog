@@ -57,6 +57,9 @@ export interface NoteDetail {
   body_html: string;
   visibility: Visibility;
   searchable: 0 | 1;
+  seo_indexable: 0 | 1;
+  rss_includable: 0 | 1;
+  featured_on_home: 0 | 1;
   short_id: string | null;
   source_path: string;
   word_count: number;
@@ -68,7 +71,6 @@ export interface NoteDetail {
   cover: string | null;
 }
 
-/** PR-E:仪表盘 idle short links */
 export interface IdleShortLinkItem {
   short_id: string;
   slug: string;
@@ -81,6 +83,14 @@ export interface IdleShortLinksResponse {
   days: number;
   items: IdleShortLinkItem[];
 }
+
+export interface ShortLinkInfo {
+  short_id: string;
+  has_password: boolean;
+  access_count: number;
+  last_accessed_at: string | null;
+}
+
 
 export interface HealthInfo {
   ok: boolean;
@@ -266,12 +276,24 @@ export const api = {
   async syncDiagnostics(): Promise<SyncDiagnosticsResponse> {
     return jsonOrThrow(await req('/api/admin/sync/diagnostics'));
   },
-  async getNote(slug: string): Promise<{ note: NoteDetail; backlinks: { src_slug: string; title: string }[]; outlinks: { dst_slug: string; title: string }[] }> {
+  async getNote(slug: string): Promise<{
+    note: NoteDetail;
+    backlinks: { src_slug: string; title: string }[];
+    outlinks: { dst_slug: string; title: string }[];
+    short_link: ShortLinkInfo | null;
+  }> {
     return jsonOrThrow(await req(`/api/admin/notes/${encodeURIComponent(slug)}`));
   },
   async patchMeta(
     slug: string,
-    patch: { visibility?: Visibility; searchable?: boolean; scheduled_at?: string | null },
+    patch: {
+      visibility?: Visibility;
+      searchable?: boolean;
+      seo_indexable?: boolean;
+      rss_includable?: boolean;
+      featured_on_home?: boolean;
+      scheduled_at?: string | null;
+    },
   ): Promise<void> {
     await jsonOrThrow(
       await req(`/api/admin/notes/${encodeURIComponent(slug)}/meta`, {
@@ -286,9 +308,22 @@ export const api = {
       await req(`/api/admin/notes/${encodeURIComponent(slug)}/short-link`, { method: 'POST' }),
     );
   },
-  /** PR-E:N 天未访问的活跃短链(目前用 created_at 作 last_accessed_at 代理) */
   async idleShortLinks(days = 30): Promise<IdleShortLinksResponse> {
     return jsonOrThrow(await req(`/api/admin/short-links/idle?days=${days}`));
+  },
+  async getShortLink(shortId: string): Promise<ShortLinkInfo> {
+    return jsonOrThrow(
+      await req(`/api/admin/short-links/${encodeURIComponent(shortId)}`),
+    );
+  },
+  async setShortLinkPassword(shortId: string, password: string | null): Promise<{ ok: true; has_password: boolean }> {
+    return jsonOrThrow(
+      await req(`/api/admin/short-links/${encodeURIComponent(shortId)}/password`, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ password }),
+      }),
+    );
   },
   async sync(): Promise<void> {
     await jsonOrThrow(await req('/api/admin/sync', { method: 'POST' }));

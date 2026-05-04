@@ -13,7 +13,13 @@ export interface NoteRow {
   body_html: string;       // 已渲染好的 HTML
   body_text: string;       // 纯文本，用于全文搜索
   visibility: Visibility;
-  searchable: 0 | 1;       // bool（SQLite 不区分）
+  searchable: 0 | 1;       // bool（SQLite 不区分）— 站内搜索可见
+  /** 是否允许搜索引擎抓取(sitemap / 不带 noindex meta) */
+  seo_indexable: 0 | 1;
+  /** 是否进 RSS feed */
+  rss_includable: 0 | 1;
+  /** 是否上首页推荐位 */
+  featured_on_home: 0 | 1;
   short_id: string | null; // 5 字符短链
   source_path: string;     // 相对 vault 根的路径，例如 "posts/mcts.md"
   created_at: string;      // ISO 8601
@@ -33,6 +39,9 @@ export interface Frontmatter {
   summary?: string;
   visibility?: Visibility;
   searchable?: boolean;
+  seo_indexable?: boolean;
+  rss_includable?: boolean;
+  featured_on_home?: boolean;
   short_id?: string;
   tags?: string[];
   cover?: string;
@@ -56,6 +65,9 @@ export interface NormalizedNote extends ParsedNote {
   title: string;
   visibility: Visibility;
   searchable: boolean;
+  seo_indexable: boolean;
+  rss_includable: boolean;
+  featured_on_home: boolean;
   short_id: string | null;
   tags: string[];
   word_count: number;
@@ -123,6 +135,12 @@ export interface ShortLink {
   slug: string;
   created_at: string;
   tombstoned_at: string | null;
+  /** 密码保护(scrypt 哈希,格式 `scrypt$<saltB64>$<keyB64>`);null = 无密码 */
+  password_hash?: string | null;
+  /** 累计访问次数(/n/:short_id 命中即 +1) */
+  access_count?: number;
+  /** 上次访问时间 ISO,null = 从未被访问 */
+  last_accessed_at?: string | null;
 }
 
 /** 链接（出链）边 */

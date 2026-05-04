@@ -39,6 +39,12 @@ export function normalize(p: ParsedNote): {
   const { searchable, warning } = enforceVisibilityRules(visibility, requestedSearchable);
   if (warning) warnings.push({ source_path: p.source_path, message: warning });
 
+  // 4 维 searchable — frontmatter 没显式给 → 跟 searchable 走;link-only/private 强制 false。
+  const restricted = visibility === 'link-only' || visibility === 'private';
+  const seoIndexable = restricted ? false : (fm.seo_indexable ?? searchable);
+  const rssIncludable = restricted ? false : (fm.rss_includable ?? searchable);
+  const featuredOnHome = restricted ? false : (fm.featured_on_home ?? false);
+
   const tags = (fm.tags ?? []).filter((t) => typeof t === 'string');
   const plain = stripMarkdown(p.body);
   const { words, minutes } = countWords(plain);
@@ -50,6 +56,9 @@ export function normalize(p: ParsedNote): {
       title,
       visibility,
       searchable,
+      seo_indexable: seoIndexable,
+      rss_includable: rssIncludable,
+      featured_on_home: featuredOnHome,
       short_id: fm.short_id ?? null,
       tags,
       word_count: words,
