@@ -558,4 +558,41 @@ export class ShortLinkRepo {
       .prepare('UPDATE short_links SET tombstoned_at = ? WHERE short_id = ?')
       .run(new Date().toISOString(), shortId);
   }
+
+  /**
+   * 统计 N 天没有访问过的活跃短链。
+   *
+   * NOTE: 主分支 schema 还没有 last_accessed_at 字段（PR-C 才会引入）,
+   * 这里先用 created_at 当代理:即"创建于 N 天以前的活跃短链"。
+   * 这意味着我们会把"老 + 最近还在被访问"的短链也算成 idle,
+   * 是已知的近似;PR-C 落地后改成 COALESCE(last_accessed_at, created_at) 即可。
+   */
+  countIdle(days: number): number {
+    const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
+    const row = this.db
+      .prepare<[string], { c: number }>(
+        `SELECT COUNT(*) AS c FROM short_links
+         WHERE tombstoned_at IS NULL
+           AND created_at < ?`,
+      )
+      .get(cutoff);
+    return row?.c ?? 0;
+  }
+
+  /**
+   * 列出 N 天没有访问过的活跃短链(默认上限 20),按最老优先。
+   * 同 countIdle 的注释:目前用 created_at 作为 last_accessed_at 的近似。
+   */
+  listIdle(days: number, limit = 20): ShortLink[] {
+    const cutoff = new Date(Date.now() - days * 86_400_000).toISOString();
+    return this.db
+      .prepare<[string, number], ShortLink>(
+        `SELECT * FROM short_links
+         WHERE tombstoned_at IS NULL
+           AND created_at < ?
+         ORDER BY created_at ASC, short_id ASC
+         LIMIT ?`,
+      )
+      .all(cutoff, limit);
+  }
 }

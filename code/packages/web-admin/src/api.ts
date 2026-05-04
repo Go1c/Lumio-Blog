@@ -68,6 +68,20 @@ export interface NoteDetail {
   cover: string | null;
 }
 
+/** PR-E:仪表盘 idle short links */
+export interface IdleShortLinkItem {
+  short_id: string;
+  slug: string;
+  created_at: string;
+  last_accessed_at: string | null;
+}
+
+export interface IdleShortLinksResponse {
+  count: number;
+  days: number;
+  items: IdleShortLinkItem[];
+}
+
 export interface HealthInfo {
   ok: boolean;
   note_count: number;
@@ -271,6 +285,10 @@ export const api = {
     await jsonOrThrow(
       await req(`/api/admin/notes/${encodeURIComponent(slug)}/short-link`, { method: 'POST' }),
     );
+  },
+  /** PR-E:N 天未访问的活跃短链(目前用 created_at 作 last_accessed_at 代理) */
+  async idleShortLinks(days = 30): Promise<IdleShortLinksResponse> {
+    return jsonOrThrow(await req(`/api/admin/short-links/idle?days=${days}`));
   },
   async sync(): Promise<void> {
     await jsonOrThrow(await req('/api/admin/sync', { method: 'POST' }));
