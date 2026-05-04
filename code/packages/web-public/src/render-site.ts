@@ -7,6 +7,7 @@ import type { NoteRow, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
 import { renderHome } from './templates/home.js';
 import { renderPost } from './templates/post.js';
+import { buildNeighborhood } from './partials/backlinks-graph.js';
 import { renderFeed } from './templates/feed.js';
 import { renderTagIndex, renderTagPage } from './templates/tag.js';
 import { renderNotFound } from './templates/notfound.js';
@@ -70,15 +71,27 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     'utf-8',
   );
 
-  // posts — 每篇文章渲染时,计算同主标签下的 series
+  // posts — 每篇文章渲染时,计算同主标签下的 series + 1-hop 邻居图
+  const visibleSlugSet = new Set(visible.map((n) => n.slug));
   for (const n of visible) {
     const primaryTag = primaryTagOf(byTag, n.slug);
     const series = primaryTag
       ? (byTag.get(primaryTag) ?? []).filter((s) => s.slug !== n.slug)
       : [];
+    // 1-hop 邻居:backlinks ∪ outlinks(只保留可见笔记,不暴露 private)
+    const backlinksRaw = repo.backlinks(n.slug);
+    const outlinksRaw = repo.outlinks(n.slug);
+    const neighborhood = buildNeighborhood({
+      slug: n.slug,
+      title: n.title,
+      backlinks: backlinksRaw.filter((b) => visibleSlugSet.has(b.src_slug)),
+      outlinks: outlinksRaw
+        .filter((o) => o.dst_slug && visibleSlugSet.has(o.dst_slug))
+        .map((o) => ({ dst_slug: o.dst_slug, title: o.title })),
+    });
     await writeFile(
       join(opts.out, 'posts', `${n.slug}.html`),
-      renderPost({ note: n, byTag, series }, opts.config),
+      renderPost({ note: n, byTag, series, neighborhood }, opts.config),
       'utf-8',
     );
   }
@@ -523,6 +536,50 @@ body.ui-public { background: var(--bg); }
   background: var(--bg-soft);
   border-radius: 8px;
   border: 1px solid var(--line);
+}
+
+/* PR-F — 文章左栏 1-hop backlinks 小图 (A-2) */
+.wsa-minigraph {
+  margin: 0 0 24px;
+  padding: 6px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg-soft);
+}
+.wsa-minigraph__svg {
+  display: block;
+  overflow: visible;
+}
+.wsa-minigraph__edge {
+  stroke: var(--line-strong, var(--line));
+  stroke-width: 1;
+  opacity: 0.7;
+}
+.wsa-minigraph__node {
+  fill: var(--bg);
+  stroke: var(--line-strong, var(--line));
+  stroke-width: 1.5;
+  transition: fill .15s, stroke .15s, r .15s;
+}
+.wsa-minigraph__node--center {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+.wsa-minigraph__nodelink { cursor: pointer; }
+.wsa-minigraph__nodelink:hover .wsa-minigraph__node--neighbor,
+.wsa-minigraph__nodelink:focus-visible .wsa-minigraph__node--neighbor {
+  fill: var(--accent);
+  stroke: var(--accent);
+}
+.wsa-minigraph__nodelink:hover .wsa-minigraph__label,
+.wsa-minigraph__nodelink:focus-visible .wsa-minigraph__label {
+  fill: var(--accent);
+}
+.wsa-minigraph__label {
+  font-family: var(--mono, ui-monospace, monospace);
+  font-size: 10px;
+  fill: var(--ink-3);
+  pointer-events: none;
 }
 
 .wsa-post__main { padding: 0 8px; min-width: 0; position: relative; }
