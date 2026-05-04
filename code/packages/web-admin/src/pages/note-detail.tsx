@@ -13,6 +13,7 @@ const VISIBILITIES: { id: Visibility; label: string; sub: string }[] = [
 export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
   const [note, setNote] = useState<NoteDetail | null>(null);
   const [backlinks, setBacklinks] = useState<{ src_slug: string; title: string }[]>([]);
+  const [outlinks, setOutlinks] = useState<{ dst_slug: string; title: string }[]>([]);
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [scheduledOn, setScheduledOn] = useState(false);
@@ -22,6 +23,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
     api.getNote(slug).then((r) => {
       setNote(r.note);
       setBacklinks(r.backlinks);
+      setOutlinks(r.outlinks ?? []);
       if (r.note.scheduled_at) {
         setScheduledOn(true);
         setScheduledAt(toLocalInput(r.note.scheduled_at));
@@ -337,21 +339,43 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
           </dl>
         </div>
 
-        <div class="ui-card" style={{ padding: 16 }}>
-          <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>反向链接 ({backlinks.length})</div>
-          {backlinks.length === 0 ? (
-            <p class="hf-tiny hf-muted" style={{ margin: 0 }}>暂无引用本笔记的笔记</p>
-          ) : (
-            <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
-              {backlinks.map((b) => (
-                <li key={b.src_slug} style={{ padding: '4px 0' }}>
-                  <a class="hf-sm" href={`#/notes/${encodeURIComponent(b.src_slug)}`} style={{ color: 'var(--accent)' }}>
-                    {b.title || b.src_slug}
-                  </a>
-                </li>
-              ))}
-            </ul>
-          )}
+        <div class="ui-card" style={{ padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+          <div>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>
+              <HfIcon name="link" size={13} color="var(--accent)" style={{ marginRight: 4 }} /> 反向链接 ({backlinks.length})
+            </div>
+            {backlinks.length === 0 ? (
+              <p class="hf-tiny hf-muted" style={{ margin: 0 }}>暂无引用本笔记的笔记</p>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {backlinks.map((b) => (
+                  <li key={b.src_slug} style={{ padding: '4px 0', borderTop: '1px solid var(--line)' }}>
+                    <a class="hf-sm" href={`#/notes/${encodeURIComponent(b.src_slug)}`} style={{ color: 'var(--accent)' }}>
+                      {b.title || b.src_slug}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div style={{ borderLeft: '1px solid var(--line)', paddingLeft: 12 }}>
+            <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>
+              <HfIcon name="link" size={13} color="var(--warn)" style={{ marginRight: 4 }} /> 出链 ({outlinks.length})
+            </div>
+            {outlinks.length === 0 ? (
+              <p class="hf-tiny hf-muted" style={{ margin: 0 }}>本笔记没有内部链接</p>
+            ) : (
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
+                {outlinks.map((o) => (
+                  <li key={o.dst_slug} style={{ padding: '4px 0', borderTop: '1px solid var(--line)' }}>
+                    <a class="hf-sm" href={`#/notes/${encodeURIComponent(o.dst_slug)}`} style={{ color: 'var(--warn)' }}>
+                      {o.title || o.dst_slug}
+                    </a>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </div>
       </div>
 

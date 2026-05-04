@@ -213,7 +213,7 @@ export const api = {
   async listNotes(): Promise<{ notes: NoteSummary[] }> {
     return jsonOrThrow(await req('/api/admin/notes'));
   },
-  async getNote(slug: string): Promise<{ note: NoteDetail; backlinks: { src_slug: string; title: string }[] }> {
+  async getNote(slug: string): Promise<{ note: NoteDetail; backlinks: { src_slug: string; title: string }[]; outlinks: { dst_slug: string; title: string }[] }> {
     return jsonOrThrow(await req(`/api/admin/notes/${encodeURIComponent(slug)}`));
   },
   async patchMeta(

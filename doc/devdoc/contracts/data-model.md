@@ -44,7 +44,7 @@ type SyncEvent = { kind: string; slug?: string; payload?: unknown; ts: string };
 
 type SiteConfig = {
   site: { title: string; description?: string; url: string; locale?: string; timezone?: string; language?: string };
-  author: { name: string; email?: string; avatar?: string; bio_md?: string; social?: { kind: string; handle: string }[] };
+  author: { name: string; email?: string; avatar?: string; bio_md?: string; social?: { platform: string; url: string }[] };
   theme?: { default?: 'light' | 'dark' | 'auto'; accent?: string; font_serif?: string; font_mono?: string };
   seo?: { default_og_template?: string; twitter_card?: string; robots?: string; sitemap?: boolean };
   home?: { hero_title_md?: string; hero_intro_md?: string; hero_cta_primary?: string; hero_cta_secondary?: string; show_recent_posts?: number; show_categories?: boolean };
@@ -214,9 +214,12 @@ DB 迁移(由 WS-G 起):
 
 | 改动 | 文件 |
 |---|---|
-| `analytics_events` 表 | `db/src/migrate.ts` 新加 migration |
-| `analytics_daily` 物化视图 | 同上 |
-| `media` 表 | 同上 |
-| `media_refs` 表(笔记 ↔ 媒体引用) | 同上 |
-| `backup_jobs` 表 | 同上 |
-| `settings_audit` 表(可选) | 同上 |
+| `analytics_events` 表 | `db/src/migrations/006_analytics.ts` ✅ |
+| `analytics_daily` 物化视图 | 同上 ✅ |
+| `media` 表 | `db/src/migrations/007_media_backup.ts` ✅ |
+| `media_refs` 表(笔记 ↔ 媒体引用) | 同上 ✅ |
+| `backup_jobs` 表 | 同上 ✅ |
+| `settings_audit` 表 | `db/src/migrations/004_settings_audit.ts` ✅ |
+| `webhook_deliveries` 表 | `db/src/migrate.ts` ✅ |
+
+> 出链查询：`NoteRepo.outlinks(slug)` ✅ 已在 `db/src/queries.ts` 实现，`GET /api/admin/notes/:slug` 响应中包含 `outlinks` 数组。

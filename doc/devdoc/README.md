@@ -22,7 +22,8 @@ doc/devdoc/
     ├── D-admin-shell-dashboard.md
     ├── E-admin-settings-tokens.md
     ├── F-admin-media-og-backup.md
-    └── G-server-apis.md
+    ├── G-server-apis.md
+    └── H-docs-pages.md
 ```
 
 ## 怎么用
@@ -49,11 +50,11 @@ doc/devdoc/
 | 同一 server route | 中 | 路由按 workstream 切前缀(`/api/admin/analytics/*` 归 D) |
 | `package.json` 增加依赖 | 低(允许) | 加之前在 PR 描述里说为啥需要 |
 
-## 现状
+## 现状(截至 PR #5)
 
-- **后端 API 框架**:Hono + better-sqlite3,基本骨架、auth、tokens、webhooks、audit、SSE 都有 — 见 `code/packages/server/`
+- **后端 API**:全部 WS-G 路由已实现 — Settings / Analytics / Search(FTS5) / Media / Graph / OG / Backup / Newsletter / Tags / Comments / Subscribers / Webhooks(含投递历史+重发)
 - **同步管线**:fast-note-sync 已实现 — 见 `code/packages/sync/`
-- **前台静态站**:极简,缺设计稿 90% 内容
-- **后台 SPA**:5 个最朴素页面,缺设计稿 95% 内容
+- **前台静态站**:≈ 85% 完成 — 首页三栏、文章页、标签、404、About、搜索、图谱、评论、Newsletter、移动端 CSS
+- **后台 SPA**:≈ 90% 完成 — 所有导航页面(仪表盘/笔记/标签/媒体/评论/订阅/Analytics/设置/Tokens/Webhooks/审计/OG/备份/配置文档)均已实现
 
-详见 `GAP-ANALYSIS.md`。
+**剩余缺口**:自家广告卡(HfAd)、MCP server(`/mcp` 端点)。详见 `GAP-ANALYSIS.md`。
