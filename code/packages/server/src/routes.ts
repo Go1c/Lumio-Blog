@@ -191,6 +191,21 @@ export function buildApp(deps: RouteDeps): Hono {
     return patchMeta(c);
   });
 
+  // 仪表盘:统计/列出 30 天(默认)未访问的活跃短链。
+  // 当前用 created_at 作为 last_accessed_at 的代理(PR-C 引入 last_accessed_at)。
+  admin.get('/short-links/idle', (c) => {
+    const days = Math.max(1, Math.min(Number(c.req.query('days') ?? 30), 365));
+    const count = shortRepo.countIdle(days);
+    const items = shortRepo.listIdle(days, 20).map((s) => ({
+      short_id: s.short_id,
+      slug: s.slug,
+      created_at: s.created_at,
+      // last_accessed_at 暂未落库,先回 null,前端不依赖该字段判断
+      last_accessed_at: null,
+    }));
+    return c.json({ count, days, items });
+  });
+
   admin.post('/notes/:slug/short-link', async (c) => {
     const slug = c.req.param('slug');
     const note = noteRepo.getBySlug(slug);

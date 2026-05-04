@@ -22,6 +22,7 @@ export function Dashboard(): JSX.Element {
   const [series, setSeries] = useState<TimeSeriesPoint[] | null>(null);
   const [notes, setNotes] = useState<NoteSummary[] | null>(null);
   const [health, setHealth] = useState<HealthInfo | null>(null);
+  const [idleShortLinks, setIdleShortLinks] = useState(0);
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [sseConnected, setSseConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +55,12 @@ export function Dashboard(): JSX.Element {
       .then((h) => setHealth(h))
       .catch(() => {
         /* health 失败不要塞错误 */
+      });
+    void api
+      .idleShortLinks(30)
+      .then((r) => setIdleShortLinks(r.count))
+      .catch(() => {
+        /* idle short link 数失败不要塞错误,仪表盘其他部分仍要显示 */
       });
   }, []);
 
@@ -222,7 +229,14 @@ export function Dashboard(): JSX.Element {
 
         <div class="ui-card" style={{ padding: 18 }}>
           <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 14 }}>待处理 / 推荐</div>
-          {buildAlerts({ drafts: draftScheduled.drafts, top: top5[0]?.title, sse: sseConnected, sseRecentSync: !!activity.find((a) => a.kind === 'sync.completed') }).map((alert, i) => (
+          {buildAlerts({
+            drafts: draftScheduled.drafts,
+            top: top5[0] ? { title: top5[0].title, slug: top5[0].slug } : undefined,
+            idleShortLinks,
+            sse: sseConnected,
+            sseRecentSync: !!activity.find((a) => a.kind === 'sync.completed'),
+            sseRecentSyncFailed: !!activity.find((a) => a.kind === 'sync.failed'),
+          }).map((alert, i) => (
             <div
               key={i}
               style={{
@@ -375,7 +389,14 @@ export function Dashboard(): JSX.Element {
   );
 }
 
-function buildAlerts(args: { drafts: number; top: string | undefined; sse: boolean; sseRecentSync: boolean }): {
+function buildAlerts(args: {
+  drafts: number;
+  top: { title: string; slug: string } | undefined;
+  idleShortLinks: number;
+  sse: boolean;
+  sseRecentSync: boolean;
+  sseRecentSyncFailed: boolean;
+}): {
   tone: 'warn' | 'ok' | 'accent';
   title: string;
   sub: string;
@@ -400,14 +421,42 @@ function buildAlerts(args: { drafts: number; top: string | undefined; sse: boole
       },
     });
   }
-  if (args.top) {
+  if (args.idleShortLinks > 0) {
     out.push({
-      tone: 'accent',
-      title: `推荐置顶 "${args.top}"`,
-      sub: 'Top 1 文章',
+      tone: 'warn',
+      title: `${args.idleShortLinks} 个分享链接 30d 无访问`,
+      sub: '考虑撤销以减少噪音',
+      cta: '查看',
+      onClick: () => {
+        // 笔记列表暂未支持 short_link_idle 过滤,先跳到 /notes;
+        // 列表支持过滤后,query 会被自动消费。
+        location.hash = '#/notes?short_link_idle=1';
+      },
     });
   }
-  if (args.sseRecentSync) {
+  if (args.top) {
+    const t = args.top;
+    out.push({
+      tone: 'accent',
+      title: `推荐置顶 "${t.title}"`,
+      sub: 'Top 1 文章',
+      cta: '查看',
+      onClick: () => {
+        location.hash = `#/notes/${encodeURIComponent(t.slug)}`;
+      },
+    });
+  }
+  if (args.sseRecentSyncFailed) {
+    out.push({
+      tone: 'warn',
+      title: '上次同步失败',
+      sub: '查看同步日志排查',
+      cta: '查看',
+      onClick: () => {
+        location.hash = '#/audit?action_prefix=sync.';
+      },
+    });
+  } else if (args.sseRecentSync) {
     out.push({ tone: 'ok', title: '同步完成', sub: '事件流刚刚收到 sync.completed' });
   } else if (args.sse) {
     out.push({ tone: 'ok', title: '事件流已连接', sub: '等待变更' });
