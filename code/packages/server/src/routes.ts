@@ -2,7 +2,7 @@ import { Hono, type Context, type MiddlewareHandler, type Next } from 'hono';
 import { streamSSE } from 'hono/streaming';
 import type { Database } from 'better-sqlite3';
 import { resolve } from 'node:path';
-import { NoteRepo, ShortLinkRepo } from '@opennote/db';
+import { NoteRepo, ShortLinkRepo, SubscribersRepo } from '@opennote/db';
 import type { SiteConfig, SyncEvent, Visibility } from '@opennote/core';
 import { AuthService, clearSessionCookie, setSessionCookie, getSessionToken } from './auth.js';
 import { TokenService, requireToken } from './tokens.js';
@@ -21,6 +21,11 @@ import { register as registerWebhooksAdmin } from './routes/webhooks-admin.js';
 import { register as registerTags } from './routes/tags.js';
 import { register as registerComments } from './routes/comments.js';
 import { register as registerSubscribers } from './routes/subscribers.js';
+import {
+  buildFolderTree,
+  EMPTY_DIAGNOSTICS,
+  type SyncDiagnosticsBuffer,
+} from './routes/sync-meta.js';
 import { createMediaStoreFromEnv, LocalMediaStore, type MediaStore } from './media-store.js';
 import type { BackupRunner } from './backup-runner.js';
 
@@ -35,6 +40,8 @@ export interface RouteDeps {
   dataDir?: string;
   backupRunner?: BackupRunner;
   mediaStore?: MediaStore;
+  /** main.ts 注入,用来回吐 syncAll 的诊断给 /api/admin/sync/diagnostics */
+  syncDiagnostics?: SyncDiagnosticsBuffer;
 }
 
 export function buildApp(deps: RouteDeps): Hono {
@@ -152,8 +159,21 @@ export function buildApp(deps: RouteDeps): Hono {
         slug: r.slug, title: r.title,
         visibility: r.visibility, searchable: !!r.searchable,
         short_id: r.short_id, updated_at: r.updated_at, word_count: r.word_count,
+        source_path: r.source_path,
       })),
     });
+  });
+
+  // 必须在 /notes/:slug 之前,否则 'tree' 会被当 slug
+  admin.get('/notes/tree', (c) => {
+    const path = c.req.query('path') ?? '';
+    return c.json(buildFolderTree(noteRepo, path));
+  });
+
+  admin.get('/sync/diagnostics', (c) => {
+    const last = deps.syncDiagnostics?.snapshot();
+    if (!last) return c.json({ at: null, diag: EMPTY_DIAGNOSTICS });
+    return c.json(last);
   });
 
   admin.get('/notes/:slug', (c) => {
@@ -278,7 +298,11 @@ export function buildApp(deps: RouteDeps): Hono {
     cacheDir: resolve(dataDir, 'og'),
   });
 
-  newsletterRoutes.register(app, {});
+  // Buttondown 没配 → 把订阅落本地 subscribers 表(避免公开订阅表单 503)
+  const subRepo = new SubscribersRepo(deps.db);
+  newsletterRoutes.register(app, {
+    localFallback: async (email) => subRepo.subscribe({ email, source: 'newsletter-form' }),
+  });
 
   // 标签 / 评论 / 订阅(本地)
   registerTags(app, { db: deps.db });

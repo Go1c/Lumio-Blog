@@ -1,10 +1,9 @@
-/* WS-B 文章侧栏评论 — 飞书风划词高亮 + Giscus 后端
+/* WS-B 文章侧栏评论 — 飞书风划词高亮 + 本地后端 (/api/posts/:slug/comments)
  *
  * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
- * - 高亮 ↔ 评论卡片通过 data-mid 关联
- * - 评论 hover → 对应高亮 active
- * - 数据源:GitHub Discussions(经 giscus 客户端 fetch),UI 完全自定义
- *   注:此处用一个极简 fetch 替代 — 仅消费 giscus 暴露的简单 JSON 端点。
+ * - 高亮 ↔ 评论卡通过 data-mid 关联(高亮纯本地 localStorage)
+ * - 评论本身走真后端:GET 拉 approved 列表,POST 投到 pending 队列等审核
+ * - 如果配了 giscusRepo,作为兼容路径加载 giscus(可选);否则只用本地后端
  */
 (function () {
   'use strict';
@@ -22,35 +21,35 @@
   var errEl = compose ? compose.querySelector('[data-error]') : null;
   var loginLink = document.getElementById('wsb-comments-login');
 
-  var slug = root.getAttribute('data-slug') || location.pathname;
+  var slug = root.getAttribute('data-slug') || location.pathname.replace(/^\/posts\/|\.html$/g, '');
   var giscusRepo = root.getAttribute('data-giscus-repo') || '';
+  var apiBase = '/api/posts/' + encodeURIComponent(slug) + '/comments';
 
-  // local-only highlights (持久化到 localStorage),作为划词演示
-  var STORAGE_KEY = 'wsb-comments:' + slug;
-  /** @type {{mid:string, quote:string, body:string, time:string, author:string, color:string, avatar:string}[]} */
+  var HL_STORAGE_KEY = 'wsb-comments-hl:' + slug;
+  var AUTHOR_STORAGE_KEY = 'wsb-comments-author';
+
+  /** @type {{id:number, author:string, website:string|null, body:string, created_at:string, mid?:string, status?:'pending'|'approved'}[]} */
   var comments = [];
-  /** @type {{mid:string, quote:string, range: {start:number,end:number}}[]} */
+  /** @type {{mid:string, quote:string}[]} */
   var highlights = [];
   var midCounter = 1;
+  var pendingMids = {};
 
-  // ---- restore ----
+  // ---- restore highlights only (评论从后端拉) ----
   try {
-    var raw = localStorage.getItem(STORAGE_KEY);
+    var raw = localStorage.getItem(HL_STORAGE_KEY);
     if (raw) {
       var saved = JSON.parse(raw);
-      comments = (saved && saved.comments) || [];
       highlights = (saved && saved.highlights) || [];
-      midCounter = (saved && saved.midCounter) || (comments.length + 1);
+      midCounter = (saved && saved.midCounter) || 1;
     }
   } catch (e) { /* ignore */ }
 
-  // ---- giscus.js — 仅在配置存在时引入,作为后端可见性指示 ----
+  // ---- giscus.js (可选) — 仅在配置存在时加载,作为兼容通道 ----
   if (giscusRepo) {
     var s = document.createElement('script');
     s.src = 'https://giscus.app/client.js';
-    s.async = true;
-    s.defer = true;
-    s.crossOrigin = 'anonymous';
+    s.async = true; s.defer = true; s.crossOrigin = 'anonymous';
     s.setAttribute('data-repo', giscusRepo);
     s.setAttribute('data-repo-id', root.getAttribute('data-giscus-repo-id') || '');
     s.setAttribute('data-category', root.getAttribute('data-giscus-category') || 'Comments');
@@ -60,43 +59,43 @@
     s.setAttribute('data-input-position', 'bottom');
     s.setAttribute('data-theme', 'preferred_color_scheme');
     s.setAttribute('data-loading', 'lazy');
-    // 我们自己的 UI 不渲染 giscus widget;但保留通信通道
     var hidden = document.createElement('div');
     hidden.style.display = 'none';
     hidden.appendChild(s);
     root.appendChild(hidden);
-
-    // listen messages from giscus iframe
-    window.addEventListener('message', function (ev) {
-      if (!ev.data || ev.data.giscus == null) return;
-      var d = ev.data.giscus;
-      if (d.discussion) {
-        var n = d.discussion.totalCommentCount || d.discussion.totalReplyCount || 0;
-        if (countEl) countEl.textContent = String(n);
-      }
-    });
-
     if (loginLink) loginLink.href = 'https://github.com/' + giscusRepo + '/discussions';
   } else if (loginLink) {
+    // 没配 giscus → 把 footer 链接换成本站匿名提示
+    loginLink.textContent = '以匿名身份留言';
     loginLink.removeAttribute('href');
     loginLink.setAttribute('aria-disabled', 'true');
   }
 
-  // ---- selection bubble ----
+  // ---- 拉远端评论 ----
+  fetch(apiBase, { headers: { accept: 'application/json' } })
+    .then(function (r) { return r.ok ? r.json() : { comments: [] }; })
+    .then(function (data) {
+      var list = (data && data.comments) || [];
+      // 后端按 created_at ASC,UI 习惯倒序
+      comments = list.slice().reverse();
+      render();
+    })
+    .catch(function () {
+      // 静默 — 列表为空,empty state 会显示
+      render();
+    });
+
+  // ---- selection bubble (高亮仍是本地交互) ----
   if (article && bubble) {
     document.addEventListener('selectionchange', function () {
       var sel = window.getSelection();
       if (!sel || sel.isCollapsed) { bubble.hidden = true; return; }
       var range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
       if (!range || !article.contains(range.commonAncestorContainer)) {
-        bubble.hidden = true;
-        return;
+        bubble.hidden = true; return;
       }
       var rect = range.getBoundingClientRect();
-      if (!rect || (rect.width === 0 && rect.height === 0)) {
-        bubble.hidden = true;
-        return;
-      }
+      if (!rect || (rect.width === 0 && rect.height === 0)) { bubble.hidden = true; return; }
       bubble.hidden = false;
       var x = rect.left + rect.width / 2 + window.scrollX;
       var y = rect.top + window.scrollY - 44;
@@ -116,9 +115,9 @@
       if (action === 'copy') {
         try { navigator.clipboard.writeText(text); } catch (e) { /* swallow */ }
       } else if (action === 'highlight') {
-        applyHighlight(sel, text, null);
+        applyHighlight(sel, text);
       } else if (action === 'comment') {
-        var mid = applyHighlight(sel, text, null);
+        var mid = applyHighlight(sel, text);
         if (mid && input) {
           input.focus();
           input.setAttribute('data-mid', mid);
@@ -130,9 +129,9 @@
     });
   }
 
-  function applyHighlight(sel, text, mid) {
+  function applyHighlight(sel, text) {
     if (!sel || sel.rangeCount === 0) return null;
-    if (!mid) mid = 'm' + (midCounter++);
+    var mid = 'm' + (midCounter++);
     var range = sel.getRangeAt(0);
     try {
       var span = document.createElement('mark');
@@ -143,18 +142,18 @@
       span.addEventListener('mouseenter', function () { setActiveCard(mid, true); });
       span.addEventListener('mouseleave', function () { setActiveCard(mid, false); });
       span.addEventListener('click', function () { jumpToCard(mid); });
-      highlights.push({ mid: mid, quote: text, range: { start: 0, end: 0 } });
-      persist();
+      highlights.push({ mid: mid, quote: text });
+      persistHl();
       return mid;
     } catch (e) {
       return null;
     }
   }
 
-  function persist() {
+  function persistHl() {
     try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        comments: comments, highlights: highlights, midCounter: midCounter,
+      localStorage.setItem(HL_STORAGE_KEY, JSON.stringify({
+        highlights: highlights, midCounter: midCounter,
       }));
     } catch (e) { /* swallow */ }
   }
@@ -162,23 +161,23 @@
   // ---- comments list ----
   function render() {
     if (!listEl) return;
-    if (!comments.length) {
+    var visible = comments.filter(function (c) { return c.status !== 'pending' || pendingMids[c.id]; });
+    if (!visible.length) {
       listEl.innerHTML = '';
       if (emptyEl) emptyEl.hidden = false;
       if (countEl && !giscusRepo) countEl.textContent = '0';
       return;
     }
     if (emptyEl) emptyEl.hidden = true;
-    if (countEl && !giscusRepo) countEl.textContent = String(comments.length);
+    if (countEl && !giscusRepo) countEl.textContent = String(visible.filter(function (c) { return c.status !== 'pending'; }).length);
 
     var html = '';
-    for (var i = 0; i < comments.length; i++) {
-      html += renderCard(comments[i]);
-    }
+    for (var i = 0; i < visible.length; i++) html += renderCard(visible[i]);
     listEl.innerHTML = html;
 
     Array.prototype.forEach.call(listEl.querySelectorAll('[data-mid]'), function (card) {
       var mid = card.getAttribute('data-mid');
+      if (!mid) return;
       card.addEventListener('mouseenter', function () { setActiveHl(mid, true); });
       card.addEventListener('mouseleave', function () { setActiveHl(mid, false); });
       card.addEventListener('focus', function () { setActiveHl(mid, true); }, true);
@@ -186,13 +185,22 @@
   }
 
   function renderCard(c) {
-    return '<li class="wsb-comments__card" data-mid="' + escAttr(c.mid) + '" tabindex="0">'
+    var hl = c.mid ? highlights.find(function (h) { return h.mid === c.mid; }) : null;
+    var quote = hl ? hl.quote : '';
+    var avatar = (c.author || '?').slice(0, 1).toUpperCase();
+    var color = avatarColor(c.author || 'anon');
+    var time = formatTime(c.created_at);
+    var pending = c.status === 'pending'
+      ? '<span class="wsb-comments__pending hf-tiny" style="color:var(--warn,#b45)">· 等待审核</span>'
+      : '';
+    return '<li class="wsb-comments__card" data-mid="' + escAttr(c.mid || ('c' + c.id)) + '" tabindex="0">'
       + '<div class="wsb-comments__card-head">'
-      +   '<span class="wsb-comments__avatar" style="background:' + escAttr(c.color) + '" aria-hidden="true">' + escText(c.avatar) + '</span>'
+      +   '<span class="wsb-comments__avatar" style="background:' + escAttr(color) + '" aria-hidden="true">' + escText(avatar) + '</span>'
       +   '<span class="wsb-comments__author">' + escText(c.author) + '</span>'
-      +   '<time class="hf-mono hf-tiny hf-faint">' + escText(c.time) + '</time>'
+      +   '<time class="hf-mono hf-tiny hf-faint" datetime="' + escAttr(c.created_at || '') + '">' + escText(time) + '</time>'
+      +   pending
       + '</div>'
-      + (c.quote ? '<div class="wsb-comments__quote">"' + escText(c.quote) + '"</div>' : '')
+      + (quote ? '<div class="wsb-comments__quote">"' + escText(quote) + '"</div>' : '')
       + '<div class="wsb-comments__body hf-sm">' + escText(c.body) + '</div>'
       + '</li>';
   }
@@ -215,7 +223,7 @@
     }
   }
 
-  // re-attach listeners on existing highlights (after reload, currently empty)
+  // 重新挂已存在 .wsb-comments__hl 的 hover 联动(SSR 渲染场景)
   Array.prototype.forEach.call(document.querySelectorAll('.wsb-comments__hl'), function (el) {
     var mid = el.getAttribute('data-mid');
     if (!mid) return;
@@ -224,48 +232,108 @@
     el.addEventListener('click', function () { jumpToCard(mid); });
   });
 
-  // ---- compose (本地草稿;真正发送由 giscus iframe 处理或 future MCP) ----
+  // ---- compose → POST /api/posts/:slug/comments ----
   if (compose && input) {
     compose.addEventListener('submit', function (ev) {
       ev.preventDefault();
+      if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
       var body = (input.value || '').trim();
       if (!body) {
-        if (errEl) {
-          errEl.textContent = '评论不能为空';
-          errEl.hidden = false;
-        }
+        showErr('评论不能为空');
         return;
       }
-      if (errEl) errEl.hidden = true;
-      var mid = input.getAttribute('data-mid') || 'm' + (midCounter++);
-      var hl = highlights.find(function (h) { return h.mid === mid; });
-      comments.unshift({
-        mid: mid,
-        quote: hl ? hl.quote : '',
-        body: body,
-        time: 'just now',
-        author: 'you',
-        color: 'var(--ink-3)',
-        avatar: 'Y',
-      });
-      input.value = '';
-      input.removeAttribute('data-mid');
-      input.placeholder = '选段评论 · 或全文评论…';
-      persist();
-      render();
+      var author = readOrPromptAuthor();
+      if (!author) {
+        showErr('请输入昵称');
+        return;
+      }
+      var mid = input.getAttribute('data-mid') || null;
+      var btn = compose.querySelector('button[type="submit"]');
+      if (btn) btn.disabled = true;
+
+      fetch(apiBase, {
+        method: 'POST',
+        headers: { 'content-type': 'application/json', accept: 'application/json' },
+        body: JSON.stringify({ author: author, body: body }),
+      })
+        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (res) {
+          if (!res.ok) {
+            var msg = (res.j && res.j.error && (res.j.error.message || res.j.error.code)) || '提交失败';
+            showErr(String(msg));
+            return;
+          }
+          var nowIso = new Date().toISOString();
+          // 把新评论插到列表顶部 — pending 的话标"等待审核",approved 的话直接亮
+          var newCard = {
+            id: res.j.id,
+            author: author,
+            website: null,
+            body: body,
+            created_at: nowIso,
+            status: res.j.status || 'pending',
+          };
+          if (mid) newCard.mid = mid;
+          if (newCard.status === 'pending') pendingMids[newCard.id] = true;
+          comments.unshift(newCard);
+          input.value = '';
+          input.removeAttribute('data-mid');
+          input.placeholder = '选段评论 · 或全文评论…';
+          render();
+        })
+        .catch(function (e) {
+          showErr('网络错误:' + (e && e.message ? e.message : 'unknown'));
+        })
+        .then(function () {
+          if (btn) btn.disabled = false;
+        });
     });
   }
 
-  // initial paint
-  render();
+  function showErr(msg) {
+    if (!errEl) return;
+    errEl.textContent = msg;
+    errEl.hidden = false;
+  }
+
+  function readOrPromptAuthor() {
+    var stored = '';
+    try { stored = localStorage.getItem(AUTHOR_STORAGE_KEY) || ''; } catch (e) { /* ignore */ }
+    if (stored) return stored;
+    var name = '';
+    try { name = window.prompt('设置一个昵称(只显示在评论旁,不会泄露):', '') || ''; } catch (e) { /* ignore */ }
+    name = name.trim().slice(0, 64);
+    if (name) {
+      try { localStorage.setItem(AUTHOR_STORAGE_KEY, name); } catch (e) { /* ignore */ }
+    }
+    return name;
+  }
+
+  function formatTime(iso) {
+    if (!iso) return '';
+    var t = Date.parse(iso);
+    if (isNaN(t)) return iso;
+    var diff = Date.now() - t;
+    if (diff < 60_000) return 'now';
+    if (diff < 3_600_000) return Math.round(diff / 60_000) + 'm';
+    if (diff < 86_400_000) return Math.round(diff / 3_600_000) + 'h';
+    if (diff < 30 * 86_400_000) return Math.round(diff / 86_400_000) + 'd';
+    return iso.slice(0, 10);
+  }
+
+  function avatarColor(seed) {
+    // 简单 hash → HSL,稳定的小调色板
+    var h = 0;
+    for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
+    var hue = Math.abs(h) % 360;
+    return 'hsl(' + hue + ', 55%, 70%)';
+  }
 
   // ---- helpers ----
   function escText(s) {
     return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   }
-  function escAttr(s) {
-    return escText(s).replace(/"/g, '&quot;');
-  }
+  function escAttr(s) { return escText(s).replace(/"/g, '&quot;'); }
   function cssEscape(s) {
     return String(s).replace(/[^a-zA-Z0-9_-]/g, function (c) { return '\\' + c; });
   }

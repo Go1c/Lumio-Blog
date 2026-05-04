@@ -119,9 +119,17 @@ export function Dashboard(): JSX.Element {
     return { drafts, scheduled };
   }, [notes]);
 
+  // 真 sparkline:按 updated_at 把笔记落 14 天的 bin,得到"最近 14 天的更新次数"曲线
+  const noteActivitySpark = useMemo(() => buildActivitySpark(notes, () => true), [notes]);
+  const visibleNoteActivitySpark = useMemo(
+    () => buildActivitySpark(notes, (n) => n.visibility === 'public' || n.visibility === 'link-only'),
+    [notes],
+  );
+
   const top5 = overview?.top_posts.slice(0, 5) ?? [];
   const totalNotes = notes?.length ?? 0;
   const visibleCount = (counts['public'] ?? 0) + (counts['link-only'] ?? 0);
+  const recentActivityCount = activity.length;
 
   return (
     <div>
@@ -152,7 +160,7 @@ export function Dashboard(): JSX.Element {
           icon="layers"
           tone="var(--accent)"
           sub={<>{counts['public'] ?? 0} 公开 / {counts['link-only'] ?? 0} 链接</>}
-          spark={fakeSpark(0)}
+          spark={noteActivitySpark}
         />
         <KpiCard
           label="可见笔记"
@@ -160,7 +168,7 @@ export function Dashboard(): JSX.Element {
           icon="eye"
           tone="var(--ok)"
           sub={<>{counts['unlisted'] ?? 0} 不列出 · {counts['private'] ?? 0} 私有</>}
-          spark={fakeSpark(1)}
+          spark={visibleNoteActivitySpark}
         />
         <KpiCard
           label={`总 PV (${range})`}
@@ -171,12 +179,11 @@ export function Dashboard(): JSX.Element {
           spark={(series ?? []).map((p) => p.value)}
         />
         <KpiCard
-          label="同步队列"
-          value={health ? '0' : '—'}
-          icon="sync"
+          label="近期活动"
+          value={recentActivityCount}
+          icon="activity"
           tone={sseConnected ? 'var(--ok)' : 'var(--ink-3)'}
-          sub={sseConnected ? '一切正常' : '未连接 SSE'}
-          spark={fakeSpark(3)}
+          sub={sseConnected ? `${recentActivityCount > 0 ? '收到' : '已连接,等待'}事件` : '未连接 SSE'}
         />
       </div>
 
@@ -470,13 +477,30 @@ function formatNum(n: number): string {
   return String(n);
 }
 
-/** 装饰性 fake sparkline (无真实数据时填充卡片底部) */
-function fakeSpark(seed: number): number[] {
-  const arr: number[] = [];
-  let v = 5 + seed;
-  for (let i = 0; i < 20; i += 1) {
-    v += Math.sin(i + seed * 1.7) * 1.6 + Math.cos(seed * 0.3 + i * 0.4) * 0.8;
-    arr.push(Math.max(0, v));
+/**
+ * 把笔记按 updated_at 落 14 天的 bin,产出 sparkline。
+ * 如果还没载入或全部笔记都太老 → 返回空数组,KpiCard 会不画。
+ */
+function buildActivitySpark(
+  notes: NoteSummary[] | null,
+  predicate: (n: NoteSummary) => boolean,
+): number[] {
+  if (!notes || notes.length === 0) return [];
+  const days = 14;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const buckets = new Array<number>(days).fill(0);
+  for (const n of notes) {
+    if (!predicate(n)) continue;
+    const t = Date.parse(n.updated_at);
+    if (Number.isNaN(t)) continue;
+    const d = new Date(t);
+    d.setHours(0, 0, 0, 0);
+    const diff = Math.round((today.getTime() - d.getTime()) / 86_400_000);
+    if (diff < 0 || diff >= days) continue;
+    buckets[days - 1 - diff]! += 1;
   }
-  return arr;
+  const total = buckets.reduce((a, b) => a + b, 0);
+  if (total === 0) return [];
+  return buckets;
 }
