@@ -252,7 +252,7 @@ export const api = {
   async syncDiagnostics(): Promise<SyncDiagnosticsResponse> {
     return jsonOrThrow(await req('/api/admin/sync/diagnostics'));
   },
-  async getNote(slug: string): Promise<{ note: NoteDetail; backlinks: { src_slug: string; title: string }[] }> {
+  async getNote(slug: string): Promise<{ note: NoteDetail; backlinks: { src_slug: string; title: string }[]; outlinks: { dst_slug: string; title: string }[] }> {
     return jsonOrThrow(await req(`/api/admin/notes/${encodeURIComponent(slug)}`));
   },
   async patchMeta(

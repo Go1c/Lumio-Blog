@@ -10,7 +10,7 @@ type SyncEvent =
   | { kind: 'note.published';   slug: string }
   | { kind: 'note.unpublished'; slug: string }
   | { kind: 'sync.started';     diff?: { added: number; updated: number; deleted: number } }
-  | { kind: 'sync.finished';    duration_ms: number };
+  | { kind: 'sync.completed';   stats: { added: number; updated: number; deleted: number; duration_ms: number } };
 ```
 
 > 所有 `note.*` 都会被推到 SSE `/api/admin/changes` 和注册的 webhooks。
@@ -36,7 +36,7 @@ type SyncEvent =
 ```ts
 const es = new EventSource('/api/admin/changes', { withCredentials: true });
 es.addEventListener('note.updated', (e) => { /* refresh list */ });
-es.addEventListener('sync.finished', (e) => { /* hide spinner */ });
+es.addEventListener('sync.completed', (e) => { /* hide spinner */ });
 es.addEventListener('ping', () => { /* keepalive,30s 一次 */ });
 ```
 
