@@ -110,6 +110,19 @@ export const seoSectionSchema = z.object({
   sitemap: z.boolean().optional(),
 });
 
+/** 自家广告(HfAd) — 嵌在 home.ad 下,可选。enabled !== true 时不渲染。 */
+export const hfAdSchema = z.object({
+  enabled: z.boolean().default(false),
+  variant: z.enum(['hero', 'native']).default('hero'),
+  emoji: z.string().optional(),
+  title: z.string().min(1),
+  body: z.string().optional(),
+  cta_label: z.string().optional(),
+  cta_href: z.string().url().optional(),
+  /** CSS 颜色(#hex / rgb()/var(--token)/named),默认 var(--accent) */
+  accent: z.string().optional(),
+});
+
 export const homeSectionSchema = z.object({
   hero_title_md: z.string().optional(),
   hero_intro_md: z.string().optional(),
@@ -117,6 +130,7 @@ export const homeSectionSchema = z.object({
   hero_cta_secondary: z.string().optional(),
   show_recent_posts: z.number().int().nonnegative().optional(),
   show_categories: z.boolean().optional(),
+  ad: hfAdSchema.optional(),
 });
 
 /** features.yaml 的 schema(PATCH 时 partial,GET 时填默认值) */

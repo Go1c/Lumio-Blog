@@ -20,6 +20,7 @@ import { renderNewsletter } from './templates/newsletter.js';
 import { HOME_MOBILE_CSS } from './templates/home.js';
 import { POST_MOBILE_CSS } from './templates/post.js';
 import { TAG_MOBILE_CSS } from './templates/tag.js';
+import { HF_AD_CSS } from './partials/hf-ad.js';
 
 export interface RenderOptions {
   db: Database;
@@ -1269,4 +1270,6 @@ const CSS =
   '\n' +
   POST_MOBILE_CSS +
   '\n' +
-  TAG_MOBILE_CSS;
+  TAG_MOBILE_CSS +
+  '\n' +
+  HF_AD_CSS;
