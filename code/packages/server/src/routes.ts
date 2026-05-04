@@ -160,7 +160,11 @@ export function buildApp(deps: RouteDeps): Hono {
     const slug = c.req.param('slug');
     const note = noteRepo.getBySlug(slug);
     if (!note) return c.json({ error: { code: 'not_found' } }, 404);
-    return c.json({ note, backlinks: noteRepo.backlinks(slug) });
+    return c.json({
+      note,
+      backlinks: noteRepo.backlinks(slug),
+      outlinks: noteRepo.outlinks(slug),
+    });
   });
 
   admin.patch('/notes/:slug/meta', async (c) => {
@@ -298,9 +302,9 @@ export function buildApp(deps: RouteDeps): Hono {
     const note = noteRepo.getBySlug(slug);
     if (!note) return c.json({ error: { code: 'not_found' } }, 404);
 
-    const body: { visibility?: string; searchable?: boolean } =
-      await c.req.json<{ visibility?: string; searchable?: boolean }>().catch(() => ({}));
-    const allowed: Partial<{ visibility: Visibility; searchable: 0 | 1 }> = {};
+    const body: { visibility?: string; searchable?: boolean; scheduled_at?: string | null } =
+      await c.req.json<{ visibility?: string; searchable?: boolean; scheduled_at?: string | null }>().catch(() => ({}));
+    const allowed: Partial<{ visibility: Visibility; searchable: 0 | 1; scheduled_at: string | null }> = {};
     const VALID: Visibility[] = ['public', 'unlisted', 'link-only', 'private'];
 
     if (body.visibility) {
@@ -315,6 +319,18 @@ export function buildApp(deps: RouteDeps): Hono {
         return c.json({ error: { code: 'validation_failed', field: 'searchable', message: `${v} 不允许 searchable=true` } }, 400);
       }
       allowed.searchable = body.searchable ? 1 : 0;
+    }
+    if ('scheduled_at' in body) {
+      const sa = body.scheduled_at;
+      if (sa !== null && sa !== undefined) {
+        const d = new Date(sa);
+        if (isNaN(d.getTime())) {
+          return c.json({ error: { code: 'validation_failed', field: 'scheduled_at', message: '必须是合法的 ISO 时间字符串' } }, 400);
+        }
+        allowed.scheduled_at = d.toISOString();
+      } else {
+        allowed.scheduled_at = null;
+      }
     }
 
     if (Object.keys(allowed).length === 0) {

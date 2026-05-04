@@ -56,40 +56,34 @@
 
 ## 阶段化(milestone)
 
-### M1 — Foundation 完成(week 1)
+### M1 — Foundation 完成 ✅ 已完成
 
 - WS-0 全部交付:tokens 三套对齐 / `<AdminShell>` / `<PublicLayout>` / 主题切换 / mobile 响应基线 / 字体加载
 
-完成定义:WS-A、WS-D、WS-G 的 PR 模板里能直接 `import { AdminShell } from '@opennote/ui'`。
-
-### M2 — Public 内容侧上线(week 2-3)
+### M2 — Public 内容侧上线 ✅ 已完成
 
 - WS-A:首页 / 文章 / 标签 / 404 / about 全部按 hf-* 视觉还原
-- WS-G:server 提供 search / graph data / analytics ingest / settings 读端的 API
+- WS-G:server 提供 search(FTS5) / graph / analytics ingest / settings API
 
-完成定义:线上博客打开,看上去 ≥ 95% 还原 hf-home / hf-article / hf-tag / hf-about
+### M3 — Admin 主体上线 ✅ 已完成
 
-### M3 — Admin 主体上线(week 3-4)
+- WS-D:admin shell + dashboard(KPI/趋势图/Top5/SSE) + 笔记详情(出链/backlinks/短链/定时) + note analytics
+- WS-E:settings(7 分区) + tokens + webhooks(含投递历史) + audit log
 
-- WS-D:admin shell + dashboard + 笔记详情 + analytics
-- WS-E:settings + tokens + webhooks + audit log
+### M4 — Public 交互 + Admin 增强 ✅ 已完成
 
-完成定义:登录后台,KPI 实时,改 visibility / 可见性 / 短链 / settings 都能动,所有 hf-admin / hf-extras2 settings 还原
+- WS-B:search results(FTS5+facets) / graph(d3-force) / 文章侧边评论(Giscus+自定义UI) / newsletter
+- WS-F:media library / OG generator(4 模板) / backup(危险区 + 双确认)
+- WS-C:RSS reader page / mobile CSS / 浮动操作 pill
 
-### M4 — Public 交互 + Admin 增强(week 4-5)
+### M5 — 收尾(进行中)
 
-- WS-B:search results / graph / 文章侧边评论 / newsletter
-- WS-F:media library / OG generator / backup
-- WS-C:RSS reader page / mobile views / OG 调用
-
-完成定义:所有 hf-* 页面在线上能看到对应实现
-
-### M5 — 收尾(week 5+)
-
-- WS-H 文档站
-- 全站无障碍 reaudit
-- Lighthouse / axe / VoiceOver 巡检
-- 性能优化(图片、prefetch、SSR)
+- [x] WS-H 文档站(CLI docs + Config docs)
+- [ ] 全站无障碍 reaudit(axe-core 扫描 + ACCESSIBILITY-AUDIT.md 更新)
+- [ ] Lighthouse / axe / VoiceOver 巡检(public 页面 ≥ 90)
+- [ ] 性能优化(图片懒加载、prefetch、OG 缓存策略)
+- [ ] MCP server(`/mcp` 端点)— 可选，后期
+- [ ] 自家广告卡(HfAd)— 低优先级
 
 ## 并行粒度
 

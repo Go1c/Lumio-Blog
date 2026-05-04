@@ -200,6 +200,16 @@ export class NoteRepo {
       .all(slug);
   }
 
+  outlinks(slug: string): { dst_slug: string; title: string }[] {
+    return this.db
+      .prepare<[string], { dst_slug: string; title: string }>(
+        `SELECT l.dst_slug, COALESCE(n.title, l.dst_slug) AS title
+         FROM links l LEFT JOIN notes n ON n.slug = l.dst_slug
+         WHERE l.src_slug = ?`,
+      )
+      .all(slug);
+  }
+
   // -------------------------------------------------------------------
   // WS-G2 — Search FTS5 + Graph
   // -------------------------------------------------------------------
