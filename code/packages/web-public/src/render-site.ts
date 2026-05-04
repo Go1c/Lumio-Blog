@@ -139,14 +139,18 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     'utf-8',
   );
 
-  // 静态产物
-  await writeFile(join(opts.out, 'feed.xml'), renderFeed(publicNotes, opts.config), 'utf-8');
+  // 静态产物 — RSS 用 rss_includable=1 维度过滤;sitemap 用 seo_indexable=1。
+  // 老库未跑 migration 时,这两列都不存在 → 回退到 publicNotes(由 backfill 把 searchable
+  // 复制过来,语义和 v0.6 之前一致)。
+  const rssNotes = publicNotes.filter((n) => (n.rss_includable ?? 1) === 1);
+  const seoNotes = publicNotes.filter((n) => (n.seo_indexable ?? 1) === 1);
+  await writeFile(join(opts.out, 'feed.xml'), renderFeed(rssNotes, opts.config), 'utf-8');
 
   // 复制 public/feed.xsl(WS-C — 浏览器直接打开 feed.xml 时美化渲染)
   await copyStaticAssets(opts.out);
   await writeFile(
     join(opts.out, 'sitemap.xml'),
-    renderSitemap(publicNotes, [...byTag.keys()], opts.config),
+    renderSitemap(seoNotes, [...byTag.keys()], opts.config),
     'utf-8',
   );
   await writeFile(

@@ -19,10 +19,12 @@ export class NoteRepo {
         .prepare(
           `INSERT INTO notes (
             slug, title, summary, body_html, body_text, visibility, searchable,
+            seo_indexable, rss_includable, featured_on_home,
             short_id, source_path, created_at, updated_at, published_at, scheduled_at,
             word_count, reading_minutes, cover, hash
           ) VALUES (
             @slug, @title, @summary, @body_html, @body_text, @visibility, @searchable,
+            @seo_indexable, @rss_includable, @featured_on_home,
             @short_id, @source_path, @created_at, @updated_at, @published_at, @scheduled_at,
             @word_count, @reading_minutes, @cover, @hash
           )
@@ -33,6 +35,9 @@ export class NoteRepo {
             body_text = excluded.body_text,
             visibility = excluded.visibility,
             searchable = excluded.searchable,
+            seo_indexable = excluded.seo_indexable,
+            rss_includable = excluded.rss_includable,
+            featured_on_home = excluded.featured_on_home,
             short_id = excluded.short_id,
             source_path = excluded.source_path,
             updated_at = excluded.updated_at,
@@ -106,7 +111,18 @@ export class NoteRepo {
 
   patchMeta(
     slug: string,
-    patch: Partial<Pick<NoteRow, 'visibility' | 'searchable' | 'published_at' | 'scheduled_at'>>,
+    patch: Partial<
+      Pick<
+        NoteRow,
+        | 'visibility'
+        | 'searchable'
+        | 'seo_indexable'
+        | 'rss_includable'
+        | 'featured_on_home'
+        | 'published_at'
+        | 'scheduled_at'
+      >
+    >,
   ): void {
     const fields = Object.keys(patch);
     if (fields.length === 0) return;
@@ -542,7 +558,12 @@ export class ShortLinkRepo {
         `INSERT INTO short_links (short_id, slug, created_at, tombstoned_at)
          VALUES (@short_id, @slug, @created_at, @tombstoned_at)`,
       )
-      .run(link);
+      .run({
+        short_id: link.short_id,
+        slug: link.slug,
+        created_at: link.created_at,
+        tombstoned_at: link.tombstoned_at,
+      });
   }
 
   getActive(slug: string): ShortLink | undefined {
@@ -553,9 +574,36 @@ export class ShortLinkRepo {
       .get(slug);
   }
 
+  /** 通过 short_id 拉一行(包含 password_hash / 计数等)。 */
+  getByShortId(shortId: string): ShortLink | undefined {
+    return this.db
+      .prepare<[string], ShortLink>(
+        `SELECT * FROM short_links WHERE short_id = ?`,
+      )
+      .get(shortId);
+  }
+
   tombstone(shortId: string): void {
     this.db
       .prepare('UPDATE short_links SET tombstoned_at = ? WHERE short_id = ?')
       .run(new Date().toISOString(), shortId);
+  }
+
+  /** 命中短链时调用 — 计数 + 1 并刷新 last_accessed_at。 */
+  recordAccess(shortId: string): void {
+    this.db
+      .prepare(
+        `UPDATE short_links
+         SET access_count = access_count + 1, last_accessed_at = ?
+         WHERE short_id = ?`,
+      )
+      .run(new Date().toISOString(), shortId);
+  }
+
+  /** 设置 / 移除短链密码。null = 移除。 */
+  setPasswordHash(shortId: string, hash: string | null): void {
+    this.db
+      .prepare('UPDATE short_links SET password_hash = ? WHERE short_id = ?')
+      .run(hash, shortId);
   }
 }

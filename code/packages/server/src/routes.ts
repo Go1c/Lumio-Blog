@@ -5,6 +5,13 @@ import { resolve } from 'node:path';
 import { NoteRepo, ShortLinkRepo, SubscribersRepo } from '@opennote/db';
 import type { SiteConfig, SyncEvent, Visibility } from '@opennote/core';
 import { AuthService, clearSessionCookie, setSessionCookie, getSessionToken } from './auth.js';
+import {
+  hasValidUnlockCookie,
+  hashShortLinkPassword,
+  passwordChallengeHtml,
+  setUnlockCookie,
+  verifyShortLinkPassword,
+} from './short-link-password.js';
 import { TokenService, requireToken } from './tokens.js';
 import { WebhookService } from './webhooks.js';
 import { AuditLog } from './audit.js';
@@ -91,14 +98,60 @@ export function buildApp(deps: RouteDeps): Hono {
 
   // /api/search is registered by registerSearch (WS-G2) below — provides FTS5 + facets
 
-  app.get('/n/:short_id', (c) => {
+  app.get('/n/:short_id', async (c) => {
     const sid = c.req.param('short_id');
+    return handleShortLinkVisit(c, sid);
+  });
+
+  // Password challenge submission — same URL, POST form-encoded.
+  app.post('/n/:short_id', async (c) => {
+    const sid = c.req.param('short_id');
+    const link = shortRepo.getByShortId(sid);
+    if (!link || link.tombstoned_at) {
+      return c.html(privateInterceptHtml('这条短链不可用', '它可能已被撤销，或从未存在。'), 404);
+    }
+    if (!link.password_hash) {
+      // No password — just behave like GET.
+      return handleShortLinkVisit(c, sid);
+    }
+    let password = '';
+    try {
+      const form = await c.req.formData();
+      password = (form.get('password') as string | null) ?? '';
+    } catch {
+      password = '';
+    }
+    const ok = await verifyShortLinkPassword(password, link.password_hash);
+    if (!ok) {
+      return c.html(passwordChallengeHtml({ shortId: sid, error: '密码错误,请重试。' }), 401);
+    }
+    setUnlockCookie(c, sid, link.password_hash);
+    return handleShortLinkVisit(c, sid);
+  });
+
+  async function handleShortLinkVisit(c: Context, sid: string): Promise<Response> {
+    const link = shortRepo.getByShortId(sid);
+    if (!link || link.tombstoned_at) {
+      return c.html(privateInterceptHtml('这条短链不可用', '它可能已被撤销，或从未存在。'), 404);
+    }
     const row = noteRepo.getByShortId(sid);
     if (!row) {
       return c.html(privateInterceptHtml('这条短链不可用', '它可能已被撤销，或从未存在。'), 404);
     }
+    if (link.password_hash) {
+      if (!hasValidUnlockCookie(c, sid, link.password_hash)) {
+        // Render challenge — do NOT count as access until unlocked.
+        return c.html(passwordChallengeHtml({ shortId: sid }), 401);
+      }
+    }
+    // Unlocked (or no password) → record hit and redirect.
+    try {
+      shortRepo.recordAccess(sid);
+    } catch {
+      // counter is best-effort; don't block redirect.
+    }
     return c.redirect(`/posts/${row.slug}.html`, 302);
-  });
+  }
 
   // ---------- Auth ----------
   app.post('/api/auth/login', async (c) => {
@@ -180,10 +233,28 @@ export function buildApp(deps: RouteDeps): Hono {
     const slug = c.req.param('slug');
     const note = noteRepo.getBySlug(slug);
     if (!note) return c.json({ error: { code: 'not_found' } }, 404);
+    let short_link: {
+      short_id: string;
+      has_password: boolean;
+      access_count: number;
+      last_accessed_at: string | null;
+    } | null = null;
+    if (note.short_id) {
+      const link = shortRepo.getByShortId(note.short_id);
+      if (link && !link.tombstoned_at) {
+        short_link = {
+          short_id: link.short_id,
+          has_password: !!link.password_hash,
+          access_count: link.access_count ?? 0,
+          last_accessed_at: link.last_accessed_at ?? null,
+        };
+      }
+    }
     return c.json({
       note,
       backlinks: noteRepo.backlinks(slug),
       outlinks: noteRepo.outlinks(slug),
+      short_link,
     });
   });
 
@@ -200,6 +271,60 @@ export function buildApp(deps: RouteDeps): Hono {
     audit.write({ actor: c.get('actor') ?? 'owner', action: 'shortlink.rotate', target: slug });
     await deps.triggerSync();
     return c.json({ ok: true });
+  });
+
+  // 短链元信息(密码状态 + 计数)— 给管理员 UI。
+  admin.get('/short-links/:short_id', (c) => {
+    const sid = c.req.param('short_id');
+    const link = shortRepo.getByShortId(sid);
+    if (!link) return c.json({ error: { code: 'not_found' } }, 404);
+    return c.json({
+      short_id: link.short_id,
+      slug: link.slug,
+      tombstoned_at: link.tombstoned_at,
+      has_password: !!link.password_hash,
+      access_count: link.access_count ?? 0,
+      last_accessed_at: link.last_accessed_at ?? null,
+    });
+  });
+
+  // 设置 / 移除短链密码。{ password: string } 设置;{ password: null } 移除。
+  admin.post('/short-links/:short_id/password', async (c) => {
+    const sid = c.req.param('short_id');
+    const link = shortRepo.getByShortId(sid);
+    if (!link) return c.json({ error: { code: 'not_found' } }, 404);
+    if (link.tombstoned_at) {
+      return c.json({ error: { code: 'gone', message: '短链已撤销' } }, 410);
+    }
+    const body: { password?: string | null } = await c.req
+      .json<{ password?: string | null }>()
+      .catch(() => ({}));
+    if (body.password === null || body.password === undefined || body.password === '') {
+      shortRepo.setPasswordHash(sid, null);
+      audit.write({
+        actor: c.get('actor') ?? 'owner',
+        action: 'shortlink.password.clear',
+        target: sid,
+      });
+      return c.json({ ok: true, has_password: false });
+    }
+    if (typeof body.password !== 'string') {
+      return c.json({ error: { code: 'validation_failed', field: 'password' } }, 400);
+    }
+    if (body.password.length < 4 || body.password.length > 256) {
+      return c.json(
+        { error: { code: 'validation_failed', field: 'password', message: '密码长度需在 4-256' } },
+        400,
+      );
+    }
+    const hash = await hashShortLinkPassword(body.password);
+    shortRepo.setPasswordHash(sid, hash);
+    audit.write({
+      actor: c.get('actor') ?? 'owner',
+      action: 'shortlink.password.set',
+      target: sid,
+    });
+    return c.json({ ok: true, has_password: true });
   });
 
   admin.post('/sync', async (c) => {
@@ -326,9 +451,23 @@ export function buildApp(deps: RouteDeps): Hono {
     const note = noteRepo.getBySlug(slug);
     if (!note) return c.json({ error: { code: 'not_found' } }, 404);
 
-    const body: { visibility?: string; searchable?: boolean; scheduled_at?: string | null } =
-      await c.req.json<{ visibility?: string; searchable?: boolean; scheduled_at?: string | null }>().catch(() => ({}));
-    const allowed: Partial<{ visibility: Visibility; searchable: 0 | 1; scheduled_at: string | null }> = {};
+    interface MetaBody {
+      visibility?: string;
+      searchable?: boolean;
+      seo_indexable?: boolean;
+      rss_includable?: boolean;
+      featured_on_home?: boolean;
+      scheduled_at?: string | null;
+    }
+    const body: MetaBody = await c.req.json<MetaBody>().catch(() => ({}));
+    const allowed: Partial<{
+      visibility: Visibility;
+      searchable: 0 | 1;
+      seo_indexable: 0 | 1;
+      rss_includable: 0 | 1;
+      featured_on_home: 0 | 1;
+      scheduled_at: string | null;
+    }> = {};
     const VALID: Visibility[] = ['public', 'unlisted', 'link-only', 'private'];
 
     if (body.visibility) {
@@ -337,13 +476,30 @@ export function buildApp(deps: RouteDeps): Hono {
       }
       allowed.visibility = body.visibility as Visibility;
     }
-    if (typeof body.searchable === 'boolean') {
-      const v = (allowed.visibility ?? note.visibility);
-      if ((v === 'link-only' || v === 'private') && body.searchable) {
-        return c.json({ error: { code: 'validation_failed', field: 'searchable', message: `${v} 不允许 searchable=true` } }, 400);
+    const effectiveVis = allowed.visibility ?? note.visibility;
+    const restricted = effectiveVis === 'link-only' || effectiveVis === 'private';
+
+    const checkFlag = (
+      val: boolean | undefined,
+      field: 'searchable' | 'seo_indexable' | 'rss_includable' | 'featured_on_home',
+    ): Response | null => {
+      if (typeof val !== 'boolean') return null;
+      if (restricted && val) {
+        return c.json(
+          { error: { code: 'validation_failed', field, message: `${effectiveVis} 不允许 ${field}=true` } },
+          400,
+        );
       }
-      allowed.searchable = body.searchable ? 1 : 0;
-    }
+      allowed[field] = val ? 1 : 0;
+      return null;
+    };
+    const errs = [
+      checkFlag(body.searchable, 'searchable'),
+      checkFlag(body.seo_indexable, 'seo_indexable'),
+      checkFlag(body.rss_includable, 'rss_includable'),
+      checkFlag(body.featured_on_home, 'featured_on_home'),
+    ];
+    for (const e of errs) if (e) return e;
     if ('scheduled_at' in body) {
       const sa = body.scheduled_at;
       if (sa !== null && sa !== undefined) {

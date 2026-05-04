@@ -1,7 +1,7 @@
 import type { JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
 import { Button, HfIcon, Tag, Toggle } from '@opennote/ui';
-import { api, type NoteDetail, type Visibility } from '../api.js';
+import { api, type NoteDetail, type ShortLinkInfo, type Visibility } from '../api.js';
 
 const VISIBILITIES: { id: Visibility; label: string; sub: string }[] = [
   { id: 'public', label: '公开', sub: '任何人可访问 URL' },
@@ -10,20 +10,32 @@ const VISIBILITIES: { id: Visibility; label: string; sub: string }[] = [
   { id: 'private', label: '私有', sub: '只在后台可见' },
 ];
 
+type SearchFlagId = 'searchable' | 'seo_indexable' | 'rss_includable' | 'featured_on_home';
+const SEARCH_FLAGS: { id: SearchFlagId; label: string; sub: string }[] = [
+  { id: 'searchable', label: '站内搜索', sub: '出现在 /search' },
+  { id: 'seo_indexable', label: 'SEO robots', sub: '允许搜索引擎抓取 / 收入 sitemap' },
+  { id: 'rss_includable', label: 'RSS 收录', sub: '出现在 /feed.xml' },
+  { id: 'featured_on_home', label: '首页推荐', sub: '上首页推荐位' },
+];
+
 export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
   const [note, setNote] = useState<NoteDetail | null>(null);
   const [backlinks, setBacklinks] = useState<{ src_slug: string; title: string }[]>([]);
   const [outlinks, setOutlinks] = useState<{ dst_slug: string; title: string }[]>([]);
+  const [shortLink, setShortLink] = useState<ShortLinkInfo | null>(null);
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null);
   const [busy, setBusy] = useState(false);
   const [scheduledOn, setScheduledOn] = useState(false);
   const [scheduledAt, setScheduledAt] = useState('');
+  const [pwModalOpen, setPwModalOpen] = useState(false);
+  const [pwInput, setPwInput] = useState('');
 
   const load = (): Promise<void> =>
     api.getNote(slug).then((r) => {
       setNote(r.note);
       setBacklinks(r.backlinks);
       setOutlinks(r.outlinks ?? []);
+      setShortLink(r.short_link ?? null);
       if (r.note.scheduled_at) {
         setScheduledOn(true);
         setScheduledAt(toLocalInput(r.note.scheduled_at));
@@ -43,9 +55,18 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
     if (v === note.visibility) return;
     setBusy(true);
     try {
-      const patch: { visibility: Visibility; searchable?: boolean } = { visibility: v };
-      if ((v === 'link-only' || v === 'private') && note.searchable) {
-        patch.searchable = false;
+      const patch: {
+        visibility: Visibility;
+        searchable?: boolean;
+        seo_indexable?: boolean;
+        rss_includable?: boolean;
+        featured_on_home?: boolean;
+      } = { visibility: v };
+      if (v === 'link-only' || v === 'private') {
+        if (note.searchable) patch.searchable = false;
+        if (note.seo_indexable) patch.seo_indexable = false;
+        if (note.rss_includable) patch.rss_includable = false;
+        if (note.featured_on_home) patch.featured_on_home = false;
       }
       await api.patchMeta(slug, patch);
       setToast({ msg: `已改为 ${v}` });
@@ -57,11 +78,12 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
     }
   };
 
-  const toggleSearchable = async (): Promise<void> => {
+  const toggleSearchFlag = async (flag: SearchFlagId): Promise<void> => {
     setBusy(true);
     try {
-      await api.patchMeta(slug, { searchable: !note.searchable });
-      setToast({ msg: `searchable: ${!note.searchable}` });
+      const current = (note as unknown as Record<SearchFlagId, 0 | 1>)[flag];
+      await api.patchMeta(slug, { [flag]: !current });
+      setToast({ msg: `${flag}: ${!current}` });
       await load();
     } catch (e) {
       setToast({ msg: (e as Error).message, err: true });
@@ -106,6 +128,43 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
       setToast({ msg: '短链已复制' });
     } catch {
       setToast({ msg: '复制失败', err: true });
+    }
+  };
+
+  const savePassword = async (): Promise<void> => {
+    if (!note.short_id) return;
+    if (pwInput.length < 4) {
+      setToast({ msg: '密码至少 4 字符', err: true });
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.setShortLinkPassword(note.short_id, pwInput);
+      setToast({ msg: '已设置密码' });
+      setPwModalOpen(false);
+      setPwInput('');
+      await load();
+    } catch (e) {
+      setToast({ msg: (e as Error).message, err: true });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removePassword = async (): Promise<void> => {
+    if (!note.short_id) return;
+    if (!confirm('移除密码后任何人凭短链都能访问,确定?')) return;
+    setBusy(true);
+    try {
+      await api.setShortLinkPassword(note.short_id, null);
+      setToast({ msg: '已移除密码' });
+      setPwModalOpen(false);
+      setPwInput('');
+      await load();
+    } catch (e) {
+      setToast({ msg: (e as Error).message, err: true });
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -225,41 +284,84 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
           </div>
         </div>
 
-        {/* searchable */}
+        {/* searchable — 4 维 */}
         <div class="ui-card" style={{ padding: 14 }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 12 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
             <HfIcon name="search" size={14} color="var(--accent)" />
-            <span style={{ fontWeight: 600, fontSize: 13 }}>可搜索</span>
+            <span style={{ fontWeight: 600, fontSize: 13 }}>可发现性</span>
           </div>
-          <div
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              padding: '6px 0',
-              borderTop: 'none',
-            }}
-          >
-            <span class="hf-sm hf-grow">站内搜索可见</span>
-            <input
-              type="checkbox"
-              role="switch"
-              class="ui-toggle"
-              checked={!!note.searchable}
-              aria-checked={note.searchable ? 'true' : 'false'}
-              disabled={busy || searchableDisabled}
-              aria-label="切换可搜索"
-              aria-describedby={searchableDisabled ? 'searchable-help' : undefined}
-              onChange={() => void toggleSearchable()}
-            />
+          <div role="group" aria-label="文章可发现性">
+            {SEARCH_FLAGS.map((f) => {
+              const checked = !!(note as unknown as Record<SearchFlagId, 0 | 1>)[f.id];
+              const helpId = `${f.id}-help`;
+              return (
+                <div
+                  key={f.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'flex-start',
+                    gap: 8,
+                    padding: '6px 0',
+                    borderTop: '1px solid var(--line)',
+                  }}
+                >
+                  <div style={{ flex: 1, minWidth: 0 }}>
+                    <div class="hf-sm" style={{ fontWeight: 500 }}>{f.label}</div>
+                    <div
+                      id={helpId}
+                      class="hf-tiny hf-muted"
+                      style={{ marginTop: 1, lineHeight: 1.4 }}
+                    >
+                      {f.sub}
+                    </div>
+                  </div>
+                  <button
+                    type="button"
+                    class="ui-toggle"
+                    role="switch"
+                    aria-checked={checked ? 'true' : 'false'}
+                    aria-pressed={checked ? 'true' : 'false'}
+                    aria-label={`切换 ${f.label}`}
+                    aria-describedby={helpId}
+                    disabled={busy || searchableDisabled}
+                    onClick={() => void toggleSearchFlag(f.id)}
+                    style={{
+                      width: 36,
+                      height: 20,
+                      borderRadius: 10,
+                      border: '1px solid var(--line-strong)',
+                      background: checked ? 'var(--accent)' : 'var(--bg-sunk)',
+                      position: 'relative',
+                      cursor: busy || searchableDisabled ? 'not-allowed' : 'pointer',
+                      opacity: busy || searchableDisabled ? 0.55 : 1,
+                      flexShrink: 0,
+                      marginTop: 2,
+                    }}
+                  >
+                    <span
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        top: 1,
+                        left: checked ? 17 : 1,
+                        width: 16,
+                        height: 16,
+                        borderRadius: '50%',
+                        background: '#fff',
+                        boxShadow: '0 1px 2px rgba(0,0,0,0.2)',
+                        transition: 'left 0.15s',
+                      }}
+                    />
+                  </button>
+                </div>
+              );
+            })}
           </div>
           {searchableDisabled && (
             <p id="searchable-help" class="hf-tiny hf-muted" style={{ marginTop: 8 }}>
-              {note.visibility} 不允许 searchable
+              {note.visibility} 自动关闭以上 4 个维度
             </p>
           )}
-          <p class="hf-tiny hf-muted" style={{ marginTop: 8, lineHeight: 1.5 }}>
-            私有 / 仅链接 自动从搜索索引中移除。
-          </p>
         </div>
 
         {/* short link */}
@@ -294,6 +396,18 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
             </button>
             <button
               type="button"
+              class="ui-btn ui-btn--sm"
+              disabled={!note.short_id || busy}
+              onClick={() => {
+                setPwInput('');
+                setPwModalOpen(true);
+              }}
+              aria-label="设置短链密码"
+            >
+              <HfIcon name="lock" size={11} /> {shortLink?.has_password ? '改密码' : '设密码'}
+            </button>
+            <button
+              type="button"
               class="ui-btn ui-btn--sm ui-btn--danger"
               disabled={busy}
               onClick={() => void rotateLink()}
@@ -301,7 +415,13 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
               <HfIcon name="sync" size={11} /> 旋转
             </button>
           </div>
-          <p class="hf-tiny hf-muted" style={{ marginTop: 8 }}>
+          {note.short_id && shortLink && (
+            <p class="hf-tiny hf-muted" style={{ marginTop: 8 }}>
+              访问 {shortLink.access_count} 次{shortLink.last_accessed_at ? ` · 上次 ${timeAgoZh(shortLink.last_accessed_at)}` : ''}
+              {shortLink.has_password ? ' · 已加密' : ''}
+            </p>
+          )}
+          <p class="hf-tiny hf-muted" style={{ marginTop: 4 }}>
             旋转后,旧链接立即 404 (会留墓碑)。
           </p>
         </div>
@@ -392,6 +512,80 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
           dangerouslySetInnerHTML={{ __html: note.body_html }}
         />
       </div>
+
+      {pwModalOpen && note.short_id && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-label="设置短链密码"
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(0,0,0,0.4)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 100,
+          }}
+          onClick={(e) => {
+            if (e.target === e.currentTarget) setPwModalOpen(false);
+          }}
+        >
+          <div
+            class="ui-card"
+            style={{ padding: 18, width: 360, maxWidth: '90vw', background: 'var(--bg)' }}
+          >
+            <div style={{ fontWeight: 600, fontSize: 14, marginBottom: 8 }}>
+              短链密码 — /n/{note.short_id}
+            </div>
+            <p class="hf-tiny hf-muted" style={{ marginTop: 0, marginBottom: 12 }}>
+              访问者需输入密码才能跳转。已加密短链仍会计入访问统计。
+            </p>
+            <input
+              type="password"
+              class="ui-input"
+              placeholder="新密码 (至少 4 字符)"
+              value={pwInput}
+              autoFocus
+              onInput={(e) => setPwInput((e.currentTarget as HTMLInputElement).value)}
+              style={{ width: '100%', padding: '8px 10px', fontSize: 14 }}
+              aria-label="新密码"
+            />
+            <div style={{ display: 'flex', gap: 6, marginTop: 12, justifyContent: 'flex-end', flexWrap: 'wrap' }}>
+              {shortLink?.has_password && (
+                <button
+                  type="button"
+                  class="ui-btn ui-btn--sm ui-btn--danger"
+                  disabled={busy}
+                  onClick={() => void removePassword()}
+                  style={{ marginRight: 'auto' }}
+                >
+                  移除密码
+                </button>
+              )}
+              <button
+                type="button"
+                class="ui-btn ui-btn--sm ui-btn--ghost"
+                disabled={busy}
+                onClick={() => {
+                  setPwModalOpen(false);
+                  setPwInput('');
+                }}
+              >
+                取消
+              </button>
+              <button
+                type="button"
+                class="ui-btn ui-btn--sm"
+                disabled={busy || pwInput.length < 4}
+                onClick={() => void savePassword()}
+              >
+                保存
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {toast && (
         <div

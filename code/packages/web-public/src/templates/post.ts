@@ -191,7 +191,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     title: `${note.title} · ${config.site.title}`,
     description: note.summary ?? '',
     config,
-    noindex: note.visibility !== 'public',
+    noindex: note.visibility !== 'public' || (note.seo_indexable ?? 1) === 0,
     body,
     active: 'home',
   });
