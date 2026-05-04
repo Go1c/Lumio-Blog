@@ -3,6 +3,7 @@ import { streamSSE } from 'hono/streaming';
 import type { Database } from 'better-sqlite3';
 import { resolve } from 'node:path';
 import { NoteRepo, ShortLinkRepo, SubscribersRepo } from '@opennote/db';
+import { generateUniqueShortId } from '@opennote/core';
 import type { SiteConfig, SyncEvent, Visibility } from '@opennote/core';
 import { AuthService, clearSessionCookie, setSessionCookie, getSessionToken } from './auth.js';
 import {
@@ -262,8 +263,7 @@ export function buildApp(deps: RouteDeps): Hono {
     return patchMeta(c);
   });
 
-  // 仪表盘:统计/列出 30 天(默认)未访问的活跃短链。
-  // 当前用 created_at 作为 last_accessed_at 的代理(PR-C 引入 last_accessed_at)。
+  // 仪表盘:统计/列出 N 天未访问的活跃短链。
   admin.get('/short-links/idle', (c) => {
     const days = Math.max(1, Math.min(Number(c.req.query('days') ?? 30), 365));
     const count = shortRepo.countIdle(days);
@@ -271,21 +271,52 @@ export function buildApp(deps: RouteDeps): Hono {
       short_id: s.short_id,
       slug: s.slug,
       created_at: s.created_at,
-      // last_accessed_at 暂未落库,先回 null,前端不依赖该字段判断
-      last_accessed_at: null,
+      last_accessed_at: s.last_accessed_at ?? null,
     }));
     return c.json({ count, days, items });
   });
 
+  // 生成或旋转短链 — 同步立即落库,不再依赖下一次 sync
+  // POST body { rotate?: boolean } 控制行为(默认 false = 仅在没有时生成)
   admin.post('/notes/:slug/short-link', async (c) => {
     const slug = c.req.param('slug');
     const note = noteRepo.getBySlug(slug);
     if (!note) return c.json({ error: { code: 'not_found' } }, 404);
+
+    let rotate = false;
+    try {
+      const j = (await c.req.json().catch(() => null)) as { rotate?: boolean } | null;
+      if (j && j.rotate === true) rotate = true;
+    } catch {
+      // ignore — 无 body 也允许
+    }
+
     const existing = shortRepo.getActive(slug);
+    if (existing && !rotate) {
+      // 已经有了,且不要求旋转 — 直接返回
+      return c.json({ ok: true, short_id: existing.short_id, rotated: false });
+    }
     if (existing) shortRepo.tombstone(existing.short_id);
-    audit.write({ actor: c.get('actor') ?? 'owner', action: 'shortlink.rotate', target: slug });
-    await deps.triggerSync();
-    return c.json({ ok: true });
+
+    const newId = generateUniqueShortId((id) => shortRepo.exists(id));
+    shortRepo.create({
+      short_id: newId,
+      slug,
+      created_at: new Date().toISOString(),
+      tombstoned_at: null,
+    });
+    // 把 notes.short_id 列也更新,这样前台/后台读 NoteRow 立刻就能看到
+    noteRepo.setShortId(slug, newId);
+
+    audit.write({
+      actor: c.get('actor') ?? 'owner',
+      action: rotate ? 'shortlink.rotate' : 'shortlink.create',
+      target: slug,
+      diff: JSON.stringify({ from: existing?.short_id ?? null, to: newId }),
+    });
+    // 触发后台 sync 让前台静态页跟上,但不阻塞返回
+    void deps.triggerSync().catch(() => undefined);
+    return c.json({ ok: true, short_id: newId, rotated: rotate && !!existing });
   });
 
   // 短链元信息(密码状态 + 计数)— 给管理员 UI。
@@ -427,7 +458,12 @@ export function buildApp(deps: RouteDeps): Hono {
     localRoot: resolve(dataDir, 'media'),
     urlPrefix: '/static/media',
   });
-  mediaRoutes.register(app, { db: deps.db, store: mediaStore, bus: deps.bus });
+  mediaRoutes.register(app, {
+    db: deps.db,
+    store: mediaStore,
+    bus: deps.bus,
+    ...(deps.vaultDir ? { vaultDir: deps.vaultDir } : {}),
+  });
   if (mediaStore instanceof LocalMediaStore) {
     mediaRoutes.registerLocalMediaStatic(app, mediaStore);
   }

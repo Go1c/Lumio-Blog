@@ -1115,6 +1115,26 @@ html[data-theme="dark"] .wsb-graph__canvas {
 .wsb-comments__error { color: var(--danger-text, #b91c1c); width: 100%; margin: 4px 0 0; }
 .wsb-comments__foot { margin-top: 10px; text-align: right; }
 
+/* reply button + nested replies */
+.wsb-comments__card-foot {
+  display: flex; gap: 8px; justify-content: flex-end;
+  margin-top: 6px;
+}
+.wsb-comments__reply-btn {
+  background: transparent; border: 0;
+  color: var(--ink-3);
+  font: inherit; cursor: pointer;
+  padding: 2px 6px; border-radius: 4px;
+}
+.wsb-comments__reply-btn:hover { background: var(--bg-soft); color: var(--accent); }
+.wsb-comments__replies {
+  list-style: none; padding: 0;
+  margin: 6px 0 0 14px;
+  border-left: 2px solid var(--line);
+  padding-left: 8px;
+}
+.wsb-comments__card--reply { margin-bottom: 6px; }
+
 /* highlight in article body */
 .wsb-comments__hl {
   background: #fde68a;
@@ -1127,7 +1147,8 @@ html[data-theme="dark"] .wsb-graph__canvas {
 html[data-theme="dark"] .wsb-comments__hl { background: rgba(253, 230, 138, .25); }
 .wsb-comments__hl.is-active { background: var(--accent); color: #fff; }
 
-/* selection bubble */
+/* selection bubble — 默认隐藏,只有去掉 [hidden] 才出现 */
+.wsb-selbubble[hidden] { display: none !important; }
 .wsb-selbubble {
   position: absolute; z-index: 50;
   display: flex; align-items: center; gap: 4px;

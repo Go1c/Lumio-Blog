@@ -5,6 +5,7 @@ import { migration006Analytics } from './migrations/006_analytics.js';
 import { migration007MediaBackup } from './migrations/007_media_backup.js';
 import { migration008CommentsSubscribers } from './migrations/008_comments_subscribers.js';
 import { migration009SearchableShortlinkExtras } from './migrations/009_searchable_shortlink_extras.js';
+import { migration010CommentsThreading } from './migrations/010_comments_threading.js';
 
 interface Migration {
   version: number;
@@ -136,6 +137,7 @@ const MIGRATIONS: Migration[] = [
   migration007MediaBackup,
   migration008CommentsSubscribers,
   migration009SearchableShortlinkExtras,
+  migration010CommentsThreading,
 ];
 
 export function runMigrations(db: Database): void {

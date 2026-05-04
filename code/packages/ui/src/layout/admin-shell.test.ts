@@ -18,13 +18,8 @@ describe('default admin menu', () => {
     expect(item?.disabled).not.toBe(true);
   });
 
-  it('links to the FNS sync settings page', () => {
+  it('does not have a top-level FNS sync sidebar item (FNS lives inside settings)', () => {
     const item = findMenuItem('#/settings/fns');
-
-    expect(item).toMatchObject({
-      label: 'FNS 同步',
-      href: '#/settings/fns',
-    });
-    expect(item?.disabled).not.toBe(true);
+    expect(item).toBeUndefined();
   });
 });

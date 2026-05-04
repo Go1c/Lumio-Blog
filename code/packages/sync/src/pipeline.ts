@@ -88,8 +88,7 @@ async function processNote(
   const isNew = !existing;
   const changed = !existing || existing.hash !== parsed.hash;
 
-  const summary =
-    parsed.frontmatter.summary ?? text.slice(0, 200) + (text.length > 200 ? '…' : '');
+  const summary = parsed.frontmatter.summary ?? autoSummary(text);
   const cover = (parsed.frontmatter.cover as string | undefined) ?? null;
 
   const row: NoteRow = {
@@ -495,6 +494,20 @@ export function syncRemove(absPath: string, opts: SyncOptions): void {
   if (!row) return;
   noteRepo.delete(row.slug);
   opts.onEvent?.({ kind: 'note.unpublished', slug: row.slug, reason: 'source removed' });
+}
+
+/**
+ * 自动摘要:取首段(\n\n 之前)的首句,最多 140 字。
+ * 比起裸 slice(0, 200) 更像一段 tagline,而不是被腰斩的正文。
+ */
+function autoSummary(text: string): string {
+  const cleaned = text.replace(/\s+/g, ' ').trim();
+  if (!cleaned) return '';
+  const firstPara = text.split(/\n\s*\n/)[0]?.replace(/\s+/g, ' ').trim() ?? cleaned;
+  const sentenceMatch = firstPara.match(/^[\s\S]*?[。！？!?.](?:["'”’」』)\]]*)/);
+  let candidate = (sentenceMatch ? sentenceMatch[0] : firstPara).trim();
+  if (candidate.length > 140) candidate = candidate.slice(0, 140).trim() + '…';
+  return candidate;
 }
 
 async function walkMarkdown(dir: string, out: string[] = []): Promise<string[]> {

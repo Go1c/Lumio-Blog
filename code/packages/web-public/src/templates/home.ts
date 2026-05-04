@@ -27,27 +27,18 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
   const heroTitleHtml = renderInlineMd(heroTitleSrc);
   const heroIntroHtml = renderInlineMd(heroIntroSrc);
 
-  // 左目录:按标签分组取 top — 作为简化的 "目录树"
+  // 左目录:把所有标签按文章数排序展示一份完整列表(不再人为对半切成 文章/系列)
   const tagEntries = [...byTag.entries()]
-    .sort((a, b) => b[1].length - a[1].length)
-    .slice(0, 9);
-  const halfPoint = Math.ceil(tagEntries.length / 2);
-  const groupA = tagEntries.slice(0, halfPoint);
-  const groupB = tagEntries.slice(halfPoint);
+    .sort((a, b) => b[1].length - a[1].length);
 
-  const renderCategoryGroup = (
-    title: string,
-    emoji: string,
-    items: Array<[string, NoteRow[]]>,
-    gid: string,
-  ): string => {
-    if (!items.length) return '';
+  const renderCatalog = (items: Array<[string, NoteRow[]]>): string => {
+    if (!items.length) return '<p class="hf-tiny hf-muted" style="padding:4px 10px;margin:0">暂无标签</p>';
     const rows = items
       .map(
         ([tag, notes]) => `
           <li>
             <a class="wsa-cat__row" href="/tags/${esc(encodeURIComponent(tag))}.html">
-              <span class="wsa-cat__name">${esc(tag)}</span>
+              <span class="wsa-cat__name">#${esc(tag)}</span>
               <span class="hf-mono hf-tiny hf-faint" aria-label="${notes.length} 篇">${notes.length}</span>
             </a>
           </li>`,
@@ -55,14 +46,21 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
       .join('');
     return `
       <div class="wsa-cat__group">
-        <div class="wsa-cat__title" id="${gid}"><span aria-hidden="true">${emoji}</span> ${esc(title)}</div>
-        <ul class="wsa-cat__list" aria-labelledby="${gid}">${rows}</ul>
+        <div class="wsa-cat__title" id="wsa-cat-all"><span aria-hidden="true">🏷️</span> 标签</div>
+        <ul class="wsa-cat__list" aria-labelledby="wsa-cat-all">${rows}</ul>
       </div>`;
   };
 
-  // 文章流
-  const pinned = posts[0];
-  const rest = posts.slice(1);
+  // 文章流 — 只把显式 frontmatter pinned: true 的当置顶
+  const isPinned = (n: NoteRow): boolean => {
+    const fm = (n as { frontmatter?: { pinned?: unknown }; pinned?: unknown }).frontmatter;
+    if (fm && (fm.pinned === true || fm.pinned === 'true' || fm.pinned === 1)) return true;
+    const flat = (n as { pinned?: unknown }).pinned;
+    return flat === true || flat === 1;
+  };
+  const pinnedIdx = posts.findIndex(isPinned);
+  const pinned = pinnedIdx >= 0 ? posts[pinnedIdx] : null;
+  const rest = pinned ? posts.filter((_, i) => i !== pinnedIdx) : posts;
 
   const renderPinned = (n: NoteRow): string => {
     const iso = isoDate(n);
@@ -180,7 +178,8 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
           ${heroIntroHtml ? `<p class="wsa-hero__intro">${heroIntroHtml}</p>` : ''}
           <div class="wsa-hero__cta">
             <a class="ui-btn ui-btn--primary" href="#recent">${esc(config.home?.hero_cta_primary ?? '看最新文章')} <span aria-hidden="true">→</span></a>
-            <a class="ui-btn" href="/tags/index.html">${esc(config.home?.hero_cta_secondary ?? '逛标签')} <span aria-label="共 ${totalNotes} 条">(${totalNotes})</span></a>
+            <a class="ui-btn" href="/tags/index.html">${esc(config.home?.hero_cta_secondary ?? '逛标签')} <span aria-label="共 ${byTag.size} 个标签">(${byTag.size})</span></a>
+            <a class="ui-btn" href="/search/index.html" aria-label="全站搜索"><span aria-hidden="true">🔍</span> 搜索</a>
           </div>
         </div>
       </div>
@@ -190,8 +189,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
         <!-- LEFT: catalog -->
         <aside class="wsa-cat" aria-label="目录">
           <div class="wsa-cat__head hf-mono hf-tiny">▸ 目录</div>
-          ${renderCategoryGroup('文章', '📄', groupA, 'wsa-cat-a')}
-          ${renderCategoryGroup('系列', '📚', groupB, 'wsa-cat-b')}
+          ${renderCatalog(tagEntries)}
         </aside>
 
         <!-- MIDDLE: feed -->
