@@ -1,4 +1,4 @@
-import type { Hono } from 'hono';
+import type { Hono, Context } from 'hono';
 import type { NewsletterIssue } from '@opennote/core';
 
 export interface NewsletterDeps {
@@ -6,29 +6,51 @@ export interface NewsletterDeps {
   fetchImpl?: typeof fetch;
   /** 测试时跳过环境检查 */
   apiKey?: string;
+  /**
+   * Buttondown 没配置时 fallback 到本地订阅;由 routes.ts 注入。
+   * 拿到 email 字符串,返回 (already?: boolean) 表示是否重复。
+   * 不传 = 维持老行为(返回 503)。
+   */
+  localFallback?: (email: string, c: Context) => Promise<{ already: boolean }>;
 }
 export type NewsletterRouteDeps = NewsletterDeps;
 
 const BUTTONDOWN_BASE = 'https://api.buttondown.email/v1';
 
 /**
- * Newsletter — Buttondown bridge。
+ * Newsletter 端点。
  *
- * env BUTTONDOWN_API_KEY 没配置 → 全部返回 503 newsletter_disabled。
- * 配了 → 透传到 Buttondown,做错误归一化。
+ * 行为:
+ * - BUTTONDOWN_API_KEY 配了 → 透传到 Buttondown,做错误归一化
+ * - 没配 + 注入了 localFallback → 落本地 subscribers 表
+ * - 都没有 → 返回 503 newsletter_disabled
  */
 export function register(app: Hono, deps: NewsletterRouteDeps = {}): void {
   const fetcher = deps.fetchImpl ?? fetch;
 
   app.post('/api/newsletter/subscribe', async (c) => {
     const key = deps.apiKey ?? process.env.BUTTONDOWN_API_KEY;
-    if (!key) {
-      return c.json({ error: { code: 'newsletter_disabled' } }, 503);
-    }
+
+    // 解析 email(本地 fallback / Buttondown 都要用)
     const body = (await c.req.json<{ email?: string }>().catch(() => ({}))) as { email?: string };
     const email = body.email?.trim();
     if (!email || !/.+@.+\..+/.test(email)) {
       return c.json({ error: { code: 'validation_failed', field: 'email' } }, 400);
+    }
+
+    if (!key) {
+      if (deps.localFallback) {
+        try {
+          const r = await deps.localFallback(email, c);
+          return c.json({ ok: true, already: r.already, source: 'local' as const });
+        } catch (e) {
+          return c.json(
+            { error: { code: 'subscribe_failed', message: (e as Error).message } },
+            500,
+          );
+        }
+      }
+      return c.json({ error: { code: 'newsletter_disabled' } }, 503);
     }
     try {
       const r = await fetcher(`${BUTTONDOWN_BASE}/subscribers`, {

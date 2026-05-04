@@ -18,6 +18,7 @@ import { BackupRunner } from './backup-runner.js';
 import { createMediaStoreFromEnv, LocalMediaStore } from './media-store.js';
 import { MediaRefExtractor } from './media-ref-extractor.js';
 import { FnsSupervisor, defaultFnsCliDir, defaultFnsConfigOutPath } from './fns-supervisor.js';
+import { SyncDiagnosticsBuffer } from './routes/sync-meta.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -85,12 +86,15 @@ async function main(): Promise<void> {
     db, bus, vaultDir: vault, dbPath, outDir: resolve(dataDir, 'backups'),
   });
 
+  const syncDiagnostics = new SyncDiagnosticsBuffer();
+
   const triggerSync = async (): Promise<void> => {
     await syncAll({
       vault, db,
       onLog: (lvl, m, meta) => log(lvl, m, meta),
       onEvent: (e) => bus.emit(e),
       onNoteRendered: mediaRefExtractor.hook,
+      onDiagnostics: (d) => syncDiagnostics.record(d),
     });
     await renderSite({ db, out, config });
   };
@@ -126,6 +130,7 @@ async function main(): Promise<void> {
     db, config, bus, triggerSync,
     dataDir, vaultDir: vault, dbPath,
     backupRunner, mediaStore,
+    syncDiagnostics,
   });
 
   const root = new Hono();

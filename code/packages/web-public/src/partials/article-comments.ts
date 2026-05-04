@@ -2,15 +2,14 @@ import type { SiteConfig } from '@opennote/core';
 import { esc } from '../templates/layout.js';
 
 /**
- * 文章侧栏评论 — 飞书风划词高亮 + Giscus 后端
+ * 文章侧栏评论 — 飞书风划词高亮 + 本地后端 (/api/posts/:slug/comments)
  *
  * 设计稿:doc/prototype/hf-article.jsx 评论 rail + hf-extras.jsx §1
  *
  * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
- * - 高亮的句子 ↔ 右侧评论卡通过 `data-mid` 关联
- * - 评论 hover 时左侧高亮变 active(JS 处理)
- * - 后端走 Giscus(GitHub Discussions),客户端引入 giscus.js 拉数据,
- *   但 UI 完全自定义,不直接渲染 giscus 默认 widget
+ * - 高亮的句子 ↔ 右侧评论卡通过 `data-mid` 关联(高亮纯本地 localStorage)
+ * - 评论本身走 Lumio 自带后端:GET 拉 approved 列表,POST 投到 pending 队列等审核
+ * - 如果 CommentsConfig.repo 配了 Giscus,作为兼容路径同时加载,可拉 GitHub Discussions
  * - 若 features.comments === false → 调用方应 skip 整块
  */
 export interface CommentsConfig {
@@ -62,7 +61,7 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
             <span class="hf-mono hf-tiny" data-count aria-label="评论数">0</span>
           </h2>
           <div class="hf-grow"></div>
-          <span class="ui-tag" style="font-size:11px;font-family:var(--mono)">Giscus</span>
+          <span class="ui-tag" style="font-size:11px;font-family:var(--mono)">${repo ? 'Giscus' : 'Lumio'}</span>
         </header>
 
         <div class="wsb-comments__hint hf-tiny hf-muted">
@@ -91,8 +90,9 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
         </form>
 
         <footer class="wsb-comments__foot hf-tiny hf-faint">
-          后端:GitHub Discussions ·
-          <a id="wsb-comments-login" href="#" rel="nofollow noopener">登录 GitHub</a>
+          ${repo
+            ? '后端:GitHub Discussions · <a id="wsb-comments-login" href="#" rel="nofollow noopener">登录 GitHub</a>'
+            : '评论需先经过审核才会公开 · <a id="wsb-comments-login" aria-disabled="true">以匿名身份留言</a>'}
         </footer>
       </div>
     </div>

@@ -16,6 +16,38 @@ export interface NoteSummary {
   short_id: string | null;
   updated_at: string;
   word_count: number;
+  /** v0.7+:vault 相对路径,目录浏览要用。老 server 可能不返回,前端做防御。 */
+  source_path?: string;
+}
+
+export interface FolderEntry {
+  name: string;
+  /** vault 相对路径,'/' 分隔,无前后斜杠;根目录是 '' */
+  path: string;
+  note_count: number;
+  updated_at: string | null;
+}
+
+export interface FolderTreeResponse {
+  path: string;
+  breadcrumbs: { name: string; path: string }[];
+  folders: FolderEntry[];
+  notes: NoteSummary[];
+}
+
+export interface SyncDiagnostics {
+  files_scanned: number;
+  parse_failed: { source_path: string; message: string }[];
+  normalize_warnings: { source_path: string; message: string }[];
+  slug_conflicts: { source_path: string; desired: string; final: string }[];
+  process_failed: { source_path: string; slug: string; message: string }[];
+  removed_slugs: string[];
+}
+
+export interface SyncDiagnosticsResponse {
+  /** 上次 syncAll 完成的时间戳;从未跑过则为 null */
+  at: string | null;
+  diag: SyncDiagnostics;
 }
 
 export interface NoteDetail {
@@ -212,6 +244,13 @@ export const api = {
   },
   async listNotes(): Promise<{ notes: NoteSummary[] }> {
     return jsonOrThrow(await req('/api/admin/notes'));
+  },
+  async notesTree(path = ''): Promise<FolderTreeResponse> {
+    const qs = path ? `?path=${encodeURIComponent(path)}` : '';
+    return jsonOrThrow(await req(`/api/admin/notes/tree${qs}`));
+  },
+  async syncDiagnostics(): Promise<SyncDiagnosticsResponse> {
+    return jsonOrThrow(await req('/api/admin/sync/diagnostics'));
   },
   async getNote(slug: string): Promise<{ note: NoteDetail; backlinks: { src_slug: string; title: string }[]; outlinks: { dst_slug: string; title: string }[] }> {
     return jsonOrThrow(await req(`/api/admin/notes/${encodeURIComponent(slug)}`));
