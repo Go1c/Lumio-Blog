@@ -2,12 +2,18 @@ import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { renderArticleComments } from '../partials/article-comments.js';
+import {
+  renderBacklinksGraphSection,
+  type Neighborhood,
+} from '../partials/backlinks-graph.js';
 
 export interface PostData {
   note: NoteRow;
   byTag: Map<string, NoteRow[]>;
   /** 同主标签下的其他文章(系列) */
   series: NoteRow[];
+  /** 1-hop 邻居图(PR-F / A-2)。无邻居时图整体隐藏。 */
+  neighborhood?: Neighborhood;
 }
 
 /**
@@ -15,7 +21,10 @@ export interface PostData {
  * 对应设计稿: doc/prototype/hf-article.jsx (不含侧栏评论 — WS-B)
  */
 export function renderPost(data: PostData, config: SiteConfig): string {
-  const { note, byTag, series } = data;
+  const { note, byTag, series, neighborhood } = data;
+  const minigraphHtml = neighborhood
+    ? renderBacklinksGraphSection(neighborhood)
+    : '';
   const iso = isoDate(note);
   const tags = tagsForSlug(byTag, note.slug);
   const author = config.author;
@@ -110,6 +119,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
                  <ul class="wsa-outline">${outlineHtml}</ul>`
               : ''
           }
+          ${minigraphHtml}
 
           <div class="wsa-actbar" role="toolbar" aria-label="文章操作">
             <button type="button" class="ui-btn ui-btn--icon" aria-label="收藏" id="wsa-act-fav"><span aria-hidden="true">★</span></button>
