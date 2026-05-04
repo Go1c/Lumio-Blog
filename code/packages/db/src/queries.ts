@@ -212,6 +212,32 @@ export class NoteRepo {
       .all(slug);
   }
 
+  /**
+   * 聚合 analytics_daily 得到每个 slug 的累计 views。
+   * 用于 home / post 模板渲染时显示访问量(H-5 / A-3 / G-5)。
+   *
+   * 容错:若 analytics_daily 表不存在(老库未 migrate),返回空 Map。
+   */
+  getLifetimeViewsBySlug(): Map<string, number> {
+    const out = new Map<string, number>();
+    try {
+      const rows = this.db
+        .prepare<unknown[], { slug: string; lifetime_views: number }>(
+          `SELECT slug, COALESCE(SUM(views), 0) AS lifetime_views
+           FROM analytics_daily
+           GROUP BY slug`,
+        )
+        .all();
+      for (const r of rows) {
+        const v = Number(r.lifetime_views);
+        if (Number.isFinite(v) && v > 0) out.set(r.slug, v);
+      }
+    } catch {
+      // analytics_daily 还没建,返回空 Map
+    }
+    return out;
+  }
+
   // -------------------------------------------------------------------
   // WS-G2 — Search FTS5 + Graph
   // -------------------------------------------------------------------

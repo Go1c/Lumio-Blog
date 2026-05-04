@@ -8,6 +8,14 @@ export interface PostData {
   byTag: Map<string, NoteRow[]>;
   /** 同主标签下的其他文章(系列) */
   series: NoteRow[];
+  /** 累计 views(从 analytics_daily 聚合);未提供则视为 0 */
+  viewsBySlug?: Map<string, number>;
+}
+
+/** 千分位格式化(英文 locale,例如 1234 -> "1,234")。0 / NaN 返回 "0"。 */
+function fmtThousands(n: number): string {
+  if (!Number.isFinite(n) || n <= 0) return '0';
+  return Math.floor(n).toLocaleString('en-US');
 }
 
 /**
@@ -15,10 +23,16 @@ export interface PostData {
  * 对应设计稿: doc/prototype/hf-article.jsx (不含侧栏评论 — WS-B)
  */
 export function renderPost(data: PostData, config: SiteConfig): string {
-  const { note, byTag, series } = data;
+  const { note, byTag, series, viewsBySlug } = data;
   const iso = isoDate(note);
   const tags = tagsForSlug(byTag, note.slug);
   const author = config.author;
+  const views = viewsBySlug?.get(note.slug) ?? 0;
+  const viewsHtml =
+    views > 0
+      ? `<span aria-hidden="true">·</span>
+            <span class="wsa-post__views" aria-label="共 ${views} 次浏览">${fmtThousands(views)} views</span>`
+      : '';
 
   const visibilityLabel = labelOf(note.visibility);
   const visibilityBadge =
@@ -131,6 +145,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
             <span aria-label="阅读时长 ${note.reading_minutes} 分钟">${note.reading_minutes} min read</span>
             <span aria-hidden="true">·</span>
             <span aria-label="共 ${note.word_count} 字">${note.word_count} 字</span>
+            ${viewsHtml}
           </p>
           <hr class="hf-divider wsa-post__divider">
 

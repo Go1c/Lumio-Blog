@@ -31,6 +31,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   const repo = new NoteRepo(opts.db);
   const all = repo.listAll();
   const visible = all.filter((n) => n.visibility !== 'private');
+  const viewsBySlug = repo.getLifetimeViewsBySlug();
 
   await mkdir(opts.out, { recursive: true });
   await mkdir(join(opts.out, 'posts'), { recursive: true });
@@ -65,6 +66,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
         recentNotes,
         totalArticles: publicNotes.length,
         totalNotes: visible.length,
+        viewsBySlug,
       },
       opts.config,
     ),
@@ -79,7 +81,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
       : [];
     await writeFile(
       join(opts.out, 'posts', `${n.slug}.html`),
-      renderPost({ note: n, byTag, series }, opts.config),
+      renderPost({ note: n, byTag, series, viewsBySlug }, opts.config),
       'utf-8',
     );
   }
