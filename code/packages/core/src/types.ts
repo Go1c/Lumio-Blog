@@ -201,7 +201,21 @@ export interface SiteConfig {
     hero_cta_secondary?: string;
     show_recent_posts?: number;
     show_categories?: boolean;
+    ad?: HfAdSettings;
   };
+}
+
+/** 自家广告(HfAd)配置 — 见 schema.ts hfAdSchema。 */
+export interface HfAdSettings {
+  enabled: boolean;
+  variant: 'hero' | 'native';
+  emoji?: string;
+  title: string;
+  body?: string;
+  cta_label?: string;
+  cta_href?: string;
+  /** CSS 颜色,默认 var(--accent) */
+  accent?: string;
 }
 
 // =====================================================================
