@@ -15,15 +15,16 @@ export class NoteRepo {
 
   upsert(note: NoteRow, tags: string[], links: LinkEdge[]): void {
     const tx = this.db.transaction(() => {
+      const row = { ...note, kind: note.kind ?? 'markdown' };
       this.db
         .prepare(
           `INSERT INTO notes (
-            slug, title, summary, body_html, body_text, visibility, searchable,
+            slug, title, summary, body_html, body_text, kind, visibility, searchable,
             seo_indexable, rss_includable, featured_on_home,
             short_id, source_path, created_at, updated_at, published_at, scheduled_at,
             word_count, reading_minutes, cover, hash
           ) VALUES (
-            @slug, @title, @summary, @body_html, @body_text, @visibility, @searchable,
+            @slug, @title, @summary, @body_html, @body_text, @kind, @visibility, @searchable,
             @seo_indexable, @rss_includable, @featured_on_home,
             @short_id, @source_path, @created_at, @updated_at, @published_at, @scheduled_at,
             @word_count, @reading_minutes, @cover, @hash
@@ -33,6 +34,7 @@ export class NoteRepo {
             summary = excluded.summary,
             body_html = excluded.body_html,
             body_text = excluded.body_text,
+            kind = excluded.kind,
             visibility = excluded.visibility,
             searchable = excluded.searchable,
             seo_indexable = excluded.seo_indexable,
@@ -48,7 +50,7 @@ export class NoteRepo {
             cover = excluded.cover,
             hash = excluded.hash`,
         )
-        .run(note);
+        .run(row);
 
       this.db.prepare('DELETE FROM tags WHERE slug = ?').run(note.slug);
       const insertTag = this.db.prepare('INSERT INTO tags (slug, tag) VALUES (?, ?)');

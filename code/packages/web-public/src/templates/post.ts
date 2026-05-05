@@ -168,9 +168,13 @@ export function renderPost(data: PostData, config: SiteConfig): string {
           </p>
           <hr class="hf-divider wsa-post__divider">
 
-          <div class="wsa-prose hf-prose">
-            ${note.body_html}
-          </div>
+          ${
+            note.kind === 'canvas'
+              ? `<div class="wsa-prose ob-canvas-host">${note.body_html}</div>`
+              : note.kind === 'html'
+              ? `<div class="wsa-prose ob-html-host">${note.body_html}</div>`
+              : `<div class="wsa-prose hf-prose">${note.body_html}</div>`
+          }
 
           <hr class="hf-divider wsa-post__divider">
 

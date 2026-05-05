@@ -79,6 +79,8 @@ async function main(): Promise<void> {
     repo: new MediaRepo(db),
     prefixes: [
       '/static/media',
+      // Obsidian 附件管线产出的 URL,跟 admin 上传走的 /static/media 同一个 media_refs 表
+      '/_attachments',
       ...(mediaStore instanceof LocalMediaStore ? [] : []),
     ],
   });
@@ -90,7 +92,7 @@ async function main(): Promise<void> {
 
   const triggerSync = async (): Promise<void> => {
     await syncAll({
-      vault, db,
+      vault, db, out,
       onLog: (lvl, m, meta) => log(lvl, m, meta),
       onEvent: (e) => bus.emit(e),
       onNoteRendered: mediaRefExtractor.hook,
@@ -102,7 +104,7 @@ async function main(): Promise<void> {
   await triggerSync();
 
   startWatcher({
-    vault, db,
+    vault, db, out,
     onLog: (lvl, m, meta) => log(lvl, m, meta),
     onEvent: async (e) => {
       bus.emit(e);

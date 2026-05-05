@@ -5,6 +5,9 @@
 
 export type Visibility = 'public' | 'unlisted' | 'link-only' | 'private';
 
+/** 笔记原文形态;用于路由 / 渲染分发 */
+export type NoteKind = 'markdown' | 'canvas' | 'html';
+
 /** 一篇笔记在 SQLite 里的形态 */
 export interface NoteRow {
   slug: string;            // 唯一主键，一般从标题自动生成
@@ -12,6 +15,8 @@ export interface NoteRow {
   summary: string | null;
   body_html: string;       // 已渲染好的 HTML
   body_text: string;       // 纯文本，用于全文搜索
+  /** 原文格式:markdown / canvas / html。默认 markdown,新字段。 */
+  kind?: NoteKind;
   visibility: Visibility;
   searchable: 0 | 1;       // bool（SQLite 不区分）— 站内搜索可见
   /** 是否允许搜索引擎抓取(sitemap / 不带 noindex meta) */
@@ -63,6 +68,8 @@ export interface ParsedNote {
 export interface NormalizedNote extends ParsedNote {
   slug: string;
   title: string;
+  /** markdown / canvas / html(可选,缺省 markdown) */
+  kind?: NoteKind;
   visibility: Visibility;
   searchable: boolean;
   seo_indexable: boolean;
