@@ -52,6 +52,17 @@ export interface FolderTreeResponse {
   breadcrumbs: { name: string; path: string }[];
   folders: FolderEntry[];
   notes: FolderTreeNoteSummary[];
+  /**
+   * 当前路径(含子目录)下所有笔记的 visibility 计数。前台筛选 chip 显示这个,
+   * 跟 `notes`(只有当前层)区分开——否则 root 下永远是 0/0/0/0。
+   */
+  visibility_counts: {
+    all: number;
+    public: number;
+    unlisted: number;
+    'link-only': number;
+    private: number;
+  };
 }
 
 /**
@@ -69,8 +80,14 @@ export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeRespons
 
   const folders = new Map<string, { count: number; updated_at: string | null }>();
   const directNotes: FolderTreeNoteSummary[] = [];
+  const visibility_counts = {
+    all: 0, public: 0, unlisted: 0, 'link-only': 0, private: 0,
+  };
 
   for (const n of inScope) {
+    visibility_counts.all += 1;
+    const v = n.visibility as keyof typeof visibility_counts;
+    if (v in visibility_counts) visibility_counts[v] += 1;
     const rel = cleanPath === '' ? n.source_path : n.source_path.slice(prefix.length);
     const segs = rel.split('/');
     if (segs.length === 1) {
@@ -114,5 +131,5 @@ export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeRespons
     }
   }
 
-  return { path: cleanPath, breadcrumbs, folders: folderEntries, notes: directNotes };
+  return { path: cleanPath, breadcrumbs, folders: folderEntries, notes: directNotes, visibility_counts };
 }

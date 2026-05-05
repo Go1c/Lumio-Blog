@@ -33,6 +33,14 @@ export interface FolderTreeResponse {
   breadcrumbs: { name: string; path: string }[];
   folders: FolderEntry[];
   notes: NoteSummary[];
+  /** 当前路径(含子目录)下所有笔记按可见性聚合的计数,用于 chip 筛选 */
+  visibility_counts?: {
+    all: number;
+    public: number;
+    unlisted: number;
+    'link-only': number;
+    private: number;
+  };
 }
 
 export interface SyncDiagnostics {
