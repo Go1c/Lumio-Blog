@@ -142,6 +142,7 @@ export const featuresSchema = z.object({
     graph: z.boolean(),
     search: z.boolean(),
     short_links: z.boolean(),
+    post_summary: z.boolean(),
   }),
   admin: z.object({
     analytics: z.boolean(),
@@ -208,7 +209,7 @@ export function defaultFns(): z.infer<typeof fnsSettingsSchema> {
 /** features.yaml 缺省 — 全 true,mcp_tools 默认列表,webhooks 空数组 */
 export function defaultFeatures(): z.infer<typeof featuresSchema> {
   return {
-    content: { comments: true, newsletter: true, rss: true, graph: true, search: true, short_links: true },
+    content: { comments: true, newsletter: true, rss: true, graph: true, search: true, short_links: true, post_summary: false },
     admin: { analytics: true, media_library: true, api_tokens: true, webhooks: true, og_generator: true },
     agent: { cli_enabled: true, mcp_enabled: true, mcp_tools: ['blog_search', 'blog_read', 'blog_write', 'blog_patch_meta'] },
     webhooks: [],

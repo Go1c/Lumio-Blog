@@ -157,7 +157,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
         <article class="wsa-post__main">
           ${tagChips ? `<ul class="wsa-post__tags" aria-label="标签">${tagChips}</ul>` : ''}
           <h1 class="wsa-post__title">${esc(note.title)}</h1>
-          ${note.summary ? `<p class="wsa-post__summary">${esc(note.summary)}</p>` : ''}
+          ${note.summary && config.features?.post_summary === true ? `<p class="wsa-post__summary">${esc(note.summary)}</p>` : ''}
           <p class="wsa-post__meta hf-mono hf-tiny">
             ${visibilityBadge}
             <time datetime="${esc(iso)}">${esc(iso)}</time>

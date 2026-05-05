@@ -4,12 +4,18 @@ import { isoDate, shortDate, tagsForSlug } from '../partials/shared.js';
 import { renderInlineMd } from '../partials/inline-md.js';
 import { renderHfAdHero } from '../partials/hf-ad.js';
 
+export interface FolderEntry {
+  name: string;
+  count: number;
+}
+
 export interface HomeData {
   posts: NoteRow[];
   byTag: Map<string, NoteRow[]>;
   recentNotes: NoteRow[];
   totalArticles: number;
   totalNotes: number;
+  folders: FolderEntry[];
 }
 
 /**
@@ -17,7 +23,7 @@ export interface HomeData {
  * 对应设计稿: doc/prototype/hf-home.jsx
  */
 export function renderHome(data: HomeData, config: SiteConfig): string {
-  const { posts, byTag, recentNotes, totalArticles, totalNotes } = data;
+  const { posts, byTag, recentNotes, totalArticles, totalNotes, folders } = data;
   const author = config.author;
   const heroTitleSrc = config.home?.hero_title_md ?? config.site.title;
   const heroIntroSrc = config.home?.hero_intro_md ?? (config.site.description ?? '');
@@ -32,23 +38,51 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
     .sort((a, b) => b[1].length - a[1].length);
 
   const renderCatalog = (items: Array<[string, NoteRow[]]>): string => {
-    if (!items.length) return '<p class="hf-tiny hf-muted" style="padding:4px 10px;margin:0">暂无标签</p>';
-    const rows = items
-      .map(
-        ([tag, notes]) => `
-          <li>
-            <a class="wsa-cat__row" href="/tags/${esc(encodeURIComponent(tag))}.html">
-              <span class="wsa-cat__name">#${esc(tag)}</span>
-              <span class="hf-mono hf-tiny hf-faint" aria-label="${notes.length} 篇">${notes.length}</span>
-            </a>
-          </li>`,
-      )
-      .join('');
-    return `
-      <div class="wsa-cat__group">
-        <div class="wsa-cat__title" id="wsa-cat-all"><span aria-hidden="true">🏷️</span> 标签</div>
-        <ul class="wsa-cat__list" aria-labelledby="wsa-cat-all">${rows}</ul>
-      </div>`;
+    let html = '';
+
+    // 文件夹部分
+    if (folders.length > 0) {
+      const folderRows = folders
+        .map(
+          (f) => `
+            <li>
+              <span class="wsa-cat__row wsa-cat__row--folder">
+                <span class="wsa-cat__name"><span aria-hidden="true" style="margin-right:4px">📁</span>${esc(f.name)}</span>
+                <span class="hf-mono hf-tiny hf-faint" aria-label="${f.count} 篇">${f.count}</span>
+              </span>
+            </li>`,
+        )
+        .join('');
+      html += `
+        <div class="wsa-cat__group">
+          <div class="wsa-cat__title" id="wsa-cat-folders"><span aria-hidden="true">📂</span> 文件夹</div>
+          <ul class="wsa-cat__list" aria-labelledby="wsa-cat-folders">${folderRows}</ul>
+        </div>`;
+    }
+
+    // 标签部分
+    if (!items.length) {
+      html += '<p class="hf-tiny hf-muted" style="padding:4px 10px;margin:0">暂无标签</p>';
+    } else {
+      const tagRows = items
+        .map(
+          ([tag, notes]) => `
+            <li>
+              <a class="wsa-cat__row" href="/tags/${esc(encodeURIComponent(tag))}.html">
+                <span class="wsa-cat__name">#${esc(tag)}</span>
+                <span class="hf-mono hf-tiny hf-faint" aria-label="${notes.length} 篇">${notes.length}</span>
+              </a>
+            </li>`,
+        )
+        .join('');
+      html += `
+        <div class="wsa-cat__group">
+          <div class="wsa-cat__title" id="wsa-cat-all"><span aria-hidden="true">🏷️</span> 标签</div>
+          <ul class="wsa-cat__list" aria-labelledby="wsa-cat-all">${tagRows}</ul>
+        </div>`;
+    }
+
+    return html;
   };
 
   // 文章流 — 只把显式 frontmatter pinned: true 的当置顶

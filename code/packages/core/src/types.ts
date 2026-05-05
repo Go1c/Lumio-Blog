@@ -173,6 +173,7 @@ export interface SiteConfig {
     newsletter?: boolean;
     search?: boolean;
     graph?: boolean;
+    post_summary?: boolean;
   };
   auth?: {
     github?: { client_id: string; allowed_users: string[] };
@@ -294,6 +295,7 @@ export interface Features {
     graph: boolean;
     search: boolean;
     short_links: boolean;
+    post_summary: boolean;
   };
   admin: {
     analytics: boolean;
