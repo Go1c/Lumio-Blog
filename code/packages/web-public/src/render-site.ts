@@ -11,6 +11,7 @@ import { renderPost } from './templates/post.js';
 import { buildNeighborhood } from './partials/backlinks-graph.js';
 import { renderFeed } from './templates/feed.js';
 import { renderTagIndex, renderTagPage } from './templates/tag.js';
+import { renderFolderIndex, renderFolderPage } from './templates/folder.js';
 import { renderNotFound } from './templates/notfound.js';
 import { renderAbout } from './templates/about.js';
 import { renderRssReader, RSS_READER_CSS } from './templates/rss-reader.js';
@@ -123,6 +124,25 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     await writeFile(
       join(opts.out, 'tags', `${encodeURIComponent(tag)}.html`),
       renderTagPage(tag, notes, byTag, opts.config),
+      'utf-8',
+    );
+  }
+
+  // folder pages — public 笔记按 vault 顶层文件夹归档(home 左栏 “📁 文件夹” 跳转目标)
+  await mkdir(join(opts.out, 'folders'), { recursive: true });
+  await writeFile(
+    join(opts.out, 'folders', 'index.html'),
+    renderFolderIndex(folders, opts.config),
+    'utf-8',
+  );
+  for (const f of folders) {
+    const items = publicNotes.filter((n) => {
+      const slash = n.source_path.indexOf('/');
+      return slash > 0 && n.source_path.slice(0, slash) === f.name;
+    });
+    await writeFile(
+      join(opts.out, 'folders', `${encodeURIComponent(f.name)}.html`),
+      renderFolderPage(f.name, items, folders, opts.config),
       'utf-8',
     );
   }

@@ -46,10 +46,10 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
         .map(
           (f) => `
             <li>
-              <span class="wsa-cat__row wsa-cat__row--folder">
+              <a class="wsa-cat__row wsa-cat__row--folder" href="/folders/${esc(encodeURIComponent(f.name))}.html">
                 <span class="wsa-cat__name"><span aria-hidden="true" style="margin-right:4px">📁</span>${esc(f.name)}</span>
                 <span class="hf-mono hf-tiny hf-faint" aria-label="${f.count} 篇">${f.count}</span>
-              </span>
+              </a>
             </li>`,
         )
         .join('');

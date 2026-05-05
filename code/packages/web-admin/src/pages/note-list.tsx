@@ -1,6 +1,6 @@
 import type { JSX } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import { HfIcon, Tag } from '@opennote/ui';
+import { Dropdown, DropdownItem, HfIcon, Tag } from '@opennote/ui';
 import {
   api,
   type FolderTreeResponse,
@@ -117,7 +117,24 @@ export function NoteList(): JSX.Element {
     const out: Record<Visibility | 'all', number> = {
       all: 0, public: 0, unlisted: 0, 'link-only': 0, private: 0,
     };
-    const src = view === 'flat' ? notes : tree?.notes ?? null;
+    if (view === 'tree') {
+      // 优先用服务端聚合的(含子目录)计数;老版兼容回退到本层 notes 计数
+      const vc = tree?.visibility_counts;
+      if (vc) {
+        out.all = vc.all;
+        out.public = vc.public;
+        out.unlisted = vc.unlisted;
+        out['link-only'] = vc['link-only'];
+        out.private = vc.private;
+        return out;
+      }
+      const src = tree?.notes ?? null;
+      if (!src) return out;
+      out.all = src.length;
+      for (const n of src) out[n.visibility] = (out[n.visibility] ?? 0) + 1;
+      return out;
+    }
+    const src = notes;
     if (!src) return out;
     out.all = src.length;
     for (const n of src) out[n.visibility] = (out[n.visibility] ?? 0) + 1;
@@ -128,10 +145,8 @@ export function NoteList(): JSX.Element {
     ? notes?.length ?? 0
     : (tree?.folders.length ?? 0) + (tree?.notes.length ?? 0);
 
-  const cycleVisibility = async (n: NoteSummary): Promise<void> => {
-    const order: Visibility[] = ['public', 'unlisted', 'link-only', 'private'];
-    const idx = order.indexOf(n.visibility);
-    const next = order[(idx + 1) % order.length]!;
+  const setVisibility = async (n: NoteSummary, next: Visibility): Promise<void> => {
+    if (next === n.visibility) return;
     setBusySlug(n.slug);
     try {
       const patch: { visibility: Visibility; searchable?: boolean } = { visibility: next };
@@ -262,13 +277,13 @@ export function NoteList(): JSX.Element {
           notes={filteredTreeNotes}
           busySlug={busySlug}
           onEnterFolder={(p) => setPath(p)}
-          onCycle={cycleVisibility}
+          onSetVisibility={setVisibility}
         />
       ) : (
         <FlatTable
           notes={filteredFlat}
           busySlug={busySlug}
-          onCycle={cycleVisibility}
+          onSetVisibility={setVisibility}
         />
       )}
     </div>
@@ -390,13 +405,13 @@ function TreeView({
   notes,
   busySlug,
   onEnterFolder,
-  onCycle,
+  onSetVisibility,
 }: {
   tree: FolderTreeResponse;
   notes: NoteSummary[];
   busySlug: string | null;
   onEnterFolder: (path: string) => void;
-  onCycle: (n: NoteSummary) => void;
+  onSetVisibility: (n: NoteSummary, v: Visibility) => void;
 }): JSX.Element {
   const showFolders = tree.folders.length > 0;
   const showNotes = notes.length > 0;
@@ -419,7 +434,7 @@ function TreeView({
       )}
 
       {showNotes && (
-        <FlatTable notes={notes} busySlug={busySlug} onCycle={onCycle} />
+        <FlatTable notes={notes} busySlug={busySlug} onSetVisibility={onSetVisibility} />
       )}
 
       {!showFolders && !showNotes && (
@@ -507,11 +522,11 @@ function FolderCard({
 function FlatTable({
   notes,
   busySlug,
-  onCycle,
+  onSetVisibility,
 }: {
   notes: NoteSummary[];
   busySlug: string | null;
-  onCycle: (n: NoteSummary) => void;
+  onSetVisibility: (n: NoteSummary, v: Visibility) => void;
 }): JSX.Element {
   if (notes.length === 0) {
     return (
@@ -544,7 +559,7 @@ function FlatTable({
               key={n.slug}
               note={n}
               isBusy={busySlug === n.slug}
-              onCycle={() => onCycle(n)}
+              onSetVisibility={(v) => onSetVisibility(n, v)}
               zebra={i % 2 === 1}
             />
           ))}
@@ -570,12 +585,12 @@ function th(width?: number): JSX.CSSProperties {
 function NoteRow({
   note,
   isBusy,
-  onCycle,
+  onSetVisibility,
   zebra,
 }: {
   note: NoteSummary;
   isBusy: boolean;
-  onCycle: () => void;
+  onSetVisibility: (v: Visibility) => void;
   zebra: boolean;
 }): JSX.Element {
   const [hover, setHover] = useState(false);
@@ -637,15 +652,41 @@ function NoteRow({
             visibility: hover ? 'visible' : 'hidden',
           }}
         >
-          <button
-            type="button"
-            class="ui-btn ui-btn--sm ui-btn--ghost"
-            onClick={onCycle}
-            disabled={isBusy}
-            aria-label={`切换可见性,当前 ${note.visibility}`}
+          <Dropdown
+            label="切换可见性"
+            trigger={(p) => (
+              <button
+                type="button"
+                class="ui-btn ui-btn--sm ui-btn--ghost"
+                disabled={isBusy}
+                aria-label={`切换可见性,当前 ${visLabel(note.visibility)}`}
+                {...p}
+              >
+                <HfIcon name="eye" size={11} />
+                <span class="hf-tiny" style={{ marginLeft: 4 }}>{visLabel(note.visibility)}</span>
+                <span aria-hidden="true" style={{ marginLeft: 4, fontSize: 9 }}>▾</span>
+              </button>
+            )}
           >
-            <HfIcon name="eye" size={11} />
-          </button>
+            {(['public', 'unlisted', 'link-only', 'private'] as Visibility[]).map((v) => (
+              <DropdownItem
+                key={v}
+                aria-current={v === note.visibility ? 'true' : undefined}
+                onClick={() => { if (!isBusy) onSetVisibility(v); }}
+              >
+                <span
+                  class={`ui-badge ui-badge--${v}`}
+                  style={{ marginRight: 6 }}
+                  aria-hidden="true"
+                >
+                  {visLabel(v)}
+                </span>
+                {v === note.visibility && (
+                  <span aria-label="当前选中" style={{ marginLeft: 'auto', color: 'var(--accent)' }}>✓</span>
+                )}
+              </DropdownItem>
+            ))}
+          </Dropdown>
           <a
             class="ui-btn ui-btn--sm ui-btn--ghost"
             href={`#/notes/${encodeURIComponent(note.slug)}/analytics`}

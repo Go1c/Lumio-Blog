@@ -577,6 +577,14 @@ export function buildApp(deps: RouteDeps): Hono {
       diff: JSON.stringify(allowed),
     });
     deps.bus.emit({ kind: 'note.updated', slug });
+
+    // 改完可见性 / 索引性等元字段后,静态前台必须重新生成,
+    // 否则 visibility 由 private→public 时 /posts/<slug>.html 不会真正出现。
+    // 不阻塞 API 返回:后台跑,失败仅 log。
+    void deps.triggerSync().catch((e) => {
+      console.warn('[patchMeta] post-update sync failed:', (e as Error).message);
+    });
+
     return c.json({ slug, patched: Object.keys(allowed) });
   }
 }
