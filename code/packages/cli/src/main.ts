@@ -87,6 +87,7 @@ async function syncOnce(): Promise<void> {
   const stats = await syncAll({
     vault,
     db,
+    out,
     onLog: (level, msg, meta) =>
       console.log(JSON.stringify({ level, event: msg, ...(meta as object | undefined) })),
   });

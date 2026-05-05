@@ -1,0 +1,733 @@
+/* ======================================================================
+ * Obsidian-faithful prose + embeds + callouts + canvas + tasks + tags
+ * 单一来源——@opennote/web-public 一次 import,前后台共用
+ *
+ * Token 命名沿用 Obsidian default theme:
+ *   --ob-bg                   主背景
+ *   --ob-bg-soft              次级背景(代码 / callout 内 / 嵌入)
+ *   --ob-text-normal          正文
+ *   --ob-text-muted           次要文字
+ *   --ob-text-faint           最弱(meta)
+ *   --ob-text-accent          重点 / 链接(蓝紫)
+ *   --ob-line                 分隔线
+ *   --ob-link-color           wikilink
+ *   --ob-link-unresolved      断链
+ *   --ob-tag-color            inline #tag
+ *   --ob-callout-<type>       13 种 callout 主色
+ *
+ * 默认值映射到现有 ui token,有就复用,没有的回退到 Obsidian 出厂色。
+ * ====================================================================== */
+
+:root {
+  --ob-bg:               var(--bg, #ffffff);
+  --ob-bg-soft:          var(--bg-soft, #f7f7f8);
+  --ob-bg-sunk:          var(--bg-sunk, #efeff1);
+  --ob-text-normal:      var(--ink, #1f2328);
+  --ob-text-muted:       var(--ink-2, #57606a);
+  --ob-text-faint:       var(--ink-4, #8b949e);
+  --ob-text-accent:      var(--accent, #7c3aed);
+  --ob-line:             var(--line, #d0d7de);
+  --ob-line-strong:      var(--line-strong, #afb8c1);
+  --ob-link-color:       var(--accent, #7c3aed);
+  --ob-link-unresolved:  #d29922;
+  --ob-tag-color:        #096dd9;
+
+  /* callouts */
+  --ob-callout-note:      #086ddd;
+  --ob-callout-abstract:  #00bfbc;
+  --ob-callout-info:      #086ddd;
+  --ob-callout-todo:      #086ddd;
+  --ob-callout-tip:       #00bfbc;
+  --ob-callout-success:   #08b94e;
+  --ob-callout-question:  #e0ac00;
+  --ob-callout-warning:   #e0ac00;
+  --ob-callout-failure:   #e93147;
+  --ob-callout-danger:    #e93147;
+  --ob-callout-bug:       #e93147;
+  --ob-callout-example:   #7852ee;
+  --ob-callout-quote:     #9e9e9e;
+
+  /* canvas */
+  --ob-canvas-bg:         var(--bg-sunk, #fafafa);
+  --ob-canvas-grid:       var(--line, #e0e0e0);
+  --ob-canvas-default:    #888;
+}
+
+html[data-theme="dark"] {
+  --ob-bg:               var(--bg, #1e1e1e);
+  --ob-bg-soft:          var(--bg-soft, #262626);
+  --ob-bg-sunk:          var(--bg-sunk, #181818);
+  --ob-text-normal:      var(--ink, #dcddde);
+  --ob-text-muted:       var(--ink-2, #b3b3b3);
+  --ob-text-faint:       var(--ink-4, #6e6e6e);
+  --ob-line:             var(--line, #2a2a2a);
+  --ob-line-strong:      var(--line-strong, #404040);
+  --ob-link-color:       var(--accent, #a78bfa);
+  --ob-canvas-bg:        #181818;
+  --ob-canvas-grid:      #2a2a2a;
+}
+
+/* ----------------------------------------------------------------
+ * .hf-prose — Obsidian "Reading View" 等价物
+ * ---------------------------------------------------------------- */
+
+.hf-prose {
+  color: var(--ob-text-normal);
+  font-size: 16px;
+  line-height: 1.7;
+  word-wrap: break-word;
+  font-feature-settings: "calt", "kern";
+}
+
+.hf-prose > :first-child { margin-top: 0; }
+.hf-prose > :last-child { margin-bottom: 0; }
+
+.hf-prose h1, .hf-prose h2, .hf-prose h3,
+.hf-prose h4, .hf-prose h5, .hf-prose h6 {
+  font-weight: 700;
+  line-height: 1.25;
+  color: var(--ob-text-normal);
+  scroll-margin-top: 80px;
+  margin-top: 1.5em;
+  margin-bottom: 0.6em;
+  letter-spacing: -0.01em;
+}
+.hf-prose h1 { font-size: 1.85em; border-bottom: 1px solid var(--ob-line); padding-bottom: 0.3em; }
+.hf-prose h2 { font-size: 1.45em; border-bottom: 1px solid var(--ob-line); padding-bottom: 0.25em; }
+.hf-prose h3 { font-size: 1.2em; }
+.hf-prose h4 { font-size: 1.05em; }
+.hf-prose h5 { font-size: 0.95em; color: var(--ob-text-muted); }
+.hf-prose h6 { font-size: 0.9em; color: var(--ob-text-muted); }
+
+.hf-prose .heading-anchor {
+  margin-left: 0.4em;
+  color: var(--ob-text-faint);
+  font-weight: 400;
+  text-decoration: none;
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.hf-prose h1:hover .heading-anchor,
+.hf-prose h2:hover .heading-anchor,
+.hf-prose h3:hover .heading-anchor,
+.hf-prose h4:hover .heading-anchor,
+.hf-prose h5:hover .heading-anchor,
+.hf-prose h6:hover .heading-anchor { opacity: 1; }
+
+.hf-prose p { margin: 0 0 1em; }
+
+.hf-prose hr { border: 0; border-top: 1px solid var(--ob-line); margin: 2em 0; }
+
+.hf-prose ul, .hf-prose ol { margin: 0 0 1em; padding-left: 1.5em; }
+.hf-prose li { margin: 0.2em 0; }
+.hf-prose li > p { margin: 0; }
+.hf-prose li > ul, .hf-prose li > ol { margin: 0.2em 0; }
+
+/* ----- inline marks ----- */
+
+.hf-prose code:not([class*="language-"]):not(.shiki *) {
+  font-family: var(--mono, ui-monospace, "JetBrains Mono", monospace);
+  background: var(--ob-bg-sunk);
+  border: 1px solid var(--ob-line);
+  border-radius: 4px;
+  padding: 0.1em 0.4em;
+  font-size: 0.86em;
+  color: var(--ob-text-accent);
+}
+
+.hf-prose .cm-highlight,
+.hf-prose mark {
+  background: rgba(255, 220, 0, 0.4);
+  color: var(--ob-text-normal);
+  padding: 0 2px;
+  border-radius: 3px;
+}
+html[data-theme="dark"] .hf-prose .cm-highlight,
+html[data-theme="dark"] .hf-prose mark {
+  background: rgba(255, 220, 0, 0.2);
+}
+
+.hf-prose .cm-tag {
+  display: inline-block;
+  color: var(--ob-tag-color);
+  background: rgba(8, 109, 217, 0.08);
+  padding: 1px 6px 2px;
+  border-radius: 4px;
+  font-size: 0.85em;
+  text-decoration: none;
+  vertical-align: 1px;
+}
+.hf-prose .cm-tag:hover { background: rgba(8, 109, 217, 0.18); }
+
+.hf-prose a {
+  color: var(--ob-link-color);
+  text-decoration: underline;
+  text-decoration-thickness: 1px;
+  text-underline-offset: 2px;
+  text-decoration-color: color-mix(in srgb, var(--ob-link-color) 35%, transparent);
+}
+.hf-prose a:hover { text-decoration-color: currentColor; }
+
+/* internal-link 区分线条更细,跟 Obsidian 默认一致 */
+.hf-prose a.internal-link {
+  text-decoration: none;
+  border-bottom: 1px solid color-mix(in srgb, var(--ob-link-color) 35%, transparent);
+}
+.hf-prose a.internal-link:hover {
+  border-bottom-color: currentColor;
+}
+.hf-prose .internal-link.is-unresolved {
+  color: var(--ob-link-unresolved);
+  border-bottom: 1px dashed var(--ob-link-unresolved);
+  cursor: help;
+}
+.hf-prose .internal-link.is-asset { font-style: italic; }
+
+/* ----- blockquotes (non-callout) ----- */
+
+.hf-prose blockquote {
+  margin: 1em 0;
+  padding: 0.4em 1em;
+  border-left: 4px solid var(--ob-line-strong);
+  color: var(--ob-text-muted);
+  background: transparent;
+  font-style: italic;
+}
+.hf-prose blockquote > :first-child { margin-top: 0; }
+.hf-prose blockquote > :last-child { margin-bottom: 0; }
+
+/* ----- callouts ----- */
+
+.hf-prose .callout {
+  --ob-color: var(--ob-callout-note);
+  margin: 1em 0;
+  border-left: 4px solid var(--ob-color);
+  background: color-mix(in srgb, var(--ob-color) 8%, var(--ob-bg));
+  border-radius: 4px;
+  overflow: hidden;
+  padding: 0.5em 0.5em 0.5em 0.75em;
+  font-style: normal;
+}
+.hf-prose .callout--note,    .hf-prose .callout--info,    .hf-prose .callout--todo    { --ob-color: var(--ob-callout-note); }
+.hf-prose .callout--abstract                                                          { --ob-color: var(--ob-callout-abstract); }
+.hf-prose .callout--tip                                                                { --ob-color: var(--ob-callout-tip); }
+.hf-prose .callout--success                                                            { --ob-color: var(--ob-callout-success); }
+.hf-prose .callout--question                                                           { --ob-color: var(--ob-callout-question); }
+.hf-prose .callout--warning                                                            { --ob-color: var(--ob-callout-warning); }
+.hf-prose .callout--failure                                                            { --ob-color: var(--ob-callout-failure); }
+.hf-prose .callout--danger                                                             { --ob-color: var(--ob-callout-danger); }
+.hf-prose .callout--bug                                                                { --ob-color: var(--ob-callout-bug); }
+.hf-prose .callout--example                                                            { --ob-color: var(--ob-callout-example); }
+.hf-prose .callout--quote                                                              { --ob-color: var(--ob-callout-quote); }
+
+.hf-prose .callout__title {
+  display: flex;
+  align-items: center;
+  gap: 0.5em;
+  font-weight: 700;
+  color: var(--ob-color);
+  padding: 0 0 0.1em;
+  cursor: default;
+}
+.hf-prose .callout.is-foldable .callout__title { cursor: pointer; user-select: none; }
+.hf-prose .callout__icon {
+  flex-shrink: 0;
+  width: 1.1em;
+  height: 1.1em;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--ob-color);
+}
+.hf-prose .callout__icon svg { width: 1em; height: 1em; }
+.hf-prose .callout__chevron {
+  margin-left: auto;
+  transition: transform 0.2s;
+  font-size: 0.9em;
+  color: var(--ob-color);
+}
+.hf-prose .callout.is-collapsed .callout__chevron { transform: rotate(-90deg); }
+
+.hf-prose .callout__body {
+  padding: 0.3em 0.4em 0.1em 1.85em;
+  color: var(--ob-text-normal);
+}
+.hf-prose .callout__body > :first-child { margin-top: 0; }
+.hf-prose .callout__body > :last-child { margin-bottom: 0; }
+.hf-prose .callout.is-collapsed .callout__body { display: none; }
+
+/* nested callout — body 里再放 callout 时,继承色但缩进 */
+.hf-prose .callout .callout { margin: 0.6em 0; }
+
+/* ----- embeds ----- */
+
+.hf-prose .internal-embed.embed-image {
+  display: block;
+  margin: 1em 0;
+  text-align: center;
+}
+.hf-prose .internal-embed.embed-image img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+.hf-prose .internal-embed.embed-video,
+.hf-prose .internal-embed.embed-audio {
+  display: block;
+  margin: 1em 0;
+}
+.hf-prose .internal-embed.embed-video video {
+  width: 100%;
+  border-radius: 6px;
+  background: #000;
+}
+.hf-prose .internal-embed.embed-audio audio { width: 100%; }
+.hf-prose .internal-embed.embed-pdf {
+  display: block;
+  margin: 1em 0;
+  border: 1px solid var(--ob-line);
+  border-radius: 6px;
+  overflow: hidden;
+  position: relative;
+}
+.hf-prose .internal-embed.embed-pdf iframe {
+  width: 100%;
+  height: 600px;
+  border: 0;
+  display: block;
+}
+.hf-prose .internal-embed.embed-pdf .embed-pdf__fallback {
+  position: absolute;
+  bottom: 0; right: 0;
+  padding: 4px 8px;
+  background: var(--ob-bg);
+  border-top-left-radius: 4px;
+  font-size: 12px;
+}
+.hf-prose .internal-embed.embed-file {
+  display: inline-block;
+  padding: 6px 12px;
+  background: var(--ob-bg-soft);
+  border: 1px solid var(--ob-line);
+  border-radius: 4px;
+  text-decoration: none;
+  color: var(--ob-text-normal);
+}
+.hf-prose .internal-embed.embed-file:hover { background: var(--ob-bg-sunk); }
+.hf-prose .internal-embed.is-unresolved {
+  display: inline-block;
+  padding: 2px 8px;
+  background: rgba(210, 153, 34, 0.1);
+  border: 1px dashed var(--ob-link-unresolved);
+  border-radius: 4px;
+  color: var(--ob-link-unresolved);
+  font-size: 0.9em;
+}
+
+.hf-prose aside.embed-note {
+  display: block;
+  margin: 1em 0;
+  padding: 0.6em 0.9em;
+  background: var(--ob-bg-soft);
+  border: 1px solid var(--ob-line);
+  border-left: 3px solid var(--ob-text-accent);
+  border-radius: 4px;
+}
+.hf-prose aside.embed-note__head { margin-bottom: 0.4em; }
+.hf-prose aside.embed-note .embed-note__title {
+  font-weight: 600;
+  text-decoration: none;
+  color: var(--ob-text-accent);
+}
+.hf-prose aside.embed-note.is-stub {
+  font-style: italic;
+  color: var(--ob-text-muted);
+}
+
+/* ----- tasks (extended states) ----- */
+
+.hf-prose .task-list-item {
+  list-style: none;
+  margin-left: -1.5em;
+  padding-left: 1.5em;
+  position: relative;
+}
+.hf-prose .task-list-item input[type="checkbox"] {
+  position: absolute;
+  left: 0; top: 0.35em;
+  width: 16px; height: 16px;
+  margin: 0;
+  appearance: none; -webkit-appearance: none;
+  border: 1.5px solid var(--ob-line-strong);
+  border-radius: 3px;
+  background: var(--ob-bg);
+  cursor: default;
+}
+.hf-prose .task-list-item input[type="checkbox"]:checked,
+.hf-prose .task-list-item.task-x input[type="checkbox"] {
+  background: var(--ob-text-accent);
+  border-color: var(--ob-text-accent);
+  position: absolute;
+}
+.hf-prose .task-list-item.task-x input[type="checkbox"]::after {
+  content: ''; position: absolute; left: 4px; top: 0px;
+  width: 5px; height: 10px; border: solid #fff; border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+.hf-prose .task-list-item.task-x { color: var(--ob-text-faint); text-decoration: line-through; }
+
+/* extended states — render glyph by overriding the empty checkbox */
+.hf-prose .task-list-item.task-slash input { background: linear-gradient(135deg, transparent calc(50% - 1px), var(--ob-text-accent) calc(50% - 1px) calc(50% + 1px), transparent calc(50% + 1px)); border-color: var(--ob-text-accent); }
+.hf-prose .task-list-item.task-cancelled { color: var(--ob-text-faint); text-decoration: line-through; }
+.hf-prose .task-list-item.task-cancelled input { background: var(--ob-text-faint); border-color: var(--ob-text-faint); position: absolute; }
+.hf-prose .task-list-item.task-cancelled input::after { content: ''; position: absolute; left: 2px; top: 6px; width: 9px; height: 2px; background: #fff; }
+.hf-prose .task-list-item.task-forwarded input::after,
+.hf-prose .task-list-item.task-scheduled input::after,
+.hf-prose .task-list-item.task-question input::after,
+.hf-prose .task-list-item.task-important input::after,
+.hf-prose .task-list-item.task-star input::after {
+  content: attr(data-glyph);
+  position: absolute; inset: 0;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 11px; font-weight: 700;
+  color: #fff;
+}
+.hf-prose .task-list-item.task-forwarded input { background: #086ddd; border-color: #086ddd; }
+.hf-prose .task-list-item.task-forwarded input::after { content: '›'; color: #fff; }
+.hf-prose .task-list-item.task-scheduled input { background: #086ddd; border-color: #086ddd; }
+.hf-prose .task-list-item.task-scheduled input::after { content: '‹'; color: #fff; }
+.hf-prose .task-list-item.task-question input { background: #e0ac00; border-color: #e0ac00; }
+.hf-prose .task-list-item.task-question input::after { content: '?'; color: #fff; }
+.hf-prose .task-list-item.task-important input { background: #e93147; border-color: #e93147; }
+.hf-prose .task-list-item.task-important input::after { content: '!'; color: #fff; }
+.hf-prose .task-list-item.task-star input { background: #e0ac00; border-color: #e0ac00; }
+.hf-prose .task-list-item.task-star input::after { content: '★'; color: #fff; font-size: 9px; }
+
+/* ----- tables ----- */
+
+.hf-prose table {
+  width: auto;
+  margin: 1em 0;
+  border-collapse: collapse;
+  font-size: 0.95em;
+}
+.hf-prose table th,
+.hf-prose table td {
+  padding: 6px 12px;
+  border: 1px solid var(--ob-line);
+  text-align: left;
+}
+.hf-prose table thead th {
+  background: var(--ob-bg-soft);
+  font-weight: 700;
+}
+.hf-prose table tbody tr:nth-child(2n) { background: var(--ob-bg-soft); }
+
+/* ----- code blocks (Shiki dual theme) ----- */
+
+.hf-prose pre.shiki,
+.hf-prose pre:has(> code) {
+  margin: 1em 0;
+  padding: 14px 16px;
+  border-radius: 6px;
+  border: 1px solid var(--ob-line);
+  background: var(--ob-bg-soft);
+  overflow-x: auto;
+  font-size: 13.5px;
+  line-height: 1.65;
+}
+.hf-prose pre code {
+  font-family: var(--mono, ui-monospace, "JetBrains Mono", monospace);
+  background: transparent;
+  border: 0;
+  padding: 0;
+  color: inherit;
+  font-size: inherit;
+}
+.hf-prose .shiki { overflow-x: auto; }
+
+/* dual-theme via CSS vars(由 shiki 写入 --shiki-light / --shiki-dark) */
+html[data-theme="dark"] .hf-prose pre.shiki,
+html[data-theme="dark"] .hf-prose pre.shiki *,
+html:not([data-theme="light"]) .hf-prose pre.shiki,
+html:not([data-theme="light"]) .hf-prose pre.shiki * {
+  color: var(--shiki-dark, inherit) !important;
+  background-color: var(--shiki-dark-bg, var(--ob-bg-soft)) !important;
+  font-style: var(--shiki-dark-font-style, inherit) !important;
+  font-weight: var(--shiki-dark-font-weight, inherit) !important;
+  text-decoration: var(--shiki-dark-text-decoration, inherit) !important;
+}
+html[data-theme="light"] .hf-prose pre.shiki,
+html[data-theme="light"] .hf-prose pre.shiki * {
+  color: var(--shiki-light, inherit) !important;
+  background-color: var(--shiki-light-bg, var(--ob-bg-soft)) !important;
+  font-style: var(--shiki-light-font-style, inherit) !important;
+  font-weight: var(--shiki-light-font-weight, inherit) !important;
+  text-decoration: var(--shiki-light-text-decoration, inherit) !important;
+}
+@media (prefers-color-scheme: dark) {
+  html:not([data-theme]) .hf-prose pre.shiki,
+  html:not([data-theme]) .hf-prose pre.shiki * {
+    color: var(--shiki-dark, inherit) !important;
+    background-color: var(--shiki-dark-bg, var(--ob-bg-soft)) !important;
+  }
+}
+@media (prefers-color-scheme: light) {
+  html:not([data-theme]) .hf-prose pre.shiki,
+  html:not([data-theme]) .hf-prose pre.shiki * {
+    color: var(--shiki-light, inherit) !important;
+    background-color: var(--shiki-light-bg, var(--ob-bg-soft)) !important;
+  }
+}
+
+/* ----- math ----- */
+
+.hf-prose .katex { font-size: 1.05em; }
+.hf-prose .katex-display { margin: 1em 0; overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
+
+/* ----- mermaid ----- */
+.hf-prose .mermaid {
+  margin: 1.5em 0;
+  text-align: center;
+  background: var(--ob-bg);
+  border-radius: 6px;
+  overflow: auto;
+}
+
+/* ======================================================================
+ * .ob-canvas — Obsidian Canvas
+ * ====================================================================== */
+
+.ob-canvas {
+  position: relative;
+  width: 100%;
+  min-height: 500px;
+  height: clamp(500px, 70vh, 900px);
+  border: 1px solid var(--ob-line);
+  border-radius: 8px;
+  background: var(--ob-canvas-bg);
+  background-image:
+    linear-gradient(var(--ob-canvas-grid) 1px, transparent 1px),
+    linear-gradient(90deg, var(--ob-canvas-grid) 1px, transparent 1px);
+  background-size: 40px 40px;
+  overflow: hidden;
+  cursor: grab;
+  user-select: none;
+}
+.ob-canvas:focus { outline: 2px solid var(--ob-text-accent); outline-offset: 2px; }
+.ob-canvas:active { cursor: grabbing; }
+
+.ob-canvas__viewport {
+  position: relative;
+  transform-origin: 0 0;
+  will-change: transform;
+}
+
+.ob-canvas__edges {
+  position: absolute;
+  left: 0; top: 0;
+  width: 100%; height: 100%;
+  pointer-events: none;
+  color: var(--ob-text-faint);
+  overflow: visible;
+}
+.ob-canvas__edges path { fill: none; }
+.ob-canvas__edge-label rect {
+  fill: var(--ob-bg);
+  stroke: var(--ob-line);
+  stroke-width: 1;
+}
+.ob-canvas__edge-label text {
+  font-size: 11px;
+  font-family: var(--mono, ui-monospace, monospace);
+}
+
+.ob-canvas__node {
+  position: absolute;
+  display: block;
+  background: var(--ob-bg);
+  border: 1.5px solid var(--ob-color, var(--ob-canvas-default));
+  border-radius: 6px;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+  text-decoration: none;
+  color: var(--ob-text-normal);
+  overflow: hidden;
+  transition: box-shadow 0.15s, transform 0.05s;
+}
+.ob-canvas__node:hover { box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1); }
+.ob-canvas__node--text .ob-canvas__node-body {
+  padding: 10px 14px;
+  height: 100%;
+  overflow: auto;
+  font-size: 13px;
+  line-height: 1.55;
+}
+.ob-canvas__node--file,
+.ob-canvas__node--link {
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  padding: 12px 14px;
+}
+.ob-canvas__node--file img {
+  width: 100%; height: 100%;
+  object-fit: cover;
+  display: block;
+}
+.ob-canvas__node-title {
+  font-weight: 600;
+  margin: 0 0 4px;
+  color: var(--ob-color, var(--ob-text-accent));
+  word-break: break-word;
+}
+.ob-canvas__node-meta {
+  font-size: 11px;
+  color: var(--ob-text-faint);
+  font-family: var(--mono, ui-monospace, monospace);
+  word-break: break-all;
+}
+
+.ob-canvas__group {
+  position: absolute;
+  border: 2px dashed var(--ob-color, var(--ob-canvas-default));
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--ob-color) 6%, transparent);
+  pointer-events: none;
+}
+.ob-canvas__group-label {
+  position: absolute;
+  top: -10px; left: 14px;
+  padding: 0 8px;
+  background: var(--ob-bg);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.ob-canvas__controls {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  gap: 4px;
+  background: var(--ob-bg);
+  border: 1px solid var(--ob-line);
+  border-radius: 6px;
+  padding: 4px;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08);
+}
+.ob-canvas__btn {
+  width: 32px; height: 32px;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  border-radius: 4px;
+  color: var(--ob-text-muted);
+  font-size: 14px;
+  font-family: inherit;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+.ob-canvas__btn:hover {
+  background: var(--ob-bg-soft);
+  color: var(--ob-text-normal);
+}
+
+/* ======================================================================
+ * .ob-html-embed — sandboxed HTML 报告
+ * ====================================================================== */
+
+.ob-html-embed {
+  position: relative;
+  margin: 1em 0;
+  border: 1px solid var(--ob-line);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--ob-bg);
+}
+.ob-html-embed__frame {
+  width: 100%;
+  min-height: 480px;
+  border: 0;
+  display: block;
+  background: #fff;
+}
+.ob-html-embed__expand {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--ob-line);
+  background: var(--ob-bg);
+  color: var(--ob-text-muted);
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 14px;
+}
+.ob-html-embed__expand:hover { color: var(--ob-text-accent); }
+.ob-html-embed:fullscreen { background: #000; }
+.ob-html-embed:fullscreen .ob-html-embed__frame {
+  height: 100vh;
+  min-height: 100vh;
+}
+
+/* ======================================================================
+ * 块锚点
+ * ====================================================================== */
+.block-anchor { scroll-margin-top: 80px; }
+.block-anchor--inline { scroll-margin-top: 80px; }
+
+/* hidden Obsidian comments */
+.cm-comment { display: none; }
+
+/* ======================================================================
+ * 移动端
+ * ====================================================================== */
+@media (max-width: 768px) {
+  .hf-prose {
+    font-size: 15px;
+    line-height: 1.7;
+  }
+  .hf-prose h1 { font-size: 1.6em; }
+  .hf-prose h2 { font-size: 1.3em; }
+  .hf-prose h3 { font-size: 1.12em; }
+
+  /* 表格横向滚动 */
+  .hf-prose table {
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* embed:小屏 PDF 高度收一点 */
+  .hf-prose .internal-embed.embed-pdf iframe { height: 60vh; }
+
+  /* callout 在窄屏堆叠 */
+  .hf-prose .callout { padding: 0.5em 0.75em; }
+  .hf-prose .callout__body { padding-left: 1.6em; }
+  .hf-prose .callout__title { gap: 0.4em; }
+
+  /* canvas 高度收紧 */
+  .ob-canvas {
+    min-height: 400px;
+    height: clamp(380px, 60vh, 600px);
+    border-radius: 4px;
+  }
+  .ob-canvas__btn { width: 36px; height: 36px; } /* 触控目标 */
+
+  /* html embed:控制高度 */
+  .ob-html-embed__frame { min-height: 60vh; }
+  .ob-html-embed__expand { width: 36px; height: 36px; } /* 触控目标 */
+
+  /* embedded note transclusion */
+  .hf-prose aside.embed-note { padding: 0.5em 0.75em; }
+}
+
+@media (max-width: 380px) {
+  .hf-prose { font-size: 14.5px; }
+  .hf-prose h1 { font-size: 1.45em; }
+}

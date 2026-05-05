@@ -1,5 +1,6 @@
 import {
   type NormalizedNote,
+  type NoteKind,
   type ParsedNote,
   type Visibility,
   countWords,
@@ -17,20 +18,20 @@ export interface NormalizeWarning {
  * 把 ParsedNote 补默认值、跑约束、算字数。
  * 不分配 short_id（那要查 db，留给 pipeline）。
  */
-export function normalize(p: ParsedNote): {
+export function normalize(p: ParsedNote & { kind?: NoteKind }): {
   note: NormalizedNote;
   warnings: NormalizeWarning[];
 } {
   const warnings: NormalizeWarning[] = [];
 
   const fm = p.frontmatter;
+  const kind: NoteKind = p.kind ?? 'markdown';
+  const fileStem = p.source_path.split('/').pop()?.replace(/\.(md|markdown|canvas|html|htm)$/i, '') ?? 'untitled';
   const title =
     fm.title ??
-    // fallback: 第一个 h1
-    p.body.match(/^#\s+(.+)$/m)?.[1]?.trim() ??
-    // fallback fallback: 文件名
-    p.source_path.split('/').pop()?.replace(/\.md$/, '') ??
-    'untitled';
+    // markdown 走 # 一级标题;非 markdown 直接用文件名
+    (kind === 'markdown' ? p.body.match(/^#\s+(.+)$/m)?.[1]?.trim() : undefined) ??
+    fileStem;
 
   const slug = fm.slug ?? slugify(title);
   const visibility: Visibility = fm.visibility ?? 'private';
@@ -46,12 +47,14 @@ export function normalize(p: ParsedNote): {
   const featuredOnHome = restricted ? false : (fm.featured_on_home ?? false);
 
   const tags = (fm.tags ?? []).filter((t) => typeof t === 'string');
-  const plain = stripMarkdown(p.body);
+  // canvas / html 走自己的字数估算(后面 pipeline 渲染好后,从 plain text 重新算)
+  const plain = kind === 'markdown' ? stripMarkdown(p.body) : '';
   const { words, minutes } = countWords(plain);
 
   return {
     note: {
       ...p,
+      kind,
       slug,
       title,
       visibility,

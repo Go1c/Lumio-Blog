@@ -70,15 +70,36 @@ export function startWatcher(opts: SyncOptions): { stop: () => Promise<void> } {
     }
   };
 
-  const watcher = chokidar.watch(`${opts.vault}/**/*.md`, {
+  // 监听三种笔记类型 + 所有附件(任意文件 add/change 都能触发对应笔记的重渲染)
+  const watcher = chokidar.watch(opts.vault, {
     ignoreInitial: true, // ready 后我们手动触发 syncAll，避免对每个文件 add 一次
+    ignored: [
+      /(^|[/\\])\../, // dotfiles
+      /node_modules/,
+    ],
     awaitWriteFinish: { stabilityThreshold: 200, pollInterval: 50 },
   });
 
+  // 把任意文件的 add/change 都映射成「刷新所属笔记」——简化:对附件改动直接全量重 sync,
+  // 大多数改动是笔记本身,频次不高,代价低。
+  function isNote(p: string): boolean {
+    const lc = p.toLowerCase();
+    return lc.endsWith('.md') || lc.endsWith('.canvas') || lc.endsWith('.html') || lc.endsWith('.htm');
+  }
+
   watcher.on('ready', () => enqueue({ kind: 'all' }));
-  watcher.on('add', (path) => enqueue({ kind: 'one', abs: path }));
-  watcher.on('change', (path) => enqueue({ kind: 'one', abs: path }));
-  watcher.on('unlink', (path) => enqueue({ kind: 'remove', abs: path }));
+  watcher.on('add', (p) => {
+    if (isNote(p)) enqueue({ kind: 'one', abs: p });
+    else enqueue({ kind: 'all' }); // 附件 add → 全量(资源可能被多个笔记引用)
+  });
+  watcher.on('change', (p) => {
+    if (isNote(p)) enqueue({ kind: 'one', abs: p });
+    else enqueue({ kind: 'all' });
+  });
+  watcher.on('unlink', (p) => {
+    if (isNote(p)) enqueue({ kind: 'remove', abs: p });
+    else enqueue({ kind: 'all' });
+  });
 
   return {
     stop: async () => {

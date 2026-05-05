@@ -1,8 +1,9 @@
-import { readdir, stat } from 'node:fs/promises';
+import { readdir } from 'node:fs/promises';
 import { join, relative, basename, dirname } from 'node:path';
 import {
   type LinkEdge,
   type NoteRow,
+  type NoteKind,
   type SyncEvent,
   type SyncStats,
   generateUniqueShortId,
@@ -10,9 +11,15 @@ import {
   slugify,
 } from '@opennote/core';
 import { NoteRepo, ShortLinkRepo, type DbHandle } from '@opennote/db';
+import {
+  buildVaultIndex,
+  walkVault,
+  type VaultIndex,
+  type VaultNoteRef,
+} from '@opennote/obsidian';
 import { parseFile } from './parse.js';
 import { normalize } from './normalize.js';
-import { renderMarkdown } from './render.js';
+import { createRenderContext, renderNote, type RenderContext } from './render.js';
 
 /** 一次同步收集到的、可被外部 inspect 的结构化诊断信息。 */
 export interface SyncDiagnostics {
@@ -39,6 +46,8 @@ export interface PostRenderHook {
 export interface SyncOptions {
   vault: string;
   db: DbHandle;
+  /** 静态产物输出目录 — Obsidian 资源会被复制到 <out>/_attachments/ */
+  out: string;
   onEvent?: (e: SyncEvent) => void;
   onLog?: (level: 'info' | 'warn' | 'error', msg: string, meta?: unknown) => void;
   /** 每篇笔记 render 完之后调用一次。失败不影响主流程,只 warn。 */
@@ -53,7 +62,10 @@ export interface SyncOptions {
 interface ProcessCtx {
   noteRepo: NoteRepo;
   shortRepo: ShortLinkRepo;
-  resolveSlug: (target: string) => string | null;
+  /** vault 索引 + 资源 pipeline,渲染所有笔记共用 */
+  render: RenderContext;
+  /** 笔记 stem → 最终 slug,用于 wikilink 解析 */
+  noteSlugMap: Map<string, string>;
   onEvent?: SyncOptions['onEvent'];
   onLog?: SyncOptions['onLog'];
   onNoteRendered?: SyncOptions['onNoteRendered'];
@@ -68,7 +80,23 @@ async function processNote(
   ctx: ProcessCtx,
   existing?: NoteRow,
 ): Promise<{ changed: boolean; isNew: boolean; row: NoteRow; rawTargets: string[] }> {
-  const { html, text, links } = await renderMarkdown(parsed.body, ctx.resolveSlug);
+  const kind: NoteKind = parsed.kind ?? 'markdown';
+  const rendered = await renderNote(
+    { kind, body: parsed.body, source_path: parsed.source_path },
+    ctx.render,
+  );
+  const html = rendered.html;
+  const text = rendered.text;
+  const links = rendered.links;
+  // canvas / html 走自己的 word_count(基于渲染后的 plain text)
+  let wordCount = parsed.word_count;
+  let readingMinutes = parsed.reading_minutes;
+  if (kind !== 'markdown' && text) {
+    const cjk = (text.match(/[一-鿿]/g) ?? []).length;
+    const ascii = text.replace(/[一-鿿]/g, ' ').match(/\b\w+\b/g) ?? [];
+    wordCount = cjk + ascii.length;
+    readingMinutes = Math.max(1, Math.round(wordCount / 300));
+  }
 
   // 短链：分配/复用
   let shortId = parsed.short_id;
@@ -99,6 +127,7 @@ async function processNote(
     summary,
     body_html: html,
     body_text: text,
+    kind,
     visibility: parsed.visibility,
     searchable: parsed.searchable ? 1 : 0,
     seo_indexable: parsed.seo_indexable ? 1 : 0,
@@ -113,8 +142,8 @@ async function processNote(
       existing?.published_at ??
       (parsed.visibility === 'public' ? nowIso() : null),
     scheduled_at: (parsed.frontmatter.scheduled_at as string | undefined) ?? null,
-    word_count: parsed.word_count,
-    reading_minutes: parsed.reading_minutes,
+    word_count: wordCount,
+    reading_minutes: readingMinutes,
     cover,
     hash: parsed.hash,
   };
@@ -143,21 +172,21 @@ async function processNote(
   return { changed, isNew, row, rawTargets: links.map((l) => l.raw) };
 }
 
-/** 构造 basename → slug 映射。db 已有 + 本批新增合并。 */
-function buildResolver(
+/** db 已有 source_path → slug 的快照,本批新增 + 复用。给 VaultIndex 的 lookup 兜底。 */
+function buildSlugMap(
   noteRepo: NoteRepo,
   overrides: Map<string, string> = new Map(),
-): (target: string) => string | null {
+): Map<string, string> {
   const map = new Map<string, string>();
   for (const r of noteRepo.allSourceMappings()) {
-    const base = basename(r.source_path).replace(/\.md$/, '');
+    map.set(r.source_path, r.slug);
+    const base = basename(r.source_path).replace(/\.(md|canvas|html|htm)$/i, '');
     map.set(base, r.slug);
     map.set(base.toLowerCase(), r.slug);
     map.set(r.slug, r.slug);
   }
   for (const [k, v] of overrides) map.set(k, v);
-  return (target: string) =>
-    map.get(target) ?? map.get(target.toLowerCase()) ?? null;
+  return map;
 }
 
 /**
@@ -185,15 +214,16 @@ export async function syncAll(opts: SyncOptions): Promise<SyncStats> {
   const noteRepo = new NoteRepo(opts.db);
   const shortRepo = new ShortLinkRepo(opts.db);
 
-  const files = await walkMarkdown(opts.vault);
-  diag.files_scanned = files.length;
+  // 一次走 vault,产出 索引 + 文件列表(.md/.canvas/.html + 附件)
+  const { notes: vaultNotes, assets: vaultAssets } = await walkVault(opts.vault);
+  diag.files_scanned = vaultNotes.length;
   const seenSlugs = new Set<string>();
 
   // 先 parse + normalize 全部，建本批 slug 表
   const parsedAll: ReturnType<typeof normalize>['note'][] = [];
-  for (const abs of files) {
-    const sourcePath = relative(opts.vault, abs);
-    const { note, error } = await parseFile(abs, sourcePath);
+  for (const ref of vaultNotes) {
+    const abs = join(opts.vault, ref.source_path);
+    const { note, error } = await parseFile(abs, ref.source_path);
     if (error) {
       stats.failed++;
       diag.parse_failed.push(error);
@@ -259,17 +289,30 @@ export async function syncAll(opts: SyncOptions): Promise<SyncStats> {
       usedSlugs.add(finalSlug);
     }
     n.slug = finalSlug;
-    const base = basename(n.source_path).replace(/\.md$/, '');
+    const base = basename(n.source_path).replace(/\.(md|canvas|html|htm)$/i, '');
     overrides.set(base, finalSlug);
     overrides.set(base.toLowerCase(), finalSlug);
     overrides.set(finalSlug, finalSlug);
+    overrides.set(n.source_path, finalSlug);
   }
 
-  const resolveSlug = buildResolver(noteRepo, overrides);
+  const slugMap = buildSlugMap(noteRepo, overrides);
+
+  // 把 vault 索引 + 资源 pipeline 注入 process ctx;所有笔记共用一份
+  const indexedNotes = vaultNotes.map((n) => ({ ...n, slug: slugMap.get(n.source_path) ?? n.stem }));
+  const vaultIndex = buildVaultIndex(indexedNotes, vaultAssets);
+  const renderCtx = createRenderContext({
+    index: vaultIndex,
+    outRoot: opts.out,
+    vaultRoot: opts.vault,
+    fallbackSlug: (n) => slugMap.get(n.source_path) ?? slugMap.get(n.stem.toLowerCase()) ?? n.stem,
+  });
+
   const ctx: ProcessCtx = {
     noteRepo,
     shortRepo,
-    resolveSlug,
+    render: renderCtx,
+    noteSlugMap: slugMap,
     onEvent: opts.onEvent,
     onLog: opts.onLog,
     onNoteRendered: opts.onNoteRendered,
@@ -382,7 +425,9 @@ function hashShort(s: string): string {
  */
 export async function syncOne(absPath: string, opts: SyncOptions): Promise<void> {
   const sourcePath = relative(opts.vault, absPath);
-  if (!sourcePath.endsWith('.md') || sourcePath.startsWith('..')) return;
+  if (sourcePath.startsWith('..')) return;
+  const lower = sourcePath.toLowerCase();
+  if (!lower.endsWith('.md') && !lower.endsWith('.canvas') && !lower.endsWith('.html') && !lower.endsWith('.htm')) return;
 
   const noteRepo = new NoteRepo(opts.db);
   const shortRepo = new ShortLinkRepo(opts.db);
@@ -396,16 +441,31 @@ export async function syncOne(absPath: string, opts: SyncOptions): Promise<void>
   const { note: normalized, warnings } = normalize(note);
   for (const w of warnings) opts.onLog?.('warn', 'normalize.warning', w);
 
-  const base = basename(sourcePath).replace(/\.md$/, '');
+  const base = basename(sourcePath).replace(/\.(md|canvas|html|htm)$/i, '');
   const overrides = new Map<string, string>([
     [base, normalized.slug],
     [base.toLowerCase(), normalized.slug],
     [normalized.slug, normalized.slug],
+    [sourcePath, normalized.slug],
   ]);
+  const slugMap = buildSlugMap(noteRepo, overrides);
+
+  // 单文件场景:仍要重新 walk vault(资源会被 publish);成本只是一次 readdir。
+  // 也可缓存到 watcher 里,但增量频率低,不优化。
+  const { notes, assets } = await walkVault(opts.vault);
+  const indexed = notes.map((n) => ({ ...n, slug: slugMap.get(n.source_path) ?? n.stem }));
+  const renderCtx = createRenderContext({
+    index: buildVaultIndex(indexed, assets),
+    outRoot: opts.out,
+    vaultRoot: opts.vault,
+    fallbackSlug: (n) => slugMap.get(n.source_path) ?? slugMap.get(n.stem.toLowerCase()) ?? n.stem,
+  });
+
   const ctx: ProcessCtx = {
     noteRepo,
     shortRepo,
-    resolveSlug: buildResolver(noteRepo, overrides),
+    render: renderCtx,
+    noteSlugMap: slugMap,
     onEvent: opts.onEvent,
     onLog: opts.onLog,
     onNoteRendered: opts.onNoteRendered,
@@ -443,7 +503,9 @@ export async function syncOne(absPath: string, opts: SyncOptions): Promise<void>
     overrides.set(base, final);
     overrides.set(base.toLowerCase(), final);
     overrides.set(final, final);
-    ctx.resolveSlug = buildResolver(noteRepo, overrides);
+    overrides.set(sourcePath, final);
+    // 重建 slug map(processNote 通过 ctx.render 走 vault index,但 noteSlugMap 仍要更新)
+    for (const [k, v] of buildSlugMap(noteRepo, overrides)) ctx.noteSlugMap.set(k, v);
     existing = undefined;
   }
 
@@ -514,12 +576,13 @@ function autoSummary(text: string): string {
   return candidate;
 }
 
-async function walkMarkdown(dir: string, out: string[] = []): Promise<string[]> {
+async function _walkMarkdown_legacy(dir: string, out: string[] = []): Promise<string[]> {
+  // legacy:保留接口签名给将来某些独立工具用,主流程不再走它
   const entries = await readdir(dir, { withFileTypes: true });
   for (const e of entries) {
     if (e.name.startsWith('.')) continue;
     const full = join(dir, e.name);
-    if (e.isDirectory()) await walkMarkdown(full, out);
+    if (e.isDirectory()) await _walkMarkdown_legacy(full, out);
     else if (e.isFile() && e.name.endsWith('.md')) out.push(full);
   }
   return out;

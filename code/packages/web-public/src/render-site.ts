@@ -1,10 +1,11 @@
-import { mkdir, writeFile, copyFile, access } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile, access, readFile } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Database } from 'better-sqlite3';
 import { NoteRepo } from '@opennote/db';
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
+import { CANVAS_RUNTIME_JS, HTML_EMBED_RUNTIME_JS } from '@opennote/obsidian';
 import { renderHome } from './templates/home.js';
 import { renderPost } from './templates/post.js';
 import { buildNeighborhood } from './partials/backlinks-graph.js';
@@ -196,7 +197,37 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     'utf-8',
   );
 
-  await writeFile(join(opts.out, 'styles.css'), CSS, 'utf-8');
+  // CSS = ui token + 站点 CSS + obsidian.css(运行时 readFile,避免 build 时 inline)
+  const obsidianCss = await readObsidianCss();
+  await writeFile(join(opts.out, 'styles.css'), CSS + '\n' + obsidianCss, 'utf-8');
+
+  // 注入 obsidian 客户端运行时(canvas panzoom + html-embed iframe 自适应)
+  await writeFile(
+    join(opts.out, 'obsidian-runtime.js'),
+    `${CANVAS_RUNTIME_JS}\n${HTML_EMBED_RUNTIME_JS}`,
+    'utf-8',
+  );
+}
+
+/** 读 @opennote/obsidian 包的 obsidian.css。dev / build 两种 import.meta.url 都能命中。 */
+async function readObsidianCss(): Promise<string> {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const candidates = [
+    // dev: <repo>/code/packages/web-public/src/render-site.ts → ../../obsidian/src/styles/obsidian.css
+    join(here, '..', '..', 'obsidian', 'src', 'styles', 'obsidian.css'),
+    // build: <repo>/code/packages/web-public/dist/render-site.js → ../../obsidian/src/styles/obsidian.css
+    join(here, '..', '..', 'obsidian', 'src', 'styles', 'obsidian.css'),
+    // node_modules link
+    join(here, '..', 'node_modules', '@opennote', 'obsidian', 'src', 'styles', 'obsidian.css'),
+  ];
+  for (const p of candidates) {
+    try {
+      return await readFile(p, 'utf-8');
+    } catch {
+      continue;
+    }
+  }
+  return '';
 }
 
 /**
@@ -263,37 +294,11 @@ const APP_CSS = `
   --border: var(--line);
 }
 
-/* ---- typography for article body ---- */
+/* ---- typography for article body — 主体 prose 在 obsidian.css 里 ---- */
 a { color: var(--accent); }
 .post-list { list-style: none; padding: 0; }
-pre { background: var(--code-bg); padding: 16px; overflow: auto; border-radius: 6px; font-size: 13px; }
-code { background: var(--code-bg); padding: 2px 5px; border-radius: 3px; font-size: 0.9em; font-family: var(--mono); }
-pre code { background: none; padding: 0; font-size: 13px; }
 .opennote-broken-link { color: var(--ink-3); text-decoration: line-through dotted; cursor: help; }
-
-/* shiki: keep auto light/dark via CSS variables produced at build */
-.shiki { padding: 16px; border-radius: 6px; overflow: auto; font-size: 13px; }
-.shiki code { background: none; padding: 0; }
-html[data-theme="dark"] .shiki, html[data-theme="dark"] .shiki span {
-  color: var(--shiki-dark) !important; background-color: var(--shiki-dark-bg) !important;
-}
-html[data-theme="light"] .shiki, html[data-theme="light"] .shiki span {
-  color: var(--shiki-light) !important; background-color: var(--shiki-light-bg) !important;
-}
-@media (prefers-color-scheme: dark) {
-  html:not([data-theme]) .shiki, html:not([data-theme]) .shiki span {
-    color: var(--shiki-dark) !important; background-color: var(--shiki-dark-bg) !important;
-  }
-}
-@media (prefers-color-scheme: light) {
-  html:not([data-theme]) .shiki, html:not([data-theme]) .shiki span {
-    color: var(--shiki-light) !important; background-color: var(--shiki-light-bg) !important;
-  }
-}
-
-.mermaid { text-align: center; margin: 16px 0; }
 .opennote-math-error { color: var(--error-fg); background: var(--error-bg); padding: 2px 6px; border-radius: 3px; }
-.katex-display { overflow-x: auto; overflow-y: hidden; padding: 4px 0; }
 
 /* ====================================================================== */
 /* WS-A — public 内容页样式                                                  */
@@ -319,42 +324,10 @@ body.ui-public { background: var(--bg); }
 /* override footer to be wider */
 .ui-public__footer { max-width: 1280px; }
 
-/* ---- prose for article body (h2 / h3 / blockquote / callout) ---- */
-.hf-prose { font-size: 15px; line-height: 1.78; color: var(--ink); }
-.hf-prose p { margin: 0 0 14px; }
-.hf-prose h2 {
-  font-size: 22px; font-weight: 700;
-  margin: 32px 0 12px;
-  padding-bottom: 6px;
-  border-bottom: 1px solid var(--line);
-  scroll-margin-top: 80px;
-}
-.hf-prose h3 {
-  font-size: 17px; font-weight: 700;
-  margin: 24px 0 10px;
-  scroll-margin-top: 80px;
-}
-.hf-prose code:not(.shiki code) {
-  font-family: var(--mono); font-size: 13px;
-  background: var(--bg-sunk);
-  padding: 1px 6px;
-  border-radius: 4px;
-  color: var(--accent);
-}
-.hf-prose blockquote {
-  border-left: 3px solid var(--accent);
-  background: var(--accent-soft);
-  margin: 14px 0;
-  padding: 10px 16px;
-  color: var(--ink-2);
-  border-radius: 0 6px 6px 0;
-}
-.hf-prose a {
-  color: var(--accent);
-  text-decoration: underline;
-  text-decoration-thickness: 1px;
-  text-underline-offset: 2px;
-}
+/* ---- prose for article body — 由 @opennote/obsidian/styles/obsidian.css 提供 ---- */
+/* (此处保留 host wrappers,obsidian.css 接管 .hf-prose / .ob-canvas / .ob-html-embed) */
+.ob-canvas-host { padding: 0; margin: 0; }
+.ob-html-host { padding: 0; margin: 0; }
 
 /* ---- HOME ---- */
 .wsa-home { width: 100%; }
