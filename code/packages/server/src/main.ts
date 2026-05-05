@@ -110,7 +110,8 @@ async function main(): Promise<void> {
       onEvent: (e) => bus.emit(e),
       onNoteRendered: mediaRefExtractor.hook,
       onDiagnostics: (d) => syncDiagnostics.record(d),
-      forceAll: opts?.forceAll,
+      // exactOptionalPropertyTypes:不能显式传 undefined,只在为 true 时才注入字段
+      ...(opts?.forceAll ? { forceAll: true } : {}),
     });
     await renderSite({ db, out, config });
   };
