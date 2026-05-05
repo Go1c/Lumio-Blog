@@ -33,7 +33,7 @@ export function normalize(p: ParsedNote): {
     'untitled';
 
   const slug = fm.slug ?? slugify(title);
-  const visibility: Visibility = fm.visibility ?? 'public';
+  const visibility: Visibility = fm.visibility ?? 'private';
 
   const requestedSearchable = fm.searchable ?? visibility === 'public';
   const { searchable, warning } = enforceVisibilityRules(visibility, requestedSearchable);

@@ -45,6 +45,8 @@ export interface SyncOptions {
   onNoteRendered?: PostRenderHook;
   /** 全量同步结束后,把诊断信息回吐(用于 /api/admin/sync/diagnostics)。 */
   onDiagnostics?: (diag: SyncDiagnostics) => void;
+  /** 强制重处理所有笔记,忽略 hash 缓存。用于默认值变更后的全量刷新。 */
+  forceAll?: boolean;
 }
 
 /** 单文件处理用的上下文。slug 解析表是 db 全量映射 + 本批新增的合并。 */
@@ -278,7 +280,9 @@ export async function syncAll(opts: SyncOptions): Promise<SyncStats> {
   for (const n of parsedAll) {
     seenSlugs.add(n.slug);
     try {
-      const { changed, isNew } = await processNote(n, ctx, existing.get(n.slug));
+      const ex = existing.get(n.slug);
+      const existingArg = (opts.forceAll && ex) ? { ...ex, hash: '__force__' } : ex;
+      const { changed, isNew } = await processNote(n, ctx, existingArg);
       if (!changed) continue;
       if (isNew) {
         stats.added++;

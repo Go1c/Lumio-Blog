@@ -644,6 +644,7 @@ function FeaturesForm({ draft, update }: { draft: AdminSettings; update: (n: Adm
         { key: 'graph', label: '知识图谱' },
         { key: 'search', label: '全文搜索' },
         { key: 'short_links', label: '短链(/n/xxxxx)' },
+        { key: 'post_summary', label: '文章摘要(标题下)' },
       ],
     },
     {

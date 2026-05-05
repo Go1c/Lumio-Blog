@@ -41,7 +41,7 @@ export interface RouteDeps {
   db: Database;
   config: SiteConfig;
   bus: EventBus;
-  triggerSync: () => Promise<void>;
+  triggerSync: (opts?: { forceAll?: boolean }) => Promise<void>;
   // Optional — main.ts may wire these for full functionality
   vaultDir?: string;
   dbPath?: string;
@@ -374,9 +374,10 @@ export function buildApp(deps: RouteDeps): Hono {
   });
 
   admin.post('/sync', async (c) => {
-    audit.write({ actor: c.get('actor') ?? 'owner', action: 'sync.manual' });
-    await deps.triggerSync();
-    return c.json({ ok: true });
+    const forceAll = c.req.query('force') === '1' || c.req.query('force') === 'true';
+    audit.write({ actor: c.get('actor') ?? 'owner', action: forceAll ? 'sync.force' : 'sync.manual' });
+    await deps.triggerSync({ forceAll });
+    return c.json({ ok: true, forceAll });
   });
 
   // Tokens

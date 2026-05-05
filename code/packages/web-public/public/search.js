@@ -152,13 +152,13 @@
   }
 
   function renderResults(j, elapsed) {
-    var items = (j && j.results) || j || [];
-    if (!Array.isArray(items)) items = [];
-
-    var counts = j && j.counts ? j.counts : null;
-    if (counts) updateFacetCounts(counts);
+    var items = (j && Array.isArray(j.hits)) ? j.hits : [];
 
     var total = (j && typeof j.total === 'number') ? j.total : items.length;
+    var facetsType = (j && j.facets && j.facets.type) ? j.facets.type : null;
+    if (facetsType) {
+      updateFacetCounts({ all: total, post: facetsType.post || 0, note: facetsType.note || 0, tag: facetsType.tag || 0, media: facetsType.media || 0 });
+    }
     statusEl.textContent = total + ' 个结果 · ' + elapsed + 's';
 
     if (!items.length) {

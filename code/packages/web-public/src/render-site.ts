@@ -57,6 +57,20 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   const homeLimit = opts.config.home?.show_recent_posts ?? 12;
   const homePosts = publicNotes.slice(0, homeLimit);
   const recentNotes = visible.slice(0, 4);
+
+  // 从 source_path 提取顶层文件夹(只统计 public 文章)
+  const folderCountMap = new Map<string, number>();
+  for (const n of publicNotes) {
+    const slash = n.source_path.indexOf('/');
+    if (slash > 0) {
+      const folder = n.source_path.slice(0, slash);
+      folderCountMap.set(folder, (folderCountMap.get(folder) ?? 0) + 1);
+    }
+  }
+  const folders = [...folderCountMap.entries()]
+    .sort((a, b) => b[1] - a[1])
+    .map(([name, count]) => ({ name, count }));
+
   await writeFile(
     join(opts.out, 'index.html'),
     renderHome(
@@ -66,6 +80,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
         recentNotes,
         totalArticles: publicNotes.length,
         totalNotes: visible.length,
+        folders,
       },
       opts.config,
     ),

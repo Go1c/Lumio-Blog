@@ -19,6 +19,7 @@ import { createMediaStoreFromEnv, LocalMediaStore } from './media-store.js';
 import { MediaRefExtractor } from './media-ref-extractor.js';
 import { FnsSupervisor, defaultFnsCliDir, defaultFnsConfigOutPath } from './fns-supervisor.js';
 import { SyncDiagnosticsBuffer } from './routes/sync-meta.js';
+import { loadFeaturesYaml } from './routes/settings.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -88,13 +89,26 @@ async function main(): Promise<void> {
 
   const syncDiagnostics = new SyncDiagnosticsBuffer();
 
-  const triggerSync = async (): Promise<void> => {
+  const triggerSync = async (opts?: { forceAll?: boolean }): Promise<void> => {
+    // 每次同步前重新加载 features.yaml,确保 admin 设置变更立即生效
+    const features = await loadFeaturesYaml().catch(() => null);
+    if (features) {
+      config.features = {
+        ...config.features,
+        comments: features.content.comments,
+        newsletter: features.content.newsletter,
+        search: features.content.search,
+        graph: features.content.graph,
+        post_summary: features.content.post_summary,
+      };
+    }
     await syncAll({
       vault, db,
       onLog: (lvl, m, meta) => log(lvl, m, meta),
       onEvent: (e) => bus.emit(e),
       onNoteRendered: mediaRefExtractor.hook,
       onDiagnostics: (d) => syncDiagnostics.record(d),
+      forceAll: opts?.forceAll,
     });
     await renderSite({ db, out, config });
   };
