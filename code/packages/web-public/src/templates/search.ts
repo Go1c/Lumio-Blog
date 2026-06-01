@@ -96,6 +96,7 @@ export function renderSearch(config: SiteConfig): string {
     config,
     body,
     active: '',
+    path: '/search/index.html',
   });
 }
 

@@ -95,6 +95,22 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
   const pinnedIdx = posts.findIndex(isPinned);
   const pinned = pinnedIdx >= 0 ? posts[pinnedIdx] : null;
   const rest = pinned ? posts.filter((_, i) => i !== pinnedIdx) : posts;
+  const isWeakHomePost = (n: NoteRow): boolean => {
+    const title = (n.title ?? '').trim();
+    return !title || /^未命名(?:\s+\d+)?$/.test(title) || Number(n.word_count ?? 0) <= 0;
+  };
+  const sortDateMs = (n: NoteRow): number => {
+    const raw = n.updated_at || n.published_at || n.created_at || '';
+    const ms = Date.parse(raw);
+    return Number.isFinite(ms) ? ms : 0;
+  };
+  const restSorted = [...rest].sort((a, b) => {
+    const quality = Number(isWeakHomePost(a)) - Number(isWeakHomePost(b));
+    if (quality !== 0) return quality;
+    const date = sortDateMs(b) - sortDateMs(a);
+    if (date !== 0) return date;
+    return a.slug.localeCompare(b.slug, 'zh-Hans-CN');
+  });
 
   const renderPinned = (n: NoteRow): string => {
     const iso = isoDate(n);
@@ -147,7 +163,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
   };
 
   const feed = posts.length
-    ? (pinned ? renderPinned(pinned) : '') + rest.map(renderRow).join('')
+    ? (pinned ? renderPinned(pinned) : '') + restSorted.map(renderRow).join('')
     : '<p class="wsa-empty">还没有公开的文章。</p>';
 
   // 右栏 — 作者 / 最近笔记 / 标签云
@@ -273,6 +289,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
     config,
     body,
     active: 'home',
+    path: '/',
   });
 }
 

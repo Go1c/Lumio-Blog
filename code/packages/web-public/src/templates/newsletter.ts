@@ -201,5 +201,6 @@ export function renderNewsletter(config: SiteConfig): string {
     config,
     body,
     active: '',
+    path: '/newsletter/index.html',
   });
 }

@@ -1,5 +1,6 @@
 import type {
   AdminSettings,
+  AdminSettingsPatch,
   AnalyticsOverview,
   AnalyticsRange,
   ArticleAnalytics,
@@ -372,7 +373,7 @@ export const api = {
     async get(): Promise<AdminSettings> {
       return jsonOrThrow(await req('/api/admin/settings'));
     },
-    async patch(patch: Partial<AdminSettings>): Promise<{ ok: true; patched: string[] }> {
+    async patch(patch: AdminSettingsPatch): Promise<{ ok: true; patched: string[] }> {
       return jsonOrThrow(
         await req('/api/admin/settings', {
           method: 'PATCH',

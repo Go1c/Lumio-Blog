@@ -11,6 +11,10 @@ export interface LayoutOpts {
   noindex?: boolean;
   /** 当前导航 id;如 'home' / 'tags' */
   active?: string;
+  /** 当前页面路径,用于 canonical / Open Graph URL */
+  path?: string;
+  /** 分享图路径或绝对 URL */
+  image?: string;
 }
 
 /**
@@ -51,5 +55,7 @@ export function layout(o: LayoutOpts): string {
   };
   if (o.noindex) opts.noindex = true;
   if (o.active) opts.active = o.active;
+  if (o.path) opts.path = o.path;
+  if (o.image) opts.image = o.image;
   return publicLayout(opts);
 }

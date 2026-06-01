@@ -94,53 +94,53 @@ function currentPath(route: Route): string {
 function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
   switch (route.name) {
     case 'dashboard':
-      return [{ label: 'opennote', href: '#/' }, { label: '概览' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '概览' }];
     case 'list':
-      return [{ label: 'opennote', href: '#/' }, { label: '笔记' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '笔记' }];
     case 'detail':
       return [
-        { label: 'opennote', href: '#/' },
+        { label: 'Lumio Blog', href: '#/' },
         { label: '笔记', href: '#/notes' },
         { label: route.slug },
       ];
     case 'analytics':
       return [
-        { label: 'opennote', href: '#/' },
+        { label: 'Lumio Blog', href: '#/' },
         { label: '笔记', href: '#/notes' },
         { label: route.slug, href: `#/notes/${route.slug}` },
         { label: '数据' },
       ];
     case 'tokens':
-      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: 'Tokens' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置' }, { label: 'Tokens' }];
     case 'webhooks':
-      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: 'Webhooks' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置' }, { label: 'Webhooks' }];
     case 'settings':
-      return [{ label: 'opennote', href: '#/' }, { label: '设置', href: '#/settings' }, { label: route.section }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置', href: '#/settings' }, { label: route.section }];
     case 'audit':
-      return [{ label: 'opennote', href: '#/' }, { label: 'Audit log' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: 'Audit log' }];
     case 'media':
-      return [{ label: 'opennote', href: '#/' }, { label: '内容' }, { label: '媒体库' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '内容' }, { label: '媒体库' }];
     case 'og':
-      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: 'OG 生成器' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置' }, { label: 'OG 生成器' }];
     case 'backup':
-      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: '备份与导出' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置' }, { label: '备份与导出' }];
     case 'config-docs':
-      return [{ label: 'opennote', href: '#/' }, { label: '设置' }, { label: '配置文档' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置' }, { label: '配置文档' }];
     case 'tags':
       return route.tag
         ? [
-            { label: 'opennote', href: '#/' },
+            { label: 'Lumio Blog', href: '#/' },
             { label: '内容' },
             { label: '标签', href: '#/tags' },
             { label: route.tag },
           ]
-        : [{ label: 'opennote', href: '#/' }, { label: '内容' }, { label: '标签' }];
+        : [{ label: 'Lumio Blog', href: '#/' }, { label: '内容' }, { label: '标签' }];
     case 'comments':
-      return [{ label: 'opennote', href: '#/' }, { label: '互动' }, { label: '评论' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '互动' }, { label: '评论' }];
     case 'subscriptions':
-      return [{ label: 'opennote', href: '#/' }, { label: '互动' }, { label: '订阅' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '互动' }, { label: '订阅' }];
     case 'analytics-overview':
-      return [{ label: 'opennote', href: '#/' }, { label: '分析' }, { label: '文章数据' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '分析' }, { label: '文章数据' }];
   }
 }
 
@@ -167,7 +167,7 @@ export function App() {
       breadcrumbs={breadcrumbsFor(route)}
       onSync={onSync}
       onLogout={onLogout}
-      siteName="opennote"
+      siteName="Lumio Blog"
       userInitials="L"
     >
       {route.name === 'dashboard' && <Dashboard />}

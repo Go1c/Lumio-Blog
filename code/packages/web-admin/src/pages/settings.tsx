@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'preact/hooks';
-import type { AdminSettings, Features } from '@opennote/core';
+import type { AdminSettings, AdminSettingsPatch, Features } from '@opennote/core';
 import { api } from '../api.js';
 import { WsEStyles } from '../components/ws-e-styles.js';
 
@@ -34,7 +34,7 @@ const HEX_RE = /^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$/;
 
 function nonEmpty(v: string | undefined): boolean { return !!(v && v.trim().length > 0); }
 
-function validateSection(section: SettingsSectionId, draft: AdminSettings): ErrMap {
+export function validateSection(section: SettingsSectionId, draft: AdminSettings): ErrMap {
   const errs: ErrMap = {};
   if (section === 'site') {
     const s = draft.site ?? { title: '', url: '' };
@@ -69,7 +69,7 @@ function validateSection(section: SettingsSectionId, draft: AdminSettings): ErrM
     if (f?.enabled) {
       if (!nonEmpty(f.api_url)) errs['fns.api_url'] = 'API URL 必填(启用时)';
       else if (!URL_RE.test(f.api_url)) errs['fns.api_url'] = '必须是 http(s):// URL';
-      if (!nonEmpty(f.token)) errs['fns.token'] = 'Token 必填(启用时)';
+      if (!nonEmpty(f.token) && !f.token_set) errs['fns.token'] = 'Token 必填(启用时)';
       if (!nonEmpty(f.vault)) errs['fns.vault'] = 'Vault 名必填';
     }
   }
@@ -80,8 +80,8 @@ function validateSection(section: SettingsSectionId, draft: AdminSettings): ErrM
 // ----------------------------- patch 提取 -----------------------------
 
 /** 取出指定 section 的当前 draft 值,组装成 PATCH payload */
-function pickPatch(section: SettingsSectionId, draft: AdminSettings): Partial<AdminSettings> {
-  const patch: Partial<AdminSettings> = {};
+export function pickPatch(section: SettingsSectionId, draft: AdminSettings): AdminSettingsPatch {
+  const patch: AdminSettingsPatch = {};
   if (section === 'site') patch.site = draft.site;
   if (section === 'author') patch.author = draft.author;
   if (section === 'theme') patch.theme = draft.theme;
@@ -90,12 +90,15 @@ function pickPatch(section: SettingsSectionId, draft: AdminSettings): Partial<Ad
   if (section === 'features') patch.features = draft.features;
   if (section === 'fns' && draft.fns) {
     // server 不让前端写 last_status 等字段;UI 只送可写的 4 个
-    patch.fns = {
+    const fnsPatch: NonNullable<AdminSettingsPatch['fns']> = {
       enabled: draft.fns.enabled,
       api_url: draft.fns.api_url,
-      token: draft.fns.token,
       vault: draft.fns.vault,
     };
+    if (nonEmpty(draft.fns.token) || !draft.fns.token_set) {
+      fnsPatch.token = draft.fns.token;
+    }
+    patch.fns = fnsPatch;
   }
   return patch;
 }
@@ -790,7 +793,7 @@ function FnsForm({ draft, update, errs }: FormProps) {
             <input
               id="fns-token"
               type="password"
-              placeholder="eyJhbGc..."
+              placeholder={fns.token_set ? '已保存,留空不变' : 'eyJhbGc...'}
               value={fns.token}
               disabled={!fns.enabled}
               onInput={(e) => set('token', (e.currentTarget as HTMLInputElement).value)}
@@ -798,7 +801,12 @@ function FnsForm({ draft, update, errs }: FormProps) {
             />
             {errs['fns.token'] && <p class="ws-e__err" role="alert">{errs['fns.token']}</p>}
             <p class="hf-tiny hf-muted">
-              FNS 后台 → settings → tokens 拿。{fns.token && <span>当前长度: {fns.token.length} 字符</span>}
+              FNS 后台 → settings → tokens 拿。
+              {fns.token
+                ? <span>当前输入长度: {fns.token.length} 字符</span>
+                : fns.token_set
+                  ? <span>服务器已保存 token;留空则不修改。</span>
+                  : null}
             </p>
           </div>
 

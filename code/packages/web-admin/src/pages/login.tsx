@@ -23,8 +23,8 @@ export function Login({ onSuccess }: { onSuccess: () => void }) {
   return (
     <main>
       <form class="login" onSubmit={submit} aria-labelledby="login-h">
-        <h2 id="login-h">opennote</h2>
-        <p style={{ color: 'var(--muted)', fontSize: 13 }}>输入站长密码登录后台。</p>
+        <h2 id="login-h">Lumio Blog</h2>
+        <p style={{ color: 'var(--muted)', fontSize: 13 }}>登录 Lumio Blog 后台。</p>
         <label htmlFor="admin-password">站长密码</label>
         <input
           id="admin-password"

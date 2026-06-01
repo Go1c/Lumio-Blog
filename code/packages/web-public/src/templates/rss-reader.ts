@@ -182,6 +182,7 @@ export function renderRssReader(config: SiteConfig): string {
     config,
     body,
     active: 'home',
+    path: '/feed/index.html',
   });
 }
 

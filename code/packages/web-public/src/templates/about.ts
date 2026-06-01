@@ -100,6 +100,7 @@ export function renderAbout(config: SiteConfig): string {
     config,
     body,
     active: 'about',
+    path: '/about.html',
   });
 }
 

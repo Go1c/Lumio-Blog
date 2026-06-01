@@ -690,6 +690,91 @@ button.ui-tag { cursor: pointer; }
   color: var(--ink-3);
   font-size: 13px;
 }
+
+@media (max-width: 720px) {
+  .ui-admin {
+    grid-template-columns: 1fr;
+    height: auto;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+  .ui-admin__sidebar {
+    position: static;
+    display: flex;
+    align-items: stretch;
+    gap: 10px;
+    padding: 10px 12px;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    overflow-x: auto;
+    overflow-y: hidden;
+    white-space: nowrap;
+    scrollbar-width: none;
+  }
+  .ui-admin__sidebar::-webkit-scrollbar { display: none; }
+  .ui-admin__brand {
+    flex: 0 0 auto;
+    position: sticky;
+    left: 0;
+    z-index: 1;
+    background: var(--bg-soft);
+    padding: 4px 8px;
+  }
+  .ui-admin__sidebar > div:not(.ui-admin__brand) {
+    flex: 0 0 auto;
+    min-width: 132px;
+  }
+  .ui-admin__group-label { padding: 0 10px 4px; }
+  .ui-admin__nav-item { white-space: nowrap; }
+  .ui-admin__main {
+    height: auto;
+    min-height: 0;
+  }
+  .ui-admin__topbar {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+    padding: 10px 14px;
+  }
+  .ui-admin__crumbs {
+    flex: 1 1 100%;
+    min-width: 0;
+    overflow-wrap: anywhere;
+  }
+  .ui-admin__topbar-search {
+    flex: 1 1 180px;
+    min-width: 0;
+  }
+  .ui-admin__content {
+    padding: 16px 14px;
+    overflow-x: auto;
+    overflow-y: visible;
+  }
+  .ui-public__nav {
+    padding: 0 12px;
+    gap: 10px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scrollbar-width: none;
+  }
+  .ui-public__nav::-webkit-scrollbar { display: none; }
+  .ui-public__brand { flex: 0 0 auto; }
+  .ui-public__brand span:last-child { display: none; }
+  .ui-public__nav-list {
+    flex: 0 0 auto;
+    margin-left: 0;
+  }
+  .ui-public__nav-link {
+    padding-left: 10px;
+    padding-right: 10px;
+    white-space: nowrap;
+  }
+  .ui-public__main {
+    width: 100%;
+    padding: 32px 16px;
+  }
+  .ui-public__footer { padding: 20px 16px; }
+}
 `;
 
 export const ALL_CSS = TOKENS_CSS + '\n' + PRIMITIVES_CSS;

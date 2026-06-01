@@ -85,5 +85,6 @@ export function renderGraph(config: SiteConfig): string {
     config,
     body,
     active: '',
+    path: '/graph/index.html',
   });
 }

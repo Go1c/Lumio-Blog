@@ -426,6 +426,7 @@ export function renderCliDocs(config: SiteConfig): string {
     description: 'CLI / MCP server — 让 agent 直接操作 blog,读写笔记 / 改可见性 / 拉数据。',
     config,
     body,
+    path: '/cli/index.html',
   });
 }
 

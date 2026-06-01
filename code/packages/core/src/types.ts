@@ -118,6 +118,8 @@ export interface FnsSettings {
   api_url: string;
   /** JWT bearer,从 FNS 后台拿 */
   token: string;
+  /** GET /settings 派生字段:服务器已有 token,但不会把明文返回前端 */
+  token_set?: boolean;
   /** vault 名称,与 Obsidian 插件设的一致 */
   vault: string;
   /** 上次连接结果(server 写,前端只读) */
@@ -328,6 +330,10 @@ export interface AdminSettings {
   features: Features;
   fns?: FnsSettings;
 }
+
+export type AdminSettingsPatch = Partial<Omit<AdminSettings, 'fns'>> & {
+  fns?: Partial<FnsSettings>;
+};
 
 // ---- Search ----
 

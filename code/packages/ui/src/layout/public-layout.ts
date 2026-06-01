@@ -15,6 +15,10 @@ export interface PublicLayoutOpts {
   config: SiteConfig;
   /** main 内容,纯 HTML */
   body: string;
+  /** 当前页面路径,用于 canonical / Open Graph URL */
+  path?: string;
+  /** 分享图路径或绝对 URL */
+  image?: string;
   /** 当前导航项,匹配 nav item id(home / posts / notes / docs / tags / about) */
   active?: string;
   /** noindex meta */
@@ -39,6 +43,22 @@ const NAV_ITEMS: NavItem[] = [
   { id: 'search', label: '搜索', href: '/search/index.html' },
 ];
 
+function normalizePath(path?: string): string {
+  if (!path) return '/';
+  if (/^https?:\/\//i.test(path)) return path;
+  return path.startsWith('/') ? path : `/${path}`;
+}
+
+function absoluteUrl(base: string, path?: string): string {
+  const siteUrl = base.trim().replace(/\/+$/, '') || 'http://localhost';
+  const target = normalizePath(path);
+  try {
+    return new URL(target, `${siteUrl}/`).toString();
+  } catch {
+    return `${siteUrl}${target.startsWith('/') ? target : `/${target}`}`;
+  }
+}
+
 /**
  * SSG-safe 公共布局,返回完整 HTML 字符串。
  *
@@ -51,6 +71,10 @@ export function publicLayout(o: PublicLayoutOpts): string {
   const lang = o.config.site.language ?? 'zh-CN';
   const stylesHref = o.stylesHref ?? '/styles.css';
   const fontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap';
+  const description = o.description || o.config.site.description || '';
+  const canonicalUrl = absoluteUrl(o.config.site.url, o.path);
+  const imageUrl = o.image ? absoluteUrl(o.config.site.url, o.image) : null;
+  const ogType = normalizePath(o.path) === '/' ? 'website' : 'article';
 
   return `<!doctype html>
 <html lang="${escHtml(lang)}">
@@ -58,8 +82,19 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${escHtml(o.title)}</title>
-  <meta name="description" content="${escHtml(o.description)}">
+  <meta name="description" content="${escHtml(description)}">
   ${o.noindex ? '<meta name="robots" content="noindex,nofollow">' : ''}
+  <link rel="canonical" href="${escHtml(canonicalUrl)}">
+  <meta property="og:title" content="${escHtml(o.title)}">
+  <meta property="og:description" content="${escHtml(description)}">
+  <meta property="og:type" content="${escHtml(ogType)}">
+  <meta property="og:url" content="${escHtml(canonicalUrl)}">
+  <meta property="og:site_name" content="${escHtml(o.config.site.title)}">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="${escHtml(o.title)}">
+  <meta name="twitter:description" content="${escHtml(description)}">
+  ${imageUrl ? `<meta property="og:image" content="${escHtml(imageUrl)}">
+  <meta name="twitter:image" content="${escHtml(imageUrl)}">` : ''}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link rel="stylesheet" href="${fontUrl}">
@@ -92,7 +127,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
   </nav>
   <main id="main-content" class="ui-public__main" role="main">${o.body}</main>
   <footer class="ui-public__footer" role="contentinfo">
-    <p>${escHtml(o.config.author.name)} · powered by opennote</p>
+    <p>${escHtml(o.config.author.name)} · ${escHtml(o.config.site.title)}</p>
   </footer>
   <script>
     (function(){

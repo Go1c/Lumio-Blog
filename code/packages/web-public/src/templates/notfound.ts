@@ -106,6 +106,7 @@ export function renderNotFound(data: NotFoundData, config: SiteConfig): string {
     config,
     body,
     noindex: true,
+    path: '/404.html',
   });
 }
 

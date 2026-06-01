@@ -201,10 +201,8 @@ export function renderPost(data: PostData, config: SiteConfig): string {
 
       <!-- WS-C — 移动端浮动操作 pill(桌面隐藏) -->
       <div class="wsc-pill" role="toolbar" aria-label="文章操作">
-        <button type="button" class="wsc-pill__btn" id="wsc-pill-fav" aria-label="收藏"><span aria-hidden="true">★</span></button>
         <button type="button" class="wsc-pill__btn" id="wsc-pill-link" aria-label="复制链接"><span aria-hidden="true">🔗</span></button>
         <button type="button" class="wsc-pill__btn" id="wsc-pill-share" aria-label="分享"><span aria-hidden="true">↗</span></button>
-        <button type="button" class="wsc-pill__btn wsc-pill__btn--accent" id="wsc-pill-feedback" aria-label="反馈"><span aria-hidden="true">✎</span></button>
       </div>
     </div>
     ${progressScript}
@@ -232,6 +230,8 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     noindex: note.visibility !== 'public' || (note.seo_indexable ?? 1) === 0,
     body,
     active: 'home',
+    path: `/posts/${note.slug}.html`,
+    ...(note.cover ? { image: String(note.cover) } : {}),
   });
 }
 

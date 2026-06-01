@@ -36,6 +36,7 @@ import {
 } from './routes/sync-meta.js';
 import { createMediaStoreFromEnv, LocalMediaStore, type MediaStore } from './media-store.js';
 import type { BackupRunner } from './backup-runner.js';
+import { LoginRateLimiter, requestIp } from './login-rate-limit.js';
 
 export interface RouteDeps {
   db: Database;
@@ -60,6 +61,7 @@ export function buildApp(deps: RouteDeps): Hono {
   const tokens = new TokenService(deps.db);
   const hooks = new WebhookService(deps.db);
   const audit = new AuditLog(deps.db);
+  const loginLimiter = new LoginRateLimiter();
 
   // 把每个事件投到 webhooks
   deps.bus.subscribe((e) => { void hooks.deliver(e); });
@@ -156,14 +158,24 @@ export function buildApp(deps: RouteDeps): Hono {
 
   // ---------- Auth ----------
   app.post('/api/auth/login', async (c) => {
+    const ip = requestIp((name) => c.req.header(name));
+    const currentLimit = loginLimiter.check(ip);
+    if (currentLimit.limited) {
+      c.header('Retry-After', String(Math.ceil(currentLimit.retryAfterMs / 1000)));
+      audit.write({ actor: 'anon', action: 'auth.login.rate_limited', ip });
+      return c.json({ error: { code: 'rate_limited' } }, 429);
+    }
     const { password } = await c.req.json<{ password: string }>().catch(() => ({ password: '' }));
     if (!auth.verifyPassword(password ?? '')) {
-      audit.write({ actor: 'anon', action: 'auth.login.failed', ip: c.req.header('x-forwarded-for') ?? null });
+      const limit = loginLimiter.recordFailure(ip);
+      audit.write({ actor: 'anon', action: 'auth.login.failed', ip });
+      if (limit.limited) c.header('Retry-After', String(Math.ceil(limit.retryAfterMs / 1000)));
       return c.json({ error: { code: 'unauthorized' } }, 401);
     }
+    loginLimiter.recordSuccess(ip);
     const token = auth.createSession();
     setSessionCookie(c, token);
-    audit.write({ actor: 'owner', action: 'auth.login.ok', ip: c.req.header('x-forwarded-for') ?? null });
+    audit.write({ actor: 'owner', action: 'auth.login.ok', ip });
     return c.json({ ok: true });
   });
 

@@ -113,6 +113,27 @@ async function readAdminSettings(): Promise<AdminSettings> {
   return { site, author, theme, seo, home, features, fns };
 }
 
+export function sanitizeAdminSettingsForClient(settings: AdminSettings): AdminSettings {
+  const safe: AdminSettings = { ...settings };
+  if (settings.fns) {
+    safe.fns = {
+      ...settings.fns,
+      token: '',
+      token_set: settings.fns.token.trim().length > 0,
+    };
+  }
+  return safe;
+}
+
+export function redactSettingsPatch<T extends Record<string, unknown>>(patch: T): T {
+  const redacted = structuredClone(patch) as Record<string, unknown>;
+  const fns = redacted.fns;
+  if (fns && typeof fns === 'object' && 'token' in fns) {
+    (fns as Record<string, unknown>).token = '[redacted]';
+  }
+  return redacted as T;
+}
+
 // ---------------- 浅 merge(用于 PATCH 一个 section 内若干字段时,与现有 yaml 合并) ----------------
 function shallowMerge<T extends Record<string, unknown>>(base: T | undefined, patch: Partial<T>): T {
   return { ...(base ?? {}), ...patch } as T;
@@ -171,7 +192,7 @@ export function register(app: Hono, deps: RouteDeps): void {
   app.get('/api/admin/settings', actorMw, async (c) => {
     try {
       const settings = await readAdminSettings();
-      return c.json(settings);
+      return c.json(sanitizeAdminSettingsForClient(settings));
     } catch (e) {
       console.error('[settings] GET failed', e);
       return c.json({ error: { code: 'internal_error', message: (e as Error).message } }, 500);
@@ -265,13 +286,14 @@ export function register(app: Hono, deps: RouteDeps): void {
 
       // 审计
       const actor = c.get('actor') ?? 'owner';
+      const safePatch = redactSettingsPatch(patch as Record<string, unknown>);
       audit.write({
         actor,
         action: 'settings.patch',
         target: sections.join(','),
-        diff: JSON.stringify(patch),
+        diff: JSON.stringify(safePatch),
       });
-      writeSettingsChange(deps, actor, sections, patch);
+      writeSettingsChange(deps, actor, sections, safePatch);
 
       // 事件
       deps.bus.emit({ kind: 'settings.changed', sections });

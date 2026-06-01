@@ -110,7 +110,7 @@ export function AdminShell({
   onLogout,
   onSync,
   userInitials = 'L',
-  siteName = 'opennote',
+  siteName = 'Lumio Blog',
   onOpenSearch,
 }: AdminShellProps): JSX.Element {
   const { effective, toggle } = useTheme();

@@ -1,7 +1,7 @@
 site:
   title: Lumio Blog
-  url: https://lumio-blog.zeabur.app
-  description: A self-hosted notes blog powered by OpenNote
+  url: https://blog.lumio.games
+  description: Lumio games, tools, and engineering notes.
   language: zh-CN
 author:
   name: Lumio

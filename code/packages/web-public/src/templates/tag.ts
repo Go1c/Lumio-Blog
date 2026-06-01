@@ -27,6 +27,7 @@ export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig
     config,
     body,
     active: 'tags',
+    path: '/tags/index.html',
   });
 }
 
@@ -157,6 +158,7 @@ export function renderTagPage(
     config,
     body,
     active: 'tags',
+    path: `/tags/${encodeURIComponent(tag)}.html`,
   });
 }
 

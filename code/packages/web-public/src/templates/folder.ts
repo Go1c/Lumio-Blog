@@ -132,6 +132,7 @@ export function renderFolderPage(
     description,
     config,
     body,
+    path: `/folders/${encodeURIComponent(folder)}.html`,
   });
 }
 
@@ -164,5 +165,6 @@ export function renderFolderIndex(
     description: '所有文件夹',
     config,
     body,
+    path: '/folders/index.html',
   });
 }
