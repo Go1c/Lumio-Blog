@@ -1,4 +1,4 @@
-import { mkdir, writeFile, copyFile, access, readFile } from 'node:fs/promises';
+import { mkdir, writeFile, copyFile, access, readFile, readdir, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import type { Database } from 'better-sqlite3';
@@ -41,6 +41,10 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   await mkdir(join(opts.out, 'feed'), { recursive: true });
 
   const publicNotes = visible.filter((n) => n.visibility === 'public');
+  await removeStaleHtmlFiles(
+    join(opts.out, 'posts'),
+    new Set(visible.map((n) => `${n.slug}.html`)),
+  );
 
   // 标签 → notes(从 tags 表 join,只保留 public)
   const byTag = new Map<string, NoteRow[]>();
@@ -120,6 +124,10 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     renderTagIndex(byTag, opts.config),
     'utf-8',
   );
+  await removeStaleHtmlFiles(
+    join(opts.out, 'tags'),
+    new Set(['index.html', ...[...byTag.keys()].map((t) => `${encodeURIComponent(t)}.html`)]),
+  );
   for (const [tag, notes] of byTag) {
     await writeFile(
       join(opts.out, 'tags', `${encodeURIComponent(tag)}.html`),
@@ -134,6 +142,10 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     join(opts.out, 'folders', 'index.html'),
     renderFolderIndex(folders, opts.config),
     'utf-8',
+  );
+  await removeStaleHtmlFiles(
+    join(opts.out, 'folders'),
+    new Set(['index.html', ...folders.map((f) => `${encodeURIComponent(f.name)}.html`)]),
   );
   for (const f of folders) {
     const items = publicNotes.filter((n) => {
@@ -226,6 +238,20 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     join(opts.out, 'obsidian-runtime.js'),
     `${CANVAS_RUNTIME_JS}\n${HTML_EMBED_RUNTIME_JS}`,
     'utf-8',
+  );
+}
+
+export async function removeStaleHtmlFiles(dir: string, expected: Set<string>): Promise<void> {
+  let entries;
+  try {
+    entries = await readdir(dir, { withFileTypes: true });
+  } catch {
+    return;
+  }
+  await Promise.all(
+    entries
+      .filter((entry) => entry.isFile() && entry.name.endsWith('.html') && !expected.has(entry.name))
+      .map((entry) => unlink(join(dir, entry.name))),
   );
 }
 

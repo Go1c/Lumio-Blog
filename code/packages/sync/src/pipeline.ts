@@ -19,6 +19,7 @@ import {
 } from '@opennote/obsidian';
 import { parseFile } from './parse.js';
 import { normalize } from './normalize.js';
+import { applyPublicationOverrides } from './publication-state.js';
 import { createRenderContext, renderNote, type RenderContext } from './render.js';
 
 /** 一次同步收集到的、可被外部 inspect 的结构化诊断信息。 */
@@ -99,12 +100,14 @@ async function processNote(
   }
 
   // 短链：分配/复用
+  const publication = applyPublicationOverrides(parsed, existing);
+
   let shortId = parsed.short_id;
   if (!shortId) {
     const active = ctx.shortRepo.getActive(parsed.slug);
     if (active) {
       shortId = active.short_id;
-    } else if (parsed.visibility === 'link-only' || parsed.visibility === 'unlisted') {
+    } else if (publication.visibility === 'link-only' || publication.visibility === 'unlisted') {
       shortId = generateUniqueShortId((id) => ctx.shortRepo.exists(id));
       ctx.shortRepo.create({
         short_id: shortId,
@@ -128,11 +131,11 @@ async function processNote(
     body_html: html,
     body_text: text,
     kind,
-    visibility: parsed.visibility,
-    searchable: parsed.searchable ? 1 : 0,
-    seo_indexable: parsed.seo_indexable ? 1 : 0,
-    rss_includable: parsed.rss_includable ? 1 : 0,
-    featured_on_home: parsed.featured_on_home ? 1 : 0,
+    visibility: publication.visibility,
+    searchable: publication.searchable ? 1 : 0,
+    seo_indexable: publication.seo_indexable ? 1 : 0,
+    rss_includable: publication.rss_includable ? 1 : 0,
+    featured_on_home: publication.featured_on_home ? 1 : 0,
     short_id: shortId,
     source_path: parsed.source_path,
     created_at: existing?.created_at ?? (parsed.frontmatter.created_at as string) ?? nowIso(),
@@ -140,7 +143,7 @@ async function processNote(
     published_at:
       (parsed.frontmatter.published_at as string | undefined) ??
       existing?.published_at ??
-      (parsed.visibility === 'public' ? nowIso() : null),
+      (publication.visibility === 'public' ? nowIso() : null),
     scheduled_at: (parsed.frontmatter.scheduled_at as string | undefined) ?? null,
     word_count: wordCount,
     reading_minutes: readingMinutes,
@@ -325,11 +328,11 @@ export async function syncAll(opts: SyncOptions): Promise<SyncStats> {
     try {
       const ex = existing.get(n.slug);
       const existingArg = (opts.forceAll && ex) ? { ...ex, hash: '__force__' } : ex;
-      const { changed, isNew } = await processNote(n, ctx, existingArg);
+      const { changed, isNew, row } = await processNote(n, ctx, existingArg);
       if (!changed) continue;
       if (isNew) {
         stats.added++;
-        opts.onEvent?.({ kind: 'note.published', slug: n.slug, visibility: n.visibility });
+        opts.onEvent?.({ kind: 'note.published', slug: n.slug, visibility: row.visibility });
       } else {
         stats.modified++;
         opts.onEvent?.({ kind: 'note.updated', slug: n.slug });
@@ -526,7 +529,7 @@ export async function syncOne(absPath: string, opts: SyncOptions): Promise<void>
     opts.onEvent?.({
       kind: 'note.published',
       slug: normalized.slug,
-      visibility: normalized.visibility,
+      visibility: result.row.visibility,
     });
 
     // 这条笔记新出现 → 之前指它的断链可以解析了，重渲染那些 referers
