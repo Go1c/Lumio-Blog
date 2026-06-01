@@ -14,6 +14,91 @@ const METRICS: { id: Metric; label: string }[] = [
   { id: 'avg_dwell', label: '平均停留 (s)' },
 ];
 
+export const ANALYTICS_OVERVIEW_RESPONSIVE_STYLE = `
+.analytics-overview { min-width: 0; }
+.analytics-overview__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.analytics-overview__chart-head {
+  display: flex;
+  align-items: center;
+  margin-bottom: 14px;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.analytics-overview__table {
+  width: 100%;
+  border-collapse: collapse;
+}
+.analytics-overview__meter {
+  height: 6px;
+  background: var(--bg-sunk);
+  border-radius: 999px;
+  overflow: hidden;
+  width: 100%;
+  max-width: 140px;
+}
+.analytics-overview__pv { text-align: right; }
+@media (max-width: 720px) {
+  .analytics-overview__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .analytics-overview__chart-head > .hf-grow { display: none; }
+  .analytics-overview__chart-head [role="radiogroup"] {
+    width: 100%;
+    overflow-x: auto;
+    padding-bottom: 2px;
+  }
+  .analytics-overview__table,
+  .analytics-overview__table tbody,
+  .analytics-overview__table tr,
+  .analytics-overview__table td {
+    display: block;
+    width: 100%;
+  }
+  .analytics-overview__table thead { display: none; }
+  .analytics-overview__table tr {
+    display: grid;
+    gap: 8px;
+    padding: 12px 0;
+    border-top: 1px solid var(--line);
+  }
+  .analytics-overview__table td {
+    display: grid;
+    grid-template-columns: minmax(58px, 0.28fr) minmax(0, 1fr);
+    gap: 8px;
+    align-items: center;
+    padding: 0;
+    word-break: break-word;
+  }
+  .analytics-overview__table td::before {
+    content: attr(data-label);
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--ink-4);
+  }
+  .analytics-overview__pv { text-align: left; }
+  .analytics-overview__meter { max-width: none; }
+}
+`;
+
+let analyticsOverviewStyleInjected = false;
+
+function AnalyticsOverviewStyles(): null {
+  if (typeof document !== 'undefined' && !analyticsOverviewStyleInjected) {
+    analyticsOverviewStyleInjected = true;
+    const tag = document.createElement('style');
+    tag.setAttribute('data-analytics-overview', '1');
+    tag.textContent = ANALYTICS_OVERVIEW_RESPONSIVE_STYLE;
+    document.head.appendChild(tag);
+  }
+  return null;
+}
+
 function formatNum(n: number): string {
   if (n < 1000) return String(n);
   if (n < 1_000_000) return `${(n / 1000).toFixed(1)}k`;
@@ -63,7 +148,8 @@ export function AnalyticsOverviewPage(): JSX.Element {
   }, [series]);
 
   return (
-    <div>
+    <div class="analytics-overview">
+      <AnalyticsOverviewStyles />
       <div style={{ marginBottom: 18 }}>
         <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>文章数据</h1>
         <p class="hf-sm hf-muted" style={{ marginTop: 4, margin: 0 }}>
@@ -78,7 +164,7 @@ export function AnalyticsOverviewPage(): JSX.Element {
       )}
 
       {/* KPI grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div class="analytics-overview__kpis">
         <KpiCard
           label={`总 PV (${range})`}
           value={overview ? formatNum(overview.total_views) : '—'}
@@ -111,7 +197,7 @@ export function AnalyticsOverviewPage(): JSX.Element {
 
       {/* trend chart */}
       <div class="ui-card" style={{ padding: 18, marginBottom: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14, gap: 8, flexWrap: 'wrap' }}>
+        <div class="analytics-overview__chart-head">
           <div>
             <div style={{ fontWeight: 600, fontSize: 14 }}>趋势</div>
             <div class="hf-tiny hf-muted" style={{ marginTop: 2 }}>
@@ -176,7 +262,7 @@ export function AnalyticsOverviewPage(): JSX.Element {
         ) : overview.top_posts.length === 0 ? (
           <div class="hf-tiny hf-muted" style={{ padding: 24, textAlign: 'center' }}>暂无数据。</div>
         ) : (
-          <table aria-label="Top 文章">
+          <table class="analytics-overview__table" aria-label="Top 文章">
             <thead>
               <tr>
                 <th scope="col" style={{ width: 32 }}>#</th>
@@ -191,23 +277,16 @@ export function AnalyticsOverviewPage(): JSX.Element {
                 const pct = total > 0 ? p.views / total : 0;
                 return (
                   <tr key={p.slug}>
-                    <td class="hf-mono hf-tiny hf-faint">{i + 1}</td>
-                    <td>
+                    <td data-label="#" class="hf-mono hf-tiny hf-faint">{i + 1}</td>
+                    <td data-label="标题">
                       <a href={`#/notes/${encodeURIComponent(p.slug)}`}>{p.title || p.slug}</a>
                       <div class="hf-mono hf-tiny hf-faint">{p.slug}</div>
                     </td>
-                    <td style={{ textAlign: 'right' }} class="hf-mono">{formatNum(p.views)}</td>
-                    <td>
+                    <td data-label="PV" class="hf-mono analytics-overview__pv">{formatNum(p.views)}</td>
+                    <td data-label="占比">
                       <div
                         aria-label={`${formatPct(pct)} of total`}
-                        style={{
-                          height: 6,
-                          background: 'var(--bg-sunk)',
-                          borderRadius: 999,
-                          overflow: 'hidden',
-                          width: '100%',
-                          maxWidth: 140,
-                        }}
+                        class="analytics-overview__meter"
                       >
                         <div
                           style={{
@@ -218,7 +297,7 @@ export function AnalyticsOverviewPage(): JSX.Element {
                         />
                       </div>
                     </td>
-                    <td>
+                    <td data-label="操作">
                       <a class="hf-tiny" href={`#/notes/${encodeURIComponent(p.slug)}/analytics`}>详情</a>
                     </td>
                   </tr>

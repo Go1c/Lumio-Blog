@@ -7,6 +7,80 @@ import { AreaChart } from '../components/area-chart.js';
 
 const RANGES: AnalyticsRange[] = ['7d', '30d', '90d'];
 
+export const NOTE_ANALYTICS_RESPONSIVE_STYLE = `
+.note-analytics { min-width: 0; }
+.note-analytics__header {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+  margin-bottom: 22px;
+}
+.note-analytics__title { min-width: 0; }
+.note-analytics__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.note-analytics__main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 14px;
+  margin-bottom: 14px;
+}
+.note-analytics__breakdown-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 14px;
+}
+.note-analytics__referrer-body {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+}
+@media (max-width: 720px) {
+  .note-analytics__header {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+  .note-analytics__header > .hf-grow { display: none; }
+  .note-analytics__title {
+    flex: 1 0 100%;
+    overflow-wrap: anywhere;
+  }
+  .note-analytics__header .ui-btn { flex: 1 1 128px; }
+  .note-analytics__header [role="radiogroup"] {
+    flex: 1 1 180px;
+    overflow-x: auto;
+  }
+  .note-analytics__kpis {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+  }
+  .note-analytics__main-grid,
+  .note-analytics__breakdown-grid {
+    grid-template-columns: 1fr;
+  }
+  .note-analytics__referrer-body {
+    align-items: flex-start;
+    flex-wrap: wrap;
+  }
+}
+`;
+
+let noteAnalyticsStyleInjected = false;
+
+function NoteAnalyticsStyles(): null {
+  if (typeof document !== 'undefined' && !noteAnalyticsStyleInjected) {
+    noteAnalyticsStyleInjected = true;
+    const tag = document.createElement('style');
+    tag.setAttribute('data-note-analytics', '1');
+    tag.textContent = NOTE_ANALYTICS_RESPONSIVE_STYLE;
+    document.head.appendChild(tag);
+  }
+  return null;
+}
+
 export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [note, setNote] = useState<NoteDetail | null>(null);
@@ -62,7 +136,8 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
   }
 
   return (
-    <div>
+    <div class="note-analytics">
+      <NoteAnalyticsStyles />
       {/* breadcrumb */}
       <nav aria-label="面包屑" class="hf-tiny" style={{ marginBottom: 8 }}>
         <a href="#/notes" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
@@ -75,8 +150,8 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
       </nav>
 
       {/* header */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 14, marginBottom: 22 }}>
-        <div>
+      <div class="note-analytics__header">
+        <div class="note-analytics__title">
           <div class="hf-mono hf-tiny hf-muted" style={{ marginBottom: 4 }}>
             {note ? `${note.updated_at.slice(0, 10)} · ${note.reading_minutes} min · ${visLabel(note.visibility)}` : '载入中…'}
           </div>
@@ -105,7 +180,7 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
       </div>
 
       {/* big numbers */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div class="note-analytics__kpis">
         <KpiBox label="总浏览" value={data ? formatNum(data.views) : '—'} />
         <KpiBox label="独立访客" value={data ? formatNum(data.unique_visitors) : '—'} />
         <KpiBox label="平均停留" value={data ? formatDwell(data.avg_dwell_seconds) : '—'} />
@@ -113,7 +188,7 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
       </div>
 
       {/* 2-col: chart + scroll-depth */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14, marginBottom: 14 }}>
+      <div class="note-analytics__main-grid">
         <div class="ui-card" style={{ padding: 16 }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
             <span style={{ fontSize: 13, fontWeight: 600 }}>浏览趋势</span>
@@ -136,7 +211,7 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
       </div>
 
       {/* referrer + short vs canonical */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 14 }}>
+      <div class="note-analytics__breakdown-grid">
         <div class="ui-card" style={{ padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>流量来源</div>
           {data ? <ReferrerPie items={data.referrer_breakdown} /> : (
@@ -236,7 +311,7 @@ function ReferrerPie({ items }: { items: Array<{ source: string; views: number }
   });
 
   return (
-    <div style={{ display: 'flex', gap: 16, alignItems: 'center' }}>
+    <div class="note-analytics__referrer-body">
       <svg
         viewBox="0 0 120 120"
         width={120}
