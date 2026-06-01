@@ -47,3 +47,14 @@ describe('renderPost mobile actions', () => {
     expect(html).toContain('id="wsc-pill-share"');
   });
 });
+
+describe('post mobile CSS', () => {
+  it('contains defensive overflow rules for code blocks and tables', async () => {
+    const { POST_MOBILE_CSS } = await import('./post.js');
+
+    expect(POST_MOBILE_CSS).toContain('.wsa-prose pre');
+    expect(POST_MOBILE_CSS).toContain('max-width: calc(100vw - 32px)');
+    expect(POST_MOBILE_CSS).toContain('.wsa-prose table');
+    expect(POST_MOBILE_CSS).toContain('display: block');
+  });
+});

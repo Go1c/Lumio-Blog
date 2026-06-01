@@ -13,13 +13,24 @@ export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig
       return `<li><a class="ui-tag${hot ? ' ui-tag--accent' : ''}" href="/tags/${esc(encodeURIComponent(t))}.html" aria-label="标签 ${esc(t)},共 ${notes.length} 篇">#${esc(t)} <span class="hf-mono hf-faint" aria-hidden="true" style="margin-left:4px;font-size:11px">${notes.length}</span></a></li>`;
     })
     .join('');
+  const content = entries.length
+    ? `<ul class="wsa-tagindex__list" aria-label="所有标签">${items}</ul>`
+    : `<div class="wsa-tagindex__empty" role="status">
+        <div class="wsa-tagindex__empty-mark" aria-hidden="true">#</div>
+        <h2>公开文章暂时没有标签</h2>
+        <p class="hf-muted">标签会在公开文章带有 frontmatter tag 后自动出现在这里。现在可以先从首页或搜索继续浏览。</p>
+        <div class="wsa-tagindex__empty-actions">
+          <a class="ui-btn ui-btn--primary" href="/">返回首页</a>
+          <a class="ui-btn" href="/search/index.html">搜索笔记</a>
+        </div>
+      </div>`;
   const body = `
     <div class="wsa-tagindex">
       <header class="wsa-tagindex__head">
         <h1 class="wsa-tagindex__title"><span style="color:var(--accent)">#</span> 所有标签</h1>
         <p class="hf-muted">共 ${entries.length} 个标签</p>
       </header>
-      <ul class="wsa-tagindex__list" aria-label="所有标签">${items || '<li>暂无</li>'}</ul>
+      ${content}
     </div>`;
   return layout({
     title: `标签 · ${config.site.title}`,

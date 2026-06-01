@@ -343,6 +343,24 @@ export const POST_MOBILE_CSS = `
   body, html { overflow-x: hidden; }
   img, pre, table { max-width: 100%; }
   pre { overflow-x: auto; }
+  .wsa-prose { min-width: 0; overflow-wrap: anywhere; }
+  .wsa-prose pre {
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    box-sizing: border-box;
+    overflow-x: auto;
+  }
+  .wsa-prose pre code {
+    white-space: pre;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+  .wsa-prose table {
+    display: block;
+    width: 100%;
+    max-width: calc(100vw - 32px);
+    overflow-x: auto;
+  }
 
   /* 全局触控目标 */
   .ui-btn { min-height: 40px; }

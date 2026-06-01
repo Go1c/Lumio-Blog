@@ -757,6 +757,23 @@ body.ui-public { background: var(--bg); }
 .wsa-tagindex__head { margin-bottom: 24px; }
 .wsa-tagindex__title { font-size: 36px; font-weight: 800; margin: 0; letter-spacing: -0.02em; }
 .wsa-tagindex__list { display: flex; flex-wrap: wrap; gap: 8px; list-style: none; padding: 0; margin: 0; }
+.wsa-tagindex__empty {
+  border: 1px dashed var(--line-strong);
+  border-radius: 18px;
+  background: linear-gradient(135deg, var(--bg-soft), var(--bg));
+  padding: 28px;
+  max-width: 560px;
+}
+.wsa-tagindex__empty-mark {
+  width: 40px; height: 40px;
+  border-radius: 12px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent-2);
+  font-weight: 800; font-size: 24px;
+}
+.wsa-tagindex__empty h2 { margin: 14px 0 8px; font-size: 20px; }
+.wsa-tagindex__empty p { margin: 0; line-height: 1.7; }
+.wsa-tagindex__empty-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 18px; }
 
 /* ---- 404 ---- */
 .wsa-404 {

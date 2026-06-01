@@ -18,6 +18,94 @@ const SEARCH_FLAGS: { id: SearchFlagId; label: string; sub: string }[] = [
   { id: 'featured_on_home', label: '首页推荐', sub: '上首页推荐位' },
 ];
 
+export const NOTE_DETAIL_RESPONSIVE_STYLE = `
+.note-detail { min-width: 0; }
+.note-detail__title-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+.note-detail__title {
+  font-size: 22px;
+  font-weight: 700;
+  margin: 0;
+  line-height: 1.3;
+  flex: 1;
+  min-width: 0;
+}
+.note-detail__source { margin-bottom: 8px; }
+.note-detail__controls {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.note-detail__meta-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.note-detail__links-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 12px;
+}
+.note-detail__links-split {
+  border-left: 1px solid var(--line);
+  padding-left: 12px;
+}
+.note-detail__preview { min-width: 0; }
+@media (max-width: 720px) {
+  .note-detail__title-row { flex-wrap: wrap; gap: 8px; }
+  .note-detail__title { flex: 1 0 100%; font-size: 20px; }
+  .note-detail__title-row .ui-btn { flex: 1 1 132px; }
+  .note-detail__source {
+    line-height: 1.6;
+    overflow-wrap: anywhere;
+  }
+  .note-detail__controls,
+  .note-detail__meta-grid,
+  .note-detail__links-card {
+    grid-template-columns: 1fr;
+  }
+  .note-detail__links-split {
+    border-left: 0;
+    border-top: 1px solid var(--line);
+    padding-left: 0;
+    padding-top: 12px;
+  }
+  .note-detail__preview-head {
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 6px;
+  }
+  .note-detail__preview {
+    max-width: 100%;
+    overflow-x: hidden;
+  }
+  .note-detail__preview pre,
+  .note-detail__preview table {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+}
+`;
+
+let noteDetailStyleInjected = false;
+
+function NoteDetailStyles(): null {
+  if (typeof document !== 'undefined' && !noteDetailStyleInjected) {
+    noteDetailStyleInjected = true;
+    const tag = document.createElement('style');
+    tag.setAttribute('data-note-detail', '1');
+    tag.textContent = NOTE_DETAIL_RESPONSIVE_STYLE;
+    document.head.appendChild(tag);
+  }
+  return null;
+}
+
 export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
   const [note, setNote] = useState<NoteDetail | null>(null);
   const [backlinks, setBacklinks] = useState<{ src_slug: string; title: string }[]>([]);
@@ -185,7 +273,8 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
   const updatedAgo = timeAgoZh(note.updated_at);
 
   return (
-    <div>
+    <div class="note-detail">
+      <NoteDetailStyles />
       <nav aria-label="面包屑" class="hf-tiny" style={{ marginBottom: 8 }}>
         <a href="#/notes" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
           <span aria-hidden="true">← </span>笔记列表
@@ -193,8 +282,8 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
       </nav>
 
       {/* title row */}
-      <div style={{ display: 'flex', alignItems: 'flex-start', gap: 12, marginBottom: 6 }}>
-        <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0, lineHeight: 1.3, flex: 1 }}>{note.title}</h1>
+      <div class="note-detail__title-row">
+        <h1 class="note-detail__title">{note.title}</h1>
         <Button size="sm" onClick={() => window.open(`/posts/${encodeURIComponent(note.slug)}.html`, '_blank')}>
           <HfIcon name="eye" size={11} /> 前台预览
         </Button>
@@ -206,12 +295,12 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
           <HfIcon name="chart" size={11} /> 数据
         </a>
       </div>
-      <div class="hf-mono hf-tiny hf-muted" style={{ marginBottom: 8 }}>
+      <div class="hf-mono hf-tiny hf-muted note-detail__source">
         {note.source_path} · 修改 {updatedAgo} · {note.reading_minutes} min · {note.word_count} 字
       </div>
 
       {/* 3 control cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 16 }}>
+      <div class="note-detail__controls">
         {/* visibility + schedule */}
         <div class="ui-card" style={{ padding: 14 }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 10 }}>
@@ -453,7 +542,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
       </div>
 
       {/* metadata + backlinks */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12, marginBottom: 16 }}>
+      <div class="note-detail__meta-grid">
         <div class="ui-card" style={{ padding: 16 }}>
           <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>元数据</div>
           <dl class="hf-sm" style={{ display: 'grid', gridTemplateColumns: '92px 1fr', gap: '6px 12px', margin: 0 }}>
@@ -484,7 +573,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
           </dl>
         </div>
 
-        <div class="ui-card" style={{ padding: 16, display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div class="ui-card note-detail__links-card" style={{ padding: 16 }}>
           <div>
             <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>
               <HfIcon name="link" size={13} color="var(--accent)" style={{ marginRight: 4 }} /> 反向链接 ({backlinks.length})
@@ -503,7 +592,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
               </ul>
             )}
           </div>
-          <div style={{ borderLeft: '1px solid var(--line)', paddingLeft: 12 }}>
+          <div class="note-detail__links-split">
             <div style={{ fontWeight: 600, fontSize: 13, marginBottom: 10 }}>
               <HfIcon name="link" size={13} color="var(--warn)" style={{ marginRight: 4 }} /> 出链 ({outlinks.length})
             </div>
@@ -526,13 +615,13 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
 
       {/* preview */}
       <div class="ui-card" style={{ padding: 16 }}>
-        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
+        <div class="note-detail__preview-head" style={{ display: 'flex', alignItems: 'center', marginBottom: 10 }}>
           <span style={{ fontWeight: 600, fontSize: 13 }}>内容预览</span>
           <Tag style={{ marginLeft: 8 }}>read-only</Tag>
           <span class="hf-tiny hf-muted" style={{ marginLeft: 8 }}>编辑去 Obsidian</span>
         </div>
         <div
-          class="hf-prose"
+          class="hf-prose note-detail__preview"
           style={{ fontSize: 13, lineHeight: 1.7, maxWidth: 720 }}
           dangerouslySetInnerHTML={{ __html: note.body_html }}
         />
