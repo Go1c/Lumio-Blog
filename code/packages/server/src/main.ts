@@ -2,7 +2,7 @@ import { mkdir } from 'node:fs/promises';
 import { existsSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { serve } from '@hono/node-server';
+import { serve, type ServerType } from '@hono/node-server';
 import { Hono } from 'hono';
 import { logger } from 'hono/logger';
 import { serveStatic } from '@hono/node-server/serve-static';
@@ -23,7 +23,7 @@ import { loadFeaturesYaml } from './routes/settings.js';
 import { applyRuntimeConfig } from './runtime-config.js';
 import { securityHeaders } from './security-headers.js';
 import { rewriteAdminRequestPath } from './admin-static.js';
-import { runStartupSync } from './startup.js';
+import { createShutdownHandler, runStartupSync, stopRuntime } from './startup.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -48,6 +48,18 @@ function resolveAdminDist(): string | null {
   ];
   for (const p of candidates) if (existsSync(p)) return p;
   return null;
+}
+
+function closeServer(server: ServerType): Promise<void> {
+  return new Promise((resolveClose, rejectClose) => {
+    server.close((error?: Error) => {
+      if (error) {
+        rejectClose(error);
+        return;
+      }
+      resolveClose();
+    });
+  });
 }
 
 async function main(): Promise<void> {
@@ -146,8 +158,6 @@ async function main(): Promise<void> {
     log,
   });
   void fnsSupervisor.start();
-  process.on('SIGTERM', () => { void fnsSupervisor.stop(); });
-  process.on('SIGINT', () => { void fnsSupervisor.stop(); });
 
   const api = buildApp({
     db, config, bus, triggerSync,
@@ -179,7 +189,17 @@ async function main(): Promise<void> {
   const port = Number(process.env.PORT ?? 3000);
   console.log(`opennote v0.5 → http://localhost:${port}`);
   if (adminDist) console.log(`         admin → http://localhost:${port}/admin/`);
-  serve({ fetch: root.fetch, port });
+  const server = serve({ fetch: root.fetch, port });
+  const shutdown = createShutdownHandler({
+    log,
+    stopRuntime: () => stopRuntime({
+      stopBackground: () => fnsSupervisor.stop(),
+      closeServer: () => closeServer(server),
+      log,
+    }),
+  });
+  process.on('SIGTERM', shutdown);
+  process.on('SIGINT', shutdown);
 }
 
 main().catch((e) => {
