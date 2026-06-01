@@ -42,8 +42,9 @@ ENV LUMIO_VAULT_PATH=/data/posts
 ENV OPENNOTE_FNS_CONFIG=/data/fns-config.yaml
 ENV OPENNOTE_FNS_CLI_DIR=/app/fns-sync
 ENV OPENNOTE_FNS_RUNTIME_CONFIG=/data/fns-runtime-config.yaml
+ENV PORT=8080
 
-EXPOSE 3000
+EXPOSE 8080
 
 # tini 当 PID1,优雅处理子进程信号(否则 ctrl-C / kill 时 fns-cli 不退出)
 ENTRYPOINT ["/usr/bin/tini", "--"]
