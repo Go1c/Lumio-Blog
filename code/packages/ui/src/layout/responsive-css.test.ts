@@ -12,6 +12,8 @@ describe('shared responsive shell CSS', () => {
     expect(ALL_CSS).toContain('.ui-admin__brand-text { display: none; }');
     expect(ALL_CSS).toContain('.ui-admin__topbar {');
     expect(ALL_CSS).toContain('min-height: 56px');
+    expect(ALL_CSS).toContain('.ui-admin__topbar .ui-btn');
+    expect(ALL_CSS).toContain('white-space: nowrap');
   });
 
   it('keeps public nav compact and uncut on phone widths', () => {

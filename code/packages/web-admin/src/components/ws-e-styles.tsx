@@ -94,6 +94,7 @@ export const WS_E_STYLE = `
 }
 .ws-e__form--col { flex-direction: column; align-items: stretch; gap: 14px; }
 .ws-e__field { flex: 1 1 200px; min-width: 0; }
+fieldset.ws-e__field { margin: 0; padding: 0; border: 0; min-inline-size: 0; }
 .ws-e__form--col .ws-e__field { flex: 0 1 auto; }
 .ws-e__field--narrow { flex: 0 0 140px; }
 .ws-e__field label,
@@ -109,7 +110,7 @@ export const WS_E_STYLE = `
 }
 
 .ws-e__inline-group { display: flex; gap: 8px; align-items: center; }
-.ws-e__inline-group input[type=text] { flex: 1; }
+.ws-e__inline-group input { flex: 1; min-width: 0; }
 .ws-e__color-swatch {
   display: inline-block; width: 28px; height: 28px;
   border: 1px solid var(--line); border-radius: var(--radius-sm);
@@ -321,7 +322,51 @@ export const WS_E_STYLE = `
 
 /* responsive */
 @media (max-width: 720px) {
+  .ws-e { padding: 20px 16px; max-width: none; overflow-x: hidden; }
   .ws-e__scope-grid { grid-template-columns: 1fr; }
+  .ws-e__panel-head { align-items: flex-start; gap: 4px; flex-wrap: wrap; }
+  .ws-e__panel-head > * + * { margin-left: 0; }
+  .ws-e__panel-hint { margin-left: 0; width: 100%; }
+  .ws-e__form { padding: 16px 14px; }
+  .ws-e__form-actions { width: 100%; }
+  .ws-e__form-actions .primary,
+  .ws-e__form-actions button { min-height: 44px; }
+  .ws-e__table-wrap { overflow: visible; }
+  .ws-e__table,
+  .ws-e__table tbody,
+  .ws-e__table tr,
+  .ws-e__table td { display: block; width: 100%; }
+  .ws-e__table thead { display: none; }
+  .ws-e__table tr {
+    display: grid; gap: 8px;
+    padding: 12px 14px;
+    border-bottom: 1px solid var(--line);
+  }
+  .ws-e__table td {
+    display: grid;
+    grid-template-columns: minmax(72px, 0.38fr) minmax(0, 1fr);
+    gap: 8px; align-items: center;
+    padding: 0; border-bottom: 0;
+    min-width: 0; word-break: break-word;
+  }
+  .ws-e__table td::before {
+    content: attr(data-label);
+    font-family: var(--mono); font-size: 11px;
+    color: var(--ink-4); text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+  .ws-e__table td[data-label="操作"] {
+    display: flex; gap: 8px; justify-content: flex-start;
+  }
+  .ws-e__table td[data-label="操作"]::before { display: none; }
+  .ws-e__webhook-row {
+    align-items: flex-start; flex-wrap: wrap;
+  }
+  .ws-e__webhook-actions { width: 100%; padding-left: 30px; flex-wrap: wrap; }
+  .ws-e__deliveries { padding: 12px 14px; }
+  .ws-e__events { grid-template-columns: 1fr; }
+  .ws-e__inline-group { align-items: stretch; flex-wrap: wrap; }
+  .ws-e__inline-group input { min-width: 180px; }
   .ws-e__settings-grid { grid-template-columns: 1fr; }
   .ws-e__settings-nav {
     position: sticky; top: 0; z-index: 5;

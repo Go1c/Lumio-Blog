@@ -40,6 +40,18 @@ function readPath(): string {
   }
 }
 
+export function formatNoteListHeader(
+  view: ViewMode,
+  tree: FolderTreeResponse | null,
+  notes: NoteSummary[] | null,
+): string {
+  if (view === 'flat') return `${notes?.length ?? 0} 篇`;
+  const folderCount = tree?.folders.length ?? 0;
+  const noteCount = tree?.visibility_counts?.all ?? tree?.notes.length ?? 0;
+  if (folderCount > 0) return `${folderCount} 目录 · ${noteCount} 篇`;
+  return `${noteCount} 篇`;
+}
+
 export function NoteList(): JSX.Element {
   const [view, setView] = useState<ViewMode>(readView);
   const [path, setPath] = useState<string>(readPath);
@@ -141,10 +153,6 @@ export function NoteList(): JSX.Element {
     return out;
   }, [view, notes, tree]);
 
-  const totalForHeader = view === 'flat'
-    ? notes?.length ?? 0
-    : (tree?.folders.length ?? 0) + (tree?.notes.length ?? 0);
-
   const setVisibility = async (n: NoteSummary, next: Visibility): Promise<void> => {
     if (next === n.visibility) return;
     setBusySlug(n.slug);
@@ -168,7 +176,7 @@ export function NoteList(): JSX.Element {
       <div style={{ display: 'flex', alignItems: 'center', marginBottom: 16, gap: 12 }}>
         <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>笔记库</h1>
         <span class="hf-mono hf-tiny hf-faint">
-          {view === 'tree' ? `${tree?.folders.length ?? 0} 目录 · ${tree?.notes.length ?? 0} 笔记` : `${totalForHeader} 篇`}
+          {formatNoteListHeader(view, tree, notes)}
         </span>
         <div class="hf-grow" />
         <ViewToggle view={view} onChange={setView} />

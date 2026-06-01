@@ -169,21 +169,21 @@ export function TokensPage() {
                   const revoked = !!t.revoked_at;
                   return (
                     <tr key={t.id} class={revoked ? 'ws-e__row--dim' : ''}>
-                      <td>
+                      <td data-label="名称">
                         <div class="ws-e__token-name">{t.name}</div>
                         <code class="hf-mono hf-tiny hf-faint">id #{t.id}</code>
                       </td>
-                      <td>
+                      <td data-label="权限">
                         <span class={`badge ws-e__scope-badge ws-e__scope-badge--${t.scope}`}>{t.scope}</span>
                       </td>
-                      <td class="hf-mono hf-tiny hf-muted">
+                      <td data-label="创建" class="hf-mono hf-tiny hf-muted">
                         <time dateTime={t.created_at.slice(0, 10)}>{t.created_at.slice(0, 10)}</time>
                       </td>
-                      <td class="hf-mono hf-tiny hf-muted">{relativeTime(t.last_used_at)}</td>
-                      <td>
+                      <td data-label="最后使用" class="hf-mono hf-tiny hf-muted">{relativeTime(t.last_used_at)}</td>
+                      <td data-label="过期">
                         <span class={`hf-mono hf-tiny ws-e__exp ws-e__exp--${exp.tone}`}>{exp.text}</span>
                       </td>
-                      <td>
+                      <td data-label="操作">
                         {revoked ? (
                           <span class="hf-mono hf-tiny hf-faint">已撤销</span>
                         ) : (

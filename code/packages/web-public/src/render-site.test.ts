@@ -2,7 +2,7 @@ import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { removeStaleHtmlFiles, STATIC_ASSETS } from './render-site.js';
+import { HTML_ALIAS_FILES, removeStaleHtmlFiles, STATIC_ASSETS } from './render-site.js';
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -33,5 +33,10 @@ describe('removeStaleHtmlFiles', () => {
 describe('static assets', () => {
   it('includes a root favicon so browsers do not hit a 404', () => {
     expect(STATIC_ASSETS).toContain('favicon.ico');
+  });
+
+  it('publishes extensionless-friendly aliases for about and RSS URLs', () => {
+    expect(HTML_ALIAS_FILES).toContainEqual({ source: 'about.html', alias: 'about/index.html' });
+    expect(HTML_ALIAS_FILES).toContainEqual({ source: 'feed.xml', alias: 'rss.xml' });
   });
 });

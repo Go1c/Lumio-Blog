@@ -765,6 +765,17 @@ button.ui-tag { cursor: pointer; }
   }
   .ui-admin__topbar::-webkit-scrollbar { display: none; }
   .ui-admin__topbar > .hf-grow { display: none; }
+  .ui-admin__topbar .ui-btn,
+  .ui-admin__topbar .ui-avatar {
+    flex: 0 0 auto;
+  }
+  .ui-admin__topbar .ui-btn {
+    white-space: nowrap;
+  }
+  .ui-admin__topbar .ui-btn--sm {
+    min-height: 42px;
+    padding-inline: 10px;
+  }
   .ui-admin__crumbs {
     flex: 1 1 auto;
     min-width: 80px;

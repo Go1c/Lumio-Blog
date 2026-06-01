@@ -16,6 +16,16 @@ const STATUS_TABS: { value: CommentStatus | 'all'; label: string }[] = [
   { value: 'all', label: '全部' },
 ];
 
+export const DEFAULT_COMMENT_TAB: CommentStatus | 'all' = 'all';
+
+export function emptyCommentMessage(tab: CommentStatus | 'all'): string {
+  if (tab === 'pending') return '没有待审评论。已通过的历史评论可切到“全部”查看。';
+  if (tab === 'approved') return '没有已通过评论。';
+  if (tab === 'spam') return '没有垃圾评论。';
+  if (tab === 'rejected') return '没有已拒绝评论。';
+  return '还没有任何评论。';
+}
+
 function fmtTs(iso: string): string {
   return iso.replace('T', ' ').slice(0, 19);
 }
@@ -28,7 +38,7 @@ function statusTone(s: CommentStatus): 'ok' | 'warn' | 'danger' | 'default' {
 }
 
 export function CommentsPage() {
-  const [tab, setTab] = useState<CommentStatus | 'all'>('pending');
+  const [tab, setTab] = useState<CommentStatus | 'all'>(DEFAULT_COMMENT_TAB);
   const [comments, setComments] = useState<CommentRow[] | null>(null);
   const [counts, setCounts] = useState<CommentCounts | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -134,7 +144,7 @@ export function CommentsPage() {
         {comments === null ? (
           <p role="status" aria-live="polite" class="ws-e__empty">loading…</p>
         ) : comments.length === 0 ? (
-          <p class="ws-e__empty">这里没有评论。</p>
+          <p class="ws-e__empty">{emptyCommentMessage(tab)}</p>
         ) : (
           <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
             {comments.map((c) => {

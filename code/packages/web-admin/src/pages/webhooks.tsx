@@ -74,6 +74,7 @@ export function WebhooksPage() {
   const [url, setUrl] = useState('');
   const [selEvents, setSelEvents] = useState<string[]>([]);
   const [secret, setSecret] = useState<string>(genSecret());
+  const [secretVisible, setSecretVisible] = useState(false);
   const [createdSecret, setCreatedSecret] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -245,17 +246,17 @@ export function WebhooksPage() {
                               const ok = typeof d.status === 'number' && d.status >= 200 && d.status < 300;
                               return (
                                 <tr key={d.id}>
-                                  <td><code class="hf-mono hf-tiny">{d.event_kind}</code></td>
-                                  <td>
+                                  <td data-label="事件"><code class="hf-mono hf-tiny">{d.event_kind}</code></td>
+                                  <td data-label="状态">
                                     <span class={`hf-mono hf-tiny ws-e__delivery-status ws-e__delivery-status--${ok ? 'ok' : 'danger'}`}>
                                       {d.status ?? '✗'}
                                     </span>
                                   </td>
-                                  <td class="hf-mono hf-tiny">#{d.attempt}</td>
-                                  <td class="hf-mono hf-tiny hf-muted">
+                                  <td data-label="尝试" class="hf-mono hf-tiny">#{d.attempt}</td>
+                                  <td data-label="时间" class="hf-mono hf-tiny hf-muted">
                                     <time dateTime={d.attempted_at}>{d.attempted_at.replace('T', ' ').slice(0, 19)}</time>
                                   </td>
-                                  <td>
+                                  <td data-label="操作">
                                     {!ok && (
                                       <button
                                         type="button"
@@ -325,10 +326,18 @@ export function WebhooksPage() {
             <div class="ws-e__inline-group">
               <input
                 id="webhook-secret"
-                type="text"
+                type={secretVisible ? 'text' : 'password'}
                 value={secret}
+                autoComplete="new-password"
                 onInput={(e) => setSecret((e.target as HTMLInputElement).value)}
               />
+              <button
+                type="button"
+                onClick={() => setSecretVisible((v) => !v)}
+                aria-pressed={secretVisible}
+              >
+                {secretVisible ? '隐藏' : '显示'}
+              </button>
               <button type="button" onClick={() => setSecret(genSecret())}>重新生成</button>
             </div>
           </div>

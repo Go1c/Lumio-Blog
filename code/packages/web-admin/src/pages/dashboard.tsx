@@ -16,6 +16,79 @@ interface ActivityItem {
 
 const RANGES: AnalyticsRange[] = ['7d', '30d', '90d'];
 
+export const DASHBOARD_RESPONSIVE_STYLE = `
+.dash { min-width: 0; }
+.dash__kpis {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 20px;
+}
+.dash__main-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.dash__split-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  margin-bottom: 16px;
+}
+.dash__top-row {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) 80px 40px;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 0;
+}
+.dash__top-row + .dash__top-row { border-top: 1px solid var(--line); }
+.dash__top-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-weight: 500;
+  color: var(--ink);
+  text-decoration: none;
+}
+.dash__top-meter {
+  width: 80px;
+  height: 4px;
+  background: var(--bg-sunk);
+  border-radius: 2px;
+  overflow: hidden;
+}
+.dash__alert-row {
+  display: flex;
+  gap: 10px;
+  padding: 10px 0;
+}
+.dash__alert-row + .dash__alert-row { border-top: 1px solid var(--line); }
+@media (max-width: 720px) {
+  .dash__kpis { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+  .dash__main-grid,
+  .dash__split-grid { grid-template-columns: 1fr; }
+  .dash__top-row { grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; }
+  .dash__top-title { white-space: normal; overflow: visible; }
+  .dash__top-meter { display: none; }
+  .dash__alert-row { align-items: flex-start; }
+}
+`;
+
+let dashboardStyleInjected = false;
+
+function DashboardStyles(): null {
+  if (typeof document !== 'undefined' && !dashboardStyleInjected) {
+    dashboardStyleInjected = true;
+    const tag = document.createElement('style');
+    tag.setAttribute('data-dashboard', '1');
+    tag.textContent = DASHBOARD_RESPONSIVE_STYLE;
+    document.head.appendChild(tag);
+  }
+  return null;
+}
+
 export function Dashboard(): JSX.Element {
   const [range, setRange] = useState<AnalyticsRange>('30d');
   const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
@@ -139,7 +212,8 @@ export function Dashboard(): JSX.Element {
   const recentActivityCount = activity.length;
 
   return (
-    <div>
+    <div class="dash">
+      <DashboardStyles />
       <h1 style={{ fontSize: 24, fontWeight: 700, margin: 0 }}>嘿,欢迎回来</h1>
       <p class="hf-sm hf-muted" style={{ marginTop: 4, marginBottom: 24 }}>
         过去 {range},
@@ -160,7 +234,7 @@ export function Dashboard(): JSX.Element {
       )}
 
       {/* KPI grid */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 12, marginBottom: 20 }}>
+      <div class="dash__kpis">
         <KpiCard
           label="总笔记"
           value={totalNotes}
@@ -195,7 +269,7 @@ export function Dashboard(): JSX.Element {
       </div>
 
       {/* main grid: chart + alerts */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div class="dash__main-grid">
         <div class="ui-card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
             <div>
@@ -239,12 +313,7 @@ export function Dashboard(): JSX.Element {
           }).map((alert, i) => (
             <div
               key={i}
-              style={{
-                display: 'flex',
-                gap: 10,
-                padding: '10px 0',
-                borderTop: i ? '1px solid var(--line)' : 'none',
-              }}
+              class="dash__alert-row"
             >
               <span class={`ui-dot ui-dot--${alert.tone}`} style={{ marginTop: 6 }} aria-hidden="true" />
               <div class="hf-grow">
@@ -262,7 +331,7 @@ export function Dashboard(): JSX.Element {
       </div>
 
       {/* top 5 + activity stream */}
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+      <div class="dash__split-grid">
         <div class="ui-card" style={{ padding: 18 }}>
           <div style={{ display: 'flex', alignItems: 'center', marginBottom: 14 }}>
             <div style={{ fontWeight: 600, fontSize: 14 }}>访问 Top 5</div>
@@ -280,37 +349,17 @@ export function Dashboard(): JSX.Element {
               return (
                 <div
                   key={p.slug}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 10,
-                    padding: '8px 0',
-                    borderTop: i ? '1px solid var(--line)' : 'none',
-                  }}
+                  class="dash__top-row"
                 >
                   <span class="hf-mono hf-tiny hf-faint" style={{ width: 16 }}>{i + 1}</span>
                   <a
-                    class="hf-sm hf-grow"
+                    class="hf-sm dash__top-title"
                     href={`#/notes/${encodeURIComponent(p.slug)}`}
-                    style={{
-                      overflow: 'hidden',
-                      textOverflow: 'ellipsis',
-                      whiteSpace: 'nowrap',
-                      fontWeight: 500,
-                      color: 'var(--ink)',
-                      textDecoration: 'none',
-                    }}
                   >
                     {p.title || p.slug}
                   </a>
                   <div
-                    style={{
-                      width: 80,
-                      height: 4,
-                      background: 'var(--bg-sunk)',
-                      borderRadius: 2,
-                      overflow: 'hidden',
-                    }}
+                    class="dash__top-meter"
                     aria-hidden="true"
                   >
                     <div style={{ width: `${pct}%`, height: '100%', background: 'var(--accent)' }} />

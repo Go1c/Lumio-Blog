@@ -31,6 +31,10 @@ export interface RenderOptions {
 }
 
 export const STATIC_ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js', 'favicon.ico'] as const;
+export const HTML_ALIAS_FILES = [
+  { source: 'about.html', alias: 'about/index.html' },
+  { source: 'feed.xml', alias: 'rss.xml' },
+] as const;
 
 export async function renderSite(opts: RenderOptions): Promise<void> {
   const repo = new NoteRepo(opts.db);
@@ -209,6 +213,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   const rssNotes = publicNotes.filter((n) => (n.rss_includable ?? 1) === 1);
   const seoNotes = publicNotes.filter((n) => (n.seo_indexable ?? 1) === 1);
   await writeFile(join(opts.out, 'feed.xml'), renderFeed(rssNotes, opts.config), 'utf-8');
+  await copyHtmlAliases(opts.out);
 
   // 复制 public/feed.xsl(WS-C — 浏览器直接打开 feed.xml 时美化渲染)
   await copyStaticAssets(opts.out);
@@ -241,6 +246,14 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     `${CANVAS_RUNTIME_JS}\n${HTML_EMBED_RUNTIME_JS}`,
     'utf-8',
   );
+}
+
+async function copyHtmlAliases(out: string): Promise<void> {
+  for (const item of HTML_ALIAS_FILES) {
+    const target = join(out, item.alias);
+    await mkdir(dirname(target), { recursive: true });
+    await copyFile(join(out, item.source), target);
+  }
 }
 
 export async function removeStaleHtmlFiles(dir: string, expected: Set<string>): Promise<void> {
