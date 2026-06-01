@@ -23,6 +23,7 @@ import { loadFeaturesYaml } from './routes/settings.js';
 import { applyRuntimeConfig } from './runtime-config.js';
 import { securityHeaders } from './security-headers.js';
 import { rewriteAdminRequestPath } from './admin-static.js';
+import { runStartupSync } from './startup.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -115,14 +116,20 @@ async function main(): Promise<void> {
     await renderSite({ db, out, config });
   };
 
-  await triggerSync();
+  await runStartupSync(triggerSync, log);
 
   startWatcher({
     vault, db, out,
     onLog: (lvl, m, meta) => log(lvl, m, meta),
     onEvent: async (e) => {
       bus.emit(e);
-      if (e.kind === 'sync.completed') await renderSite({ db, out, config });
+      if (e.kind === 'sync.completed') {
+        await renderSite({ db, out, config }).catch((error: unknown) => {
+          log('error', 'watch.render.failed', {
+            message: error instanceof Error ? error.message : String(error),
+          });
+        });
+      }
     },
     onNoteRendered: mediaRefExtractor.hook,
   });
