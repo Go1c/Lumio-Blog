@@ -2,7 +2,7 @@ import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { removeStaleHtmlFiles } from './render-site.js';
+import { removeStaleHtmlFiles, STATIC_ASSETS } from './render-site.js';
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -27,5 +27,11 @@ describe('removeStaleHtmlFiles', () => {
     expect(await exists(join(dir, 'stale.html'))).toBe(false);
     expect(await readFile(join(dir, 'asset.txt'), 'utf-8')).toBe('asset');
     expect(await exists(join(dir, 'nested'))).toBe(true);
+  });
+});
+
+describe('static assets', () => {
+  it('includes a root favicon so browsers do not hit a 404', () => {
+    expect(STATIC_ASSETS).toContain('favicon.ico');
   });
 });

@@ -25,6 +25,7 @@ export interface HomeData {
 export function renderHome(data: HomeData, config: SiteConfig): string {
   const { posts, byTag, recentNotes, totalArticles, totalNotes, folders } = data;
   const author = config.author;
+  const heroEyebrow = config.home?.hero_eyebrow ?? 'Game systems · AI tooling · engineering notes';
   const heroTitleSrc = config.home?.hero_title_md ?? config.site.title;
   const heroIntroSrc = config.home?.hero_intro_md ?? (config.site.description ?? '');
   // hero_title_md / hero_intro_md 按 inline-only Markdown 渲染:支持 **bold**/*italic*/`code`/[](),
@@ -213,6 +214,12 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
 
   // 自家广告(HfAd) — 放在作者卡和"最近笔记"之间。enabled !== true 时返回空串。
   const hfAdHtml = renderHfAdHero(config.home?.ad);
+  const hasTags = byTag.size > 0;
+  const secondaryCtaLabel = config.home?.hero_cta_secondary ?? (hasTags ? '逛标签' : '搜索笔记');
+  const secondaryCtaHref = hasTags ? '/tags/index.html' : '/search/index.html';
+  const secondaryCtaCount = hasTags
+    ? ` <span aria-label="共 ${byTag.size} 个标签">(${byTag.size})</span>`
+    : '';
 
   const body = `
     <div class="wsa-home">
@@ -222,13 +229,13 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
         <div class="hf-blob wsa-hero__blob-b" aria-hidden="true"></div>
         <div class="wsa-hero__inner">
           <div class="wsa-hero__pre">
-            <span class="ui-tag" style="font-family:var(--mono);font-size:11px">v${esc(String(config.site.title.length))} · ${esc(config.site.title)}</span>
+            <span class="ui-tag" style="font-family:var(--mono);font-size:11px">${esc(heroEyebrow)}</span>
           </div>
           <h1 class="wsa-hero__title">${heroTitleHtml}</h1>
           ${heroIntroHtml ? `<p class="wsa-hero__intro">${heroIntroHtml}</p>` : ''}
           <div class="wsa-hero__cta">
             <a class="ui-btn ui-btn--primary" href="#recent">${esc(config.home?.hero_cta_primary ?? '看最新文章')} <span aria-hidden="true">→</span></a>
-            <a class="ui-btn" href="/tags/index.html">${esc(config.home?.hero_cta_secondary ?? '逛标签')} <span aria-label="共 ${byTag.size} 个标签">(${byTag.size})</span></a>
+            <a class="ui-btn" href="${secondaryCtaHref}">${esc(secondaryCtaLabel)}${secondaryCtaCount}</a>
             <a class="ui-btn" href="/search/index.html" aria-label="全站搜索"><span aria-hidden="true">🔍</span> 搜索</a>
           </div>
         </div>

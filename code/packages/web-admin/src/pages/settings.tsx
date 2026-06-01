@@ -16,8 +16,8 @@ const SECTION_META: Record<SettingsSectionId, { icon: string; label: string; hin
   author:   { icon: '👤', label: '作者资料', hint: '页脚 / about / 文章 byline' },
   theme:    { icon: '🎨', label: '外观主题', hint: 'accent 色、字体、暗模式默认' },
   seo:      { icon: '🔍', label: 'SEO', hint: 'sitemap / robots / og / twitter' },
-  home:     { icon: '🏠', label: 'Home', hint: 'hero / 推荐文章数' },
-  features: { icon: '🧩', label: 'Features', hint: '开关功能 — 关掉对应 UI 隐藏' },
+  home:     { icon: '🏠', label: '首页', hint: '首屏文案 / 推荐文章数' },
+  features: { icon: '🧩', label: '功能', hint: '开关功能 — 关掉对应 UI 隐藏' },
   fns:      { icon: '🔄', label: 'FNS 同步', hint: 'Obsidian 通过 FastNoteSync 推上来的笔记 / 鉴权' },
 };
 
@@ -566,6 +566,14 @@ function HomeForm({ draft, update, errs }: FormProps) {
     <section class="ws-e__panel">
       <header class="ws-e__panel-head"><h2>▸ Home</h2></header>
       <div class="ws-e__form ws-e__form--col">
+        <div class="ws-e__field">
+          <label htmlFor="h-eyebrow">Hero 标签</label>
+          <input
+            id="h-eyebrow" type="text" value={h.hero_eyebrow ?? ''}
+            placeholder="Game systems · AI tooling · engineering notes"
+            onInput={(e) => set({ hero_eyebrow: (e.target as HTMLInputElement).value || undefined })}
+          />
+        </div>
         <div class="ws-e__field">
           <label htmlFor="h-title">Hero 标题(Markdown)</label>
           <input

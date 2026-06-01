@@ -28,12 +28,14 @@ export const siteConfigSchema = z.object({
     description: z.string().optional(),
     timezone: z.string().optional(),
     language: z.string().optional(),
+    locale: z.string().optional(),
   }),
   author: z.object({
     name: z.string(),
     email: z.string().email().optional(),
     avatar: z.string().optional(),
     bio: z.string().optional(),
+    bio_md: z.string().optional(),
     social: z
       .array(z.object({ platform: z.string(), url: z.string().url() }))
       .optional(),
@@ -44,7 +46,38 @@ export const siteConfigSchema = z.object({
       newsletter: z.boolean().optional(),
       search: z.boolean().optional(),
       graph: z.boolean().optional(),
+      post_summary: z.boolean().optional(),
     })
+    .optional(),
+  theme: z
+    .object({
+      default: z.enum(['light', 'dark', 'auto']).optional(),
+      accent: z.string().optional(),
+      font_serif: z.string().optional(),
+      font_mono: z.string().optional(),
+    })
+    .passthrough()
+    .optional(),
+  seo: z
+    .object({
+      default_og_template: z.string().optional(),
+      twitter_card: z.string().optional(),
+      robots: z.string().optional(),
+      sitemap: z.boolean().optional(),
+    })
+    .passthrough()
+    .optional(),
+  home: z
+    .object({
+      hero_eyebrow: z.string().optional(),
+      hero_title_md: z.string().optional(),
+      hero_intro_md: z.string().optional(),
+      hero_cta_primary: z.string().optional(),
+      hero_cta_secondary: z.string().optional(),
+      show_recent_posts: z.number().int().nonnegative().optional(),
+      show_categories: z.boolean().optional(),
+    })
+    .passthrough()
     .optional(),
   auth: z
     .object({
@@ -124,6 +157,7 @@ export const hfAdSchema = z.object({
 });
 
 export const homeSectionSchema = z.object({
+  hero_eyebrow: z.string().optional(),
   hero_title_md: z.string().optional(),
   hero_intro_md: z.string().optional(),
   hero_cta_primary: z.string().optional(),

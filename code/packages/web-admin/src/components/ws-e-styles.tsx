@@ -4,7 +4,7 @@
  * 不动 web-admin/public/style.css(那是另一个 WS 的产物),也不引入新依赖。
  * 用 <style> 标签把所有 .ws-e__* 规则写一次,后续打包时 Preact 会去重。
  */
-const STYLE = `
+export const WS_E_STYLE = `
 /* ============================================================
  * WS-E styles (settings / tokens / webhooks / audit)
  * 完全使用 CSS 变量,与 hf-extras / hf-extras2 视觉对齐
@@ -94,6 +94,7 @@ const STYLE = `
 }
 .ws-e__form--col { flex-direction: column; align-items: stretch; gap: 14px; }
 .ws-e__field { flex: 1 1 200px; min-width: 0; }
+.ws-e__form--col .ws-e__field { flex: 0 1 auto; }
 .ws-e__field--narrow { flex: 0 0 140px; }
 .ws-e__field label,
 .ws-e__field-label,
@@ -239,12 +240,13 @@ const STYLE = `
 
 /* settings layout */
 .ws-e__settings-grid {
-  display: grid; grid-template-columns: 200px 1fr; min-height: calc(100vh - 60px);
+  display: grid; grid-template-columns: 188px minmax(0, 920px); min-height: auto; align-items: start; min-width: 0;
 }
 .ws-e__settings-nav {
   border-right: 1px solid var(--line);
   background: var(--bg-soft);
-  padding: 18px 12px;
+  padding: 14px 10px;
+  min-width: 0;
 }
 .ws-e__settings-nav-h {
   font-family: var(--mono); font-size: 11px;
@@ -266,8 +268,10 @@ const STYLE = `
 }
 
 .ws-e__settings-main {
-  padding: 24px 28px;
-  overflow-y: auto;
+  padding: 20px 24px 80px;
+  overflow-y: visible;
+  max-width: 920px;
+  min-width: 0;
 }
 
 .ws-e__save-bar {
@@ -319,7 +323,26 @@ const STYLE = `
 @media (max-width: 720px) {
   .ws-e__scope-grid { grid-template-columns: 1fr; }
   .ws-e__settings-grid { grid-template-columns: 1fr; }
-  .ws-e__settings-nav { border-right: none; border-bottom: 1px solid var(--line); }
+  .ws-e__settings-nav {
+    position: sticky; top: 0; z-index: 5;
+    border-right: none; border-bottom: 1px solid var(--line);
+    padding: 10px 12px 8px;
+    overflow: hidden;
+  }
+  .ws-e__settings-nav-h { display: none; }
+  .ws-e__settings-nav ul {
+    display: flex; gap: 10px; overflow-x: auto;
+    list-style: none; padding: 2px 2px 8px; margin: 0;
+    width: 100%;
+    scrollbar-width: none;
+  }
+  .ws-e__settings-nav ul::-webkit-scrollbar { display: none; }
+  .ws-e__settings-nav li { flex: 0 0 auto; margin: 0; }
+  .ws-e__settings-nav-item {
+    white-space: nowrap; padding: 8px 11px; border-radius: 999px;
+    background: var(--bg); border-color: var(--line);
+  }
+  .ws-e__settings-main { padding: 14px 16px 88px; max-width: none; }
   .ws-e__form-grid2 { grid-template-columns: 1fr; }
   .ws-e__sidebar { width: 100vw; }
 }
@@ -332,7 +355,7 @@ export function WsEStyles(): null {
     injected = true;
     const tag = document.createElement('style');
     tag.setAttribute('data-ws-e', '1');
-    tag.textContent = STYLE;
+    tag.textContent = WS_E_STYLE;
     document.head.appendChild(tag);
   }
   return null;

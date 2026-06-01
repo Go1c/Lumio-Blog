@@ -699,11 +699,14 @@ button.ui-tag { cursor: pointer; }
     overflow-x: hidden;
   }
   .ui-admin__sidebar {
-    position: static;
+    position: sticky;
+    top: 0;
+    z-index: 20;
     display: flex;
-    align-items: stretch;
-    gap: 10px;
-    padding: 10px 12px;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 10px;
+    max-height: 74px;
     border-right: 0;
     border-bottom: 1px solid var(--line);
     overflow-x: auto;
@@ -717,36 +720,69 @@ button.ui-tag { cursor: pointer; }
     position: sticky;
     left: 0;
     z-index: 1;
-    background: var(--bg-soft);
-    padding: 4px 8px;
+    background: var(--bg);
+    border: 1px solid var(--line);
+    border-radius: var(--radius-lg);
+    padding: 6px;
+    box-shadow: var(--shadow-1);
   }
+  .ui-admin__brand-text { display: none; }
   .ui-admin__sidebar > div:not(.ui-admin__brand) {
     flex: 0 0 auto;
-    min-width: 132px;
+    min-width: 0;
   }
-  .ui-admin__group-label { padding: 0 10px 4px; }
-  .ui-admin__nav-item { white-space: nowrap; }
+  .ui-admin__group-label { display: none; }
+  .ui-admin__nav {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin: 0;
+  }
+  .ui-admin__nav li { flex: 0 0 auto; }
+  .ui-admin__nav-item {
+    min-height: 40px;
+    padding: 8px 10px;
+    border-radius: var(--radius-lg);
+    white-space: nowrap;
+  }
+  .ui-admin__nav-item span {
+    max-width: 74px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
   .ui-admin__main {
     height: auto;
     min-height: 0;
   }
   .ui-admin__topbar {
-    flex-wrap: wrap;
-    align-items: flex-start;
+    min-height: 56px;
+    flex-wrap: nowrap;
+    align-items: center;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 8px 12px;
+    overflow-x: auto;
+    scrollbar-width: none;
   }
+  .ui-admin__topbar::-webkit-scrollbar { display: none; }
+  .ui-admin__topbar > .hf-grow { display: none; }
   .ui-admin__crumbs {
-    flex: 1 1 100%;
-    min-width: 0;
-    overflow-wrap: anywhere;
+    flex: 1 1 auto;
+    min-width: 80px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
   }
   .ui-admin__topbar-search {
-    flex: 1 1 180px;
-    min-width: 0;
+    flex: 0 0 42px;
+    min-width: 42px;
+    width: 42px;
+    padding: 0;
+    justify-content: center;
   }
+  .ui-admin__topbar-search .hf-grow,
+  .ui-admin__topbar-search .ui-kbd { display: none; }
   .ui-admin__content {
-    padding: 16px 14px;
+    padding: 14px 12px;
     overflow-x: auto;
     overflow-y: visible;
   }

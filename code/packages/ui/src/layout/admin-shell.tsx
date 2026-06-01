@@ -87,8 +87,8 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
         icon: 'settings',
         match: (p) => p === '#/settings' || p.startsWith('#/settings/'),
       },
-      { label: 'Tokens', href: '#/tokens', icon: 'lock' },
-      { label: 'Webhooks', href: '#/webhooks', icon: 'webhook' },
+      { label: '令牌', href: '#/tokens', icon: 'lock' },
+      { label: 'Webhook', href: '#/webhooks', icon: 'webhook' },
       { label: '备份', href: '#/backup', icon: 'database' },
     ],
   },
@@ -122,7 +122,7 @@ export function AdminShell({
       <aside class="ui-admin__sidebar" aria-label="后台导航">
         <div class="ui-admin__brand">
           <div class="ui-admin__logo" aria-hidden="true">L</div>
-          <div style={{ fontWeight: 700, fontSize: '13px' }}>
+          <div class="ui-admin__brand-text" style={{ fontWeight: 700, fontSize: '13px' }}>
             {siteName}
             <span class="hf-mono hf-tiny hf-faint" style={{ marginLeft: '4px' }}>admin</span>
           </div>

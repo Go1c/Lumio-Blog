@@ -68,3 +68,39 @@ describe('renderHome feed quality', () => {
     expect(html.indexOf('有标题的文章')).toBeLessThan(html.indexOf('未命名'));
   });
 });
+
+describe('renderHome brand polish', () => {
+  it('uses a purposeful Lumio eyebrow instead of a generated title-length version badge', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      config,
+    );
+
+    expect(html).toContain('Game systems');
+    expect(html).not.toContain('v10 · Lumio Blog');
+  });
+
+  it('does not advertise an empty tag count in the hero CTA', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      config,
+    );
+
+    expect(html).not.toContain('(0)');
+    expect(html).toContain('href="/search/index.html"');
+  });
+});

@@ -205,6 +205,7 @@ export interface SiteConfig {
     sitemap?: boolean;
   };
   home?: {
+    hero_eyebrow?: string;
     hero_title_md?: string;
     hero_intro_md?: string;
     hero_cta_primary?: string;

@@ -22,6 +22,7 @@ import { SyncDiagnosticsBuffer } from './routes/sync-meta.js';
 import { loadFeaturesYaml } from './routes/settings.js';
 import { applyRuntimeConfig } from './runtime-config.js';
 import { securityHeaders } from './security-headers.js';
+import { rewriteAdminRequestPath } from './admin-static.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -158,7 +159,7 @@ async function main(): Promise<void> {
     log('info', 'admin.dist.found', { path: adminDist });
     root.use('/admin/*', serveStatic({
       root: adminDist,
-      rewriteRequestPath: (p) => p.replace(/^\/admin/, '') || '/index.html',
+      rewriteRequestPath: rewriteAdminRequestPath,
     }));
     // SPA fallback：/admin 直接命中 index.html
     root.get('/admin', (c) => c.redirect('/admin/'));

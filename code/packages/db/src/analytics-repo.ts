@@ -112,8 +112,8 @@ export class AnalyticsRepo {
                 COALESCE(n.title, e.slug)     AS title,
                 COUNT(*)                      AS views
            FROM analytics_events e
-           LEFT JOIN notes n ON n.slug = e.slug
-          WHERE e.ts >= ? AND e.event = 'view'
+           JOIN notes n ON n.slug = e.slug
+          WHERE e.ts >= ? AND e.event = 'view' AND n.visibility = 'public'
           GROUP BY e.slug
           ORDER BY views DESC
           LIMIT ?`,

@@ -30,6 +30,8 @@ export interface RenderOptions {
   config: SiteConfig;
 }
 
+export const STATIC_ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js', 'favicon.ico'] as const;
+
 export async function renderSite(opts: RenderOptions): Promise<void> {
   const repo = new NoteRepo(opts.db);
   const all = repo.listAll();
@@ -289,8 +291,7 @@ async function copyStaticAssets(out: string): Promise<void> {
   // 这个文件位于 src/ 或 dist/。public/ 是包根的兄弟目录。
   // import.meta.url -> .../packages/web-public/src/render-site.ts (开发) 或 .../dist/render-site.js (build)
   const here = dirname(fileURLToPath(import.meta.url));
-  const ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js'];
-  for (const name of ASSETS) {
+  for (const name of STATIC_ASSETS) {
     const candidates = [
       join(here, '..', 'public', name),         // src/  -> ../public
       join(here, '..', '..', 'public', name),   // dist/ -> ../../public

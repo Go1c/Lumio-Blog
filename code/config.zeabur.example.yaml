@@ -1,10 +1,17 @@
 site:
   title: Lumio Blog
   url: https://blog.lumio.games
-  description: Lumio games, tools, and engineering notes.
+  description: Game systems, AI workflows, and hard-won engineering notes from Lumio.
   language: zh-CN
 author:
   name: Lumio
+  bio: Games, tools, and hard-won engineering notes.
+home:
+  hero_eyebrow: Game systems · AI tooling · engineering notes
+  hero_title_md: Lumio dev notes
+  hero_intro_md: 关于游戏开发、AI 工作流和工程踩坑的公开笔记。
+  hero_cta_primary: 读最新文章
+  hero_cta_secondary: 按主题浏览
 paths:
   vault: /data/posts
   out: /data/public
