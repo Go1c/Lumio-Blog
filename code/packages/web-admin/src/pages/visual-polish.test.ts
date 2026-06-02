@@ -26,4 +26,10 @@ describe('visual polish scaffolding', () => {
     expect(og).toContain('og-page__layout');
     expect(og).toContain('@media (max-width: 720px)');
   });
+
+  it('opens the OG lab on a public article when one exists', () => {
+    const og = src('og.tsx');
+
+    expect(og).toContain("r.notes.find((n) => n.visibility === 'public') ?? r.notes[0]");
+  });
 });

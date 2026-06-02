@@ -177,7 +177,7 @@ export function OgPage(): JSX.Element {
       .listNotes()
       .then((r) => {
         setNotes(r.notes);
-        const first = r.notes[0];
+        const first = r.notes.find((n) => n.visibility === 'public') ?? r.notes[0];
         if (!slug && first) setSlug(first.slug);
       })
       .catch((e: Error) => setToast({ msg: e.message, err: true }));
