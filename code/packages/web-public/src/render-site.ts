@@ -7,6 +7,8 @@ import type { NoteRow, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
 import { CANVAS_RUNTIME_JS, HTML_EMBED_RUNTIME_JS } from '@opennote/obsidian';
 import { renderHome } from './templates/home.js';
+import { renderArticles } from './templates/articles.js';
+import { renderColumns } from './templates/columns.js';
 import { renderPost } from './templates/post.js';
 import { buildNeighborhood } from './partials/backlinks-graph.js';
 import { renderFeed } from './templates/feed.js';
@@ -23,6 +25,7 @@ import { HOME_MOBILE_CSS } from './templates/home.js';
 import { POST_MOBILE_CSS } from './templates/post.js';
 import { TAG_MOBILE_CSS } from './templates/tag.js';
 import { HF_AD_CSS } from './partials/hf-ad.js';
+import { LUMIO_CSS } from './templates/lumio-design.js';
 
 export interface RenderOptions {
   db: Database;
@@ -43,6 +46,8 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
 
   await mkdir(opts.out, { recursive: true });
   await mkdir(join(opts.out, 'posts'), { recursive: true });
+  await mkdir(join(opts.out, 'articles'), { recursive: true });
+  await mkdir(join(opts.out, 'columns'), { recursive: true });
   await mkdir(join(opts.out, 'tags'), { recursive: true });
   await mkdir(join(opts.out, 'feed'), { recursive: true });
 
@@ -96,6 +101,18 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
       },
       opts.config,
     ),
+    'utf-8',
+  );
+
+  await writeFile(
+    join(opts.out, 'articles', 'index.html'),
+    renderArticles(publicNotes, byTag, opts.config),
+    'utf-8',
+  );
+
+  await writeFile(
+    join(opts.out, 'columns', 'index.html'),
+    renderColumns(publicNotes, byTag, opts.config),
     'utf-8',
   );
 
@@ -333,6 +350,8 @@ function renderSitemap(posts: NoteRow[], tags: string[], config: SiteConfig): st
   const url = (path: string) => `<url><loc>${config.site.url}${path}</loc></url>`;
   const items = [
     url('/'),
+    url('/articles/index.html'),
+    url('/columns/index.html'),
     url('/about.html'),
     url('/tags/index.html'),
     url('/feed/'),
@@ -1358,4 +1377,6 @@ const CSS =
   '\n' +
   TAG_MOBILE_CSS +
   '\n' +
-  HF_AD_CSS;
+  HF_AD_CSS +
+  '\n' +
+  LUMIO_CSS;

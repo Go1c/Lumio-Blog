@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>管理后台 · Lumio.games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="gametech.css">
+<link rel="stylesheet" href="admin.css">
+</head>
+<body class="admin">
+<div class="adm">
+
+  <!-- ───────── SIDEBAR ───────── -->
+  <aside class="adm-side">
+    <div class="adm-brand">
+      <span class="brand__mark"><span class="brand__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
+      <div><div class="adm-brand__name">LUMIO 后台</div><div class="adm-brand__sub">ADMIN CONSOLE</div></div>
+    </div>
+
+    <div class="adm-navlabel">概览</div>
+    <nav class="adm-nav">
+      <a class="is-active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>仪表盘</a>
+    </nav>
+
+    <div class="adm-navlabel">内容</div>
+    <nav class="adm-nav">
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>文章管理<span class="badge-n">28</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg>专栏管理<span class="badge-n">4</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10.5 13.5 4H6a2 2 0 0 0-2 2v7.5L10.5 20a2 2 0 0 0 2.8 0l6.7-6.7a2 2 0 0 0 0-2.8z"></path><circle cx="8.5" cy="8.5" r="1.2"></circle></svg>标签管理<span class="badge-n">15</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-4.2A8.38 8.38 0 0 1 4 12a8.5 8.5 0 0 1 17-.5z"></path></svg>评论审核<span class="badge-n">6</span></a>
+    </nav>
+
+    <div class="adm-navlabel">运营</div>
+    <nav class="adm-nav">
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>广告位<span class="badge-n">3</span></a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-8"></path><path d="M3 21h18"></path></svg>数据统计</a>
+      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"></path></svg>系统设置</a>
+    </nav>
+
+    <div class="adm-side__foot">
+      <span class="av">L</span>
+      <div><div class="nm">林辰</div><div class="rl">超级管理员</div></div>
+    </div>
+  </aside>
+
+  <!-- ───────── MAIN ───────── -->
+  <div class="adm-main">
+    <header class="adm-top">
+      <div>
+        <div class="adm-top__title">仪表盘</div>
+        <div class="adm-top__sub">欢迎回来,这是今天的数据概览</div>
+      </div>
+      <div class="adm-top__spacer"></div>
+      <label class="adm-search">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+        <input type="text" placeholder="搜索文章、用户…">
+      </label>
+      <a class="btn-new" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"></path></svg>写文章</a>
+    </header>
+
+    <div class="adm-body">
+
+      <!-- stat cards -->
+      <div class="stat-row">
+        <div class="stat">
+          <div class="stat__top">
+            <span class="stat__icon i-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg></span>
+            <span class="stat__delta up">▲ 12.4%</span>
+          </div>
+          <div class="stat__num">48,210</div>
+          <div class="stat__label">本月访问量</div>
+        </div>
+        <div class="stat">
+          <div class="stat__top">
+            <span class="stat__icon i-mint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg></span>
+            <span class="stat__delta up">▲ 3 篇</span>
+          </div>
+          <div class="stat__num">28</div>
+          <div class="stat__label">已发布文章</div>
+        </div>
+        <div class="stat">
+          <div class="stat__top">
+            <span class="stat__icon i-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg></span>
+            <span class="stat__delta up">▲ 8.1%</span>
+          </div>
+          <div class="stat__num">3,642</div>
+          <div class="stat__label">邮件订阅数</div>
+        </div>
+        <div class="stat">
+          <div class="stat__top">
+            <span class="stat__icon i-rose"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg></span>
+            <span class="stat__delta down">▼ 2.3%</span>
+          </div>
+          <div class="stat__num">1,058</div>
+          <div class="stat__label">广告点击量</div>
+        </div>
+      </div>
+
+      <!-- chart + ad manager -->
+      <div class="two-col">
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">近 7 日访问趋势</span>
+            <span class="panel__spacer"></span>
+            <a class="panel__link" href="#">查看详情</a>
+          </div>
+          <div class="chart">
+            <div class="chart__bars">
+              <div class="chart__bar" style="height:52%"></div>
+              <div class="chart__bar" style="height:68%"></div>
+              <div class="chart__bar" style="height:45%"></div>
+              <div class="chart__bar" style="height:80%"></div>
+              <div class="chart__bar" style="height:62%"></div>
+              <div class="chart__bar" style="height:91%"></div>
+              <div class="chart__bar" style="height:74%"></div>
+            </div>
+            <div class="chart__x"><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span></div>
+          </div>
+        </div>
+
+        <div class="panel">
+          <div class="panel__head">
+            <span class="panel__title">广告位管理</span>
+            <span class="panel__spacer"></span>
+            <a class="panel__link" href="#">+ 新建</a>
+          </div>
+          <div class="adlist">
+            <div class="adrow">
+              <div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div>
+              <div class="adrow__info"><div class="adrow__name">首页信息流横幅</div><div class="adrow__url">example.com/promo</div></div>
+              <div class="adrow__stat"><b>728</b><small>点击 / 周</small></div>
+              <div class="switch"></div>
+            </div>
+            <div class="adrow">
+              <div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div>
+              <div class="adrow__info"><div class="adrow__name">侧边栏方图</div><div class="adrow__url">partner.io/x</div></div>
+              <div class="adrow__stat"><b>214</b><small>点击 / 周</small></div>
+              <div class="switch"></div>
+            </div>
+            <div class="adrow">
+              <div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div>
+              <div class="adrow__info"><div class="adrow__name">文末推广</div><div class="adrow__url">—</div></div>
+              <div class="adrow__stat"><b>116</b><small>点击 / 周</small></div>
+              <div class="switch off"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- article table -->
+      <div class="panel">
+        <div class="panel__head">
+          <span class="panel__title">文章管理</span>
+          <span class="panel__spacer"></span>
+          <a class="panel__link" href="Articles.html">前台查看</a>
+        </div>
+        <table class="tbl">
+          <thead>
+            <tr><th>标题</th><th>分类</th><th>状态</th><th>浏览</th><th>发布日期</th><th>操作</th></tr>
+          </thead>
+          <tbody id="tbody"></tbody>
+        </table>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<script>
+  const ROWS = [
+    { t:'深入 GPU 渲染管线:从顶点到像素', a:'林辰', cat:'渲染', cc:'c-blue', st:'pub', stt:'已发布', v:'3.2k', d:'2026-05-30' },
+    { t:'渲染优化实战', a:'林辰', cat:'渲染', cc:'c-blue', st:'pub', stt:'已发布', v:'2.1k', d:'2026-05-28' },
+    { t:'Unity 性能调优', a:'叶舟', cat:'性能', cc:'c-mint', st:'pub', stt:'已发布', v:'1.8k', d:'2026-05-25' },
+    { t:'Shader 入门指南', a:'明月', cat:'图形学', cc:'c-amber', st:'review', stt:'待审核', v:'—', d:'2026-05-22' },
+    { t:'架构设计笔记', a:'周岩', cat:'架构', cc:'c-violet', st:'pub', stt:'已发布', v:'1.5k', d:'2026-05-20' },
+    { t:'网络同步方案', a:'周岩', cat:'网络', cc:'c-sky', st:'draft', stt:'草稿', v:'—', d:'2026-05-18' },
+    { t:'工具链提效', a:'明月', cat:'工具', cc:'c-rose', st:'pub', stt:'已发布', v:'980', d:'2026-05-15' },
+  ];
+  const ic = {
+    edit:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>',
+    eye:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>',
+    del:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>'
+  };
+  document.getElementById('tbody').innerHTML = ROWS.map(r => `
+    <tr>
+      <td><div class="tbl__title">${r.t}<small>作者 · ${r.a}</small></div></td>
+      <td><span class="tag-cat ${r.cc}">${r.cat}</span></td>
+      <td><span class="st ${r.st}">${r.stt}</span></td>
+      <td>${r.v}</td>
+      <td style="color:var(--muted);">${r.d}</td>
+      <td><div class="row-act">
+        <button title="编辑">${ic.edit}</button>
+        <button title="预览">${ic.eye}</button>
+        <button class="danger" title="删除">${ic.del}</button>
+      </div></td>
+    </tr>`).join('');
+
+  // toggle ad switches
+  document.querySelectorAll('.switch').forEach(s => s.addEventListener('click', () => s.classList.toggle('off')));
+</script>
+</body>
+</html>

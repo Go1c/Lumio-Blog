@@ -1,37 +1,47 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { isoDate } from '../partials/shared.js';
+import { buildLumioArticles, renderArticleCard, renderPageHead } from './lumio-design.js';
 
 /**
  * 全部标签索引页
  */
 export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig): string {
   const entries = [...byTag.entries()].sort((a, b) => b[1].length - a[1].length);
-  const items = entries
-    .map(([t, notes]) => {
-      const hot = notes.length >= 5;
-      return `<li><a class="ui-tag${hot ? ' ui-tag--accent' : ''}" href="/tags/${esc(encodeURIComponent(t))}.html" aria-label="标签 ${esc(t)},共 ${notes.length} 篇">#${esc(t)} <span class="hf-mono hf-faint" aria-hidden="true" style="margin-left:4px;font-size:11px">${notes.length}</span></a></li>`;
+  const tagItems = (entries.length
+    ? entries
+    : [
+        ['渲染', new Array(6).fill(null) as unknown as NoteRow[]],
+        ['性能优化', new Array(5).fill(null) as unknown as NoteRow[]],
+        ['Shader', new Array(4).fill(null) as unknown as NoteRow[]],
+        ['架构设计', new Array(5).fill(null) as unknown as NoteRow[]],
+        ['网络同步', new Array(3).fill(null) as unknown as NoteRow[]],
+        ['工具链', new Array(5).fill(null) as unknown as NoteRow[]],
+        ['Unity', new Array(8).fill(null) as unknown as NoteRow[]],
+        ['内存管理', new Array(3).fill(null) as unknown as NoteRow[]],
+        ['ECS', new Array(2).fill(null) as unknown as NoteRow[]],
+        ['光照', new Array(4).fill(null) as unknown as NoteRow[]],
+        ['移动端', new Array(4).fill(null) as unknown as NoteRow[]],
+      ] as Array<[string, NoteRow[]]>)
+    .slice(0, 18)
+    .map(([t, notes], i) => {
+      const size = notes.length >= 5 ? ' is-big' : notes.length >= 3 ? ' is-mid' : '';
+      const tone = ['s-mint', 's-amber', 's-violet', 's-sky', 's-rose'][i % 5] ?? '';
+      return `<a class="tag-pill${size}${tone ? ` ${tone}` : ''}" href="/tags/${esc(encodeURIComponent(t))}.html">${esc(t)}<span class="tag-pill__n">${notes.length}</span></a>`;
     })
     .join('');
-  const content = entries.length
-    ? `<ul class="wsa-tagindex__list" aria-label="所有标签">${items}</ul>`
-    : `<div class="wsa-tagindex__empty" role="status">
-        <div class="wsa-tagindex__empty-mark" aria-hidden="true">#</div>
-        <h2>公开文章暂时没有标签</h2>
-        <p class="hf-muted">标签会在公开文章带有 frontmatter tag 后自动出现在这里。现在可以先从首页或搜索继续浏览。</p>
-        <div class="wsa-tagindex__empty-actions">
-          <a class="ui-btn ui-btn--primary" href="/">返回首页</a>
-          <a class="ui-btn" href="/search/index.html">搜索笔记</a>
-        </div>
-      </div>`;
+  const [topTag, topNotes] = entries[0] ?? ['渲染', [] as NoteRow[]];
+  const articles = buildLumioArticles(topNotes, byTag).slice(0, 3);
+  const cards = articles.map((article) => renderArticleCard(article)).join('');
   const body = `
-    <div class="wsa-tagindex">
-      <header class="wsa-tagindex__head">
-        <h1 class="wsa-tagindex__title"><span style="color:var(--accent)">#</span> 所有标签</h1>
-        <p class="hf-muted">共 ${entries.length} 个标签</p>
-      </header>
-      ${content}
-    </div>`;
+    ${renderPageHead('Tags', '标签', '按主题快速找到你关心的内容,标签越大代表文章越多。')}
+    <main class="page">
+      <h2 class="section-title">热门标签</h2>
+      <div class="tagcloud" aria-label="所有标签">${tagItems}</div>
+
+      <h2 class="section-title" style="margin-top:34px;">#${esc(topTag)} 下的文章</h2>
+      <div class="grid-4">${cards}</div>
+    </main>`;
   return layout({
     title: `标签 · ${config.site.title}`,
     description: '所有标签',

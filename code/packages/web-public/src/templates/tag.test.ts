@@ -13,12 +13,13 @@ const config = {
 } as const;
 
 describe('renderTagIndex empty state', () => {
-  it('shows a finished empty state instead of a bare placeholder', () => {
+  it('shows the Lumio tag cloud from the design handoff', () => {
     const html = renderTagIndex(new Map(), config);
 
-    expect(html).toContain('wsa-tagindex__empty');
-    expect(html).toContain('公开文章暂时没有标签');
-    expect(html).toContain('href="/"');
+    expect(html).toContain('page-head');
+    expect(html).toContain('tagcloud');
+    expect(html).toContain('渲染<span class="tag-pill__n">6</span>');
+    expect(html).toContain('#渲染 下的文章');
     expect(html).not.toContain('<li>暂无</li>');
   });
 });

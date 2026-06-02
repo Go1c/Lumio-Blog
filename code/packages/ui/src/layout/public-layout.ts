@@ -39,8 +39,10 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { id: 'home', label: '首页', href: '/' },
+  { id: 'articles', label: '文章', href: '/articles/index.html' },
+  { id: 'columns', label: '专栏', href: '/columns/index.html' },
   { id: 'tags', label: '标签', href: '/tags/index.html' },
-  { id: 'search', label: '搜索', href: '/search/index.html' },
+  { id: 'about', label: '关于', href: '/about.html' },
 ];
 
 function normalizePath(path?: string): string {
@@ -70,11 +72,12 @@ function absoluteUrl(base: string, path?: string): string {
 export function publicLayout(o: PublicLayoutOpts): string {
   const lang = o.config.site.language ?? 'zh-CN';
   const stylesHref = o.stylesHref ?? '/styles.css';
-  const fontUrl = 'https://fonts.googleapis.com/css2?family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap';
+  const fontUrl = 'https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&family=JetBrains+Mono:wght@400;500;600;700&display=swap';
   const description = o.description || o.config.site.description || '';
   const canonicalUrl = absoluteUrl(o.config.site.url, o.path);
   const imageUrl = o.image ? absoluteUrl(o.config.site.url, o.image) : null;
   const ogType = normalizePath(o.path) === '/' ? 'website' : 'article';
+  const brand = o.config.site.title || 'Lumio';
 
   return `<!doctype html>
 <html lang="${escHtml(lang)}">
@@ -104,31 +107,39 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <script>${THEME_BOOT_SCRIPT}</script>
   ${o.extraHead ?? ''}
 </head>
-<body class="ui-public">
+<body class="ui-public lumio-public">
   <a class="skip-link" href="#main-content">跳到正文</a>
-  <nav class="ui-public__nav" aria-label="主导航">
-    <a href="/" class="ui-public__brand" aria-label="${escHtml(o.config.site.title)} 首页">
-      <span class="ui-public__brand-logo" aria-hidden="true">${escHtml(o.config.site.title.charAt(0).toUpperCase())}</span>
-      <span>${escHtml(o.config.site.title)}</span>
-    </a>
-    <ul class="ui-public__nav-list">
-      ${NAV_ITEMS.map((it) => `<li><a class="ui-public__nav-link" href="${it.href}"${o.active === it.id ? ' aria-current="page"' : ''}>${it.label}</a></li>`).join('\n      ')}
-    </ul>
-    <div class="hf-grow"></div>
-    <a href="/search/index.html" class="ui-btn ui-btn--icon" aria-label="全站搜索">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
-    </a>
-    <button type="button" class="ui-btn ui-btn--icon" id="ui-theme-toggle" aria-label="切换主题">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><path d="M8 1 V3 M8 13 V15 M1 8 H3 M13 8 H15 M3 3 L4.5 4.5 M11.5 11.5 L13 13 M3 13 L4.5 11.5 M11.5 4.5 L13 3"></path></svg>
-    </button>
-    <a href="/feed.xml" class="ui-btn ui-btn--icon" aria-label="RSS 订阅">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="4" cy="12" r="1" fill="currentColor" stroke="none"></circle><path d="M2 8 Q8 8, 8 14 M2 4 Q12 4, 12 14"></path></svg>
-    </a>
-  </nav>
-  <main id="main-content" class="ui-public__main" role="main">${o.body}</main>
-  <footer class="ui-public__footer" role="contentinfo">
-    <p>${escHtml(o.config.author.name)} · ${escHtml(o.config.site.title)}</p>
-  </footer>
+  <div class="shell">
+    <nav class="ui-public__nav nav" aria-label="主导航">
+      <a href="/" class="ui-public__brand brand" aria-label="${escHtml(brand)} 首页">
+        <span class="brand__mark" aria-hidden="true">
+          <span class="brand__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        </span>
+        <span class="brand__txt">
+          <span class="brand__name">LUMIO</span>
+          <span class="brand__sub">.GAMES</span>
+        </span>
+      </a>
+      <ul class="ui-public__nav-list nav__links">
+        ${NAV_ITEMS.map((it) => `<li><a class="ui-public__nav-link nav__link${o.active === it.id ? ' is-active' : ''}" href="${it.href}"${o.active === it.id ? ' aria-current="page"' : ''}>${it.label}</a></li>`).join('\n        ')}
+      </ul>
+      <div class="nav__spacer"></div>
+      <form class="search" action="/search/index.html" role="search">
+        <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+        <input type="search" name="q" placeholder="搜索文章、标签" aria-label="搜索文章、标签">
+      </form>
+      <button type="button" class="icon-btn" id="ui-theme-toggle" aria-label="切换主题">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
+      </button>
+      <a class="avatar" href="/admin/" title="管理后台" aria-label="管理后台">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+      </a>
+    </nav>
+    <main id="main-content" class="ui-public__main" role="main">${o.body}</main>
+    <footer class="ui-public__footer" role="contentinfo">
+      <p>${escHtml(o.config.author.name)} · ${escHtml(o.config.site.title)}</p>
+    </footer>
+  </div>
   <script>
     (function(){
       var btn=document.getElementById('ui-theme-toggle');

@@ -83,11 +83,11 @@ describe('renderHome brand polish', () => {
       config,
     );
 
-    expect(html).toContain('Game systems');
+    expect(html).toContain('Lumio Dev Notes');
     expect(html).not.toContain('v10 · Lumio Blog');
   });
 
-  it('does not advertise an empty tag count in the hero CTA', () => {
+  it('links the hero CTA into the articles experience', () => {
     const html = renderHome(
       {
         posts: [],
@@ -101,6 +101,6 @@ describe('renderHome brand polish', () => {
     );
 
     expect(html).not.toContain('(0)');
-    expect(html).toContain('href="/search/index.html"');
+    expect(html).toContain('href="/articles/index.html"');
   });
 });

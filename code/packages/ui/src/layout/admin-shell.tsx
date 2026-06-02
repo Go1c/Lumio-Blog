@@ -10,6 +10,7 @@ export interface AdminMenuItem {
   /** 跳转地址,disabled 时可省略 */
   href?: string;
   icon?: HfIconName;
+  badge?: string | number;
   disabled?: boolean;
   /** 可选,用于自定义判断高亮(否则按 currentPath 匹配 href) */
   match?: (currentPath: string) => boolean;
@@ -52,37 +53,27 @@ export interface AdminShellProps {
 
 export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
-    label: '仪表盘',
+    label: '概览',
     items: [
-      { label: '概览', href: '#/', icon: 'home' },
+      { label: '仪表盘', href: '#/', icon: 'home' },
     ],
   },
   {
     label: '内容',
     items: [
-      { label: '笔记', href: '#/notes', icon: 'note', match: (p) => p.startsWith('#/notes') },
-      { label: '标签', href: '#/tags', icon: 'tag' },
-      { label: '媒体', href: '#/media', icon: 'image' },
+      { label: '文章管理', href: '#/notes', icon: 'note', match: (p) => p.startsWith('#/notes') },
+      { label: '专栏管理', href: '#/tags', icon: 'book' },
+      { label: '标签管理', href: '#/tags', icon: 'tag' },
+      { label: '评论审核', href: '#/comments', icon: 'comment', badge: 8 },
     ],
   },
   {
-    label: '互动',
+    label: '运营',
     items: [
-      { label: '评论', href: '#/comments', icon: 'comment' },
-      { label: '订阅', href: '#/subscriptions', icon: 'mail' },
-    ],
-  },
-  {
-    label: '分析',
-    items: [
-      { label: '文章数据', href: '#/analytics', icon: 'chart' },
-    ],
-  },
-  {
-    label: '设置',
-    items: [
+      { label: '广告位', href: '#/media', icon: 'image' },
+      { label: '数据统计', href: '#/analytics', icon: 'chart' },
       {
-        label: '设置',
+        label: '系统设置',
         href: '#/settings',
         icon: 'settings',
         match: (p) => p === '#/settings' || p.startsWith('#/settings/'),
@@ -114,6 +105,12 @@ export function AdminShell({
   onOpenSearch,
 }: AdminShellProps): JSX.Element {
   const { effective, toggle } = useTheme();
+  const pageTitle = breadcrumbs && breadcrumbs.length > 0
+    ? breadcrumbs[breadcrumbs.length - 1]?.label ?? '仪表盘'
+    : '仪表盘';
+  const pageSub = currentPath === '#/'
+    ? '游戏技术博客运营概览'
+    : 'Lumio Game Tech Blog 管理后台';
 
   return (
     <div class="ui-admin">
@@ -121,15 +118,17 @@ export function AdminShell({
 
       <aside class="ui-admin__sidebar" aria-label="后台导航">
         <div class="ui-admin__brand">
-          <div class="ui-admin__logo" aria-hidden="true">L</div>
-          <div class="ui-admin__brand-text" style={{ fontWeight: 700, fontSize: '13px' }}>
-            {siteName}
-            <span class="hf-mono hf-tiny hf-faint" style={{ marginLeft: '4px' }}>admin</span>
+          <div class="ui-admin__logo" aria-hidden="true">
+            <span class="ui-admin__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+          </div>
+          <div class="ui-admin__brand-text">
+            <div class="ui-admin__brand-name">LUMIO</div>
+            <div class="ui-admin__brand-sub">.GAMES ADMIN</div>
           </div>
         </div>
 
         {menu.map((group) => (
-          <div key={group.label}>
+          <div class="ui-admin__group" key={group.label}>
             <div class="ui-admin__group-label">{group.label}</div>
             <ul class="ui-admin__nav">
               {group.items.map((it) => {
@@ -144,7 +143,7 @@ export function AdminShell({
                       >
                         {it.icon && <HfIcon name={it.icon} size={14} />}
                         <span>{it.label}</span>
-                        <span class="hf-mono hf-tiny hf-faint" style={{ marginLeft: 'auto' }}>soon</span>
+                        <span class="ui-admin__badge">soon</span>
                       </span>
                     </li>
                   );
@@ -158,6 +157,7 @@ export function AdminShell({
                     >
                       {it.icon && <HfIcon name={it.icon} size={14} />}
                       <span>{it.label}</span>
+                      {it.badge !== undefined && <span class="ui-admin__badge">{it.badge}</span>}
                     </a>
                   </li>
                 );
@@ -165,38 +165,34 @@ export function AdminShell({
             </ul>
           </div>
         ))}
+
+        <div class="ui-admin__foot">
+          <Avatar initials={userInitials} aria-label="当前用户" size={34} />
+          <div>
+            <div class="ui-admin__foot-name">Lumio Editor</div>
+            <div class="ui-admin__foot-role">管理员</div>
+          </div>
+        </div>
       </aside>
 
       <div class="ui-admin__main">
         <header class="ui-admin__topbar" role="banner">
-          {breadcrumbs && breadcrumbs.length > 0 ? (
-            <nav class="ui-admin__crumbs" aria-label="面包屑">
-              {breadcrumbs.map((c, i) => (
-                <span key={i}>
-                  {i > 0 && <span aria-hidden="true"> / </span>}
-                  {c.href ? <a href={c.href}>{c.label}</a> : <span>{c.label}</span>}
-                </span>
-              ))}
-            </nav>
-          ) : (
-            <span class="ui-admin__crumbs">{siteName}</span>
-          )}
+          <div class="ui-admin__top-title">
+            <div class="ui-admin__top-h">{pageTitle}</div>
+            <div class="ui-admin__top-sub">{pageSub}</div>
+          </div>
 
           <div class="hf-grow" />
 
-          {onOpenSearch && (
-            <button
-              type="button"
-              class="ui-admin__topbar-search"
-              onClick={onOpenSearch}
-              aria-label="搜索 (⌘K)"
-              aria-keyshortcuts="Meta+K Control+K"
-            >
-              <HfIcon name="search" size={13} />
-              <span class="hf-grow">搜索…</span>
-              <span class="ui-kbd" aria-hidden="true">⌘K</span>
-            </button>
-          )}
+          <button
+            type="button"
+            class="ui-admin__topbar-search"
+            onClick={onOpenSearch}
+            aria-label="搜索"
+          >
+            <HfIcon name="search" size={13} />
+            <span class="hf-grow">搜索文章、广告、标签</span>
+          </button>
 
           {onSync && (
             <Button size="sm" onClick={onSync} aria-label="同步内容">
@@ -205,6 +201,10 @@ export function AdminShell({
           )}
 
           {topbarActions}
+
+          <a class="btn-new" href="#/notes" aria-label="写文章">
+            <HfIcon name="plus" size={13} /> 写文章
+          </a>
 
           <Button
             size="icon"
@@ -215,11 +215,7 @@ export function AdminShell({
           </Button>
 
           {userMenu ?? (
-            <Avatar
-              initials={userInitials}
-              aria-label="当前用户"
-              size={28}
-            />
+            <Avatar initials={userInitials} aria-label="当前用户" size={28} />
           )}
 
           {onLogout && (

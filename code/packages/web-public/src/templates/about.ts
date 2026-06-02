@@ -1,98 +1,44 @@
 import type { SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
+import { renderPageHead, renderSubscribe } from './lumio-design.js';
 
-/**
- * About 页 — config-driven 作者页
- * 对应设计稿: doc/prototype/hf-extras2.jsx §15 HFAbout
- */
 export function renderAbout(config: SiteConfig): string {
-  const a = config.author;
-  const avatarChar = (a.name || 'L').charAt(0).toUpperCase();
-
-  // bio: 优先 bio_md(简化:仅支持纯段落,不解析 markdown — 由 server 端预渲染),否则 bio
-  const bioHtml = a.bio_md
-    ? `<div class="wsa-about__bio">${renderSimpleParagraphs(a.bio_md)}</div>`
-    : a.bio
-      ? `<div class="wsa-about__bio"><p>${esc(a.bio)}</p></div>`
-      : '';
-
-  // 联系方式 — email + social
-  const contactRows: Array<{ platform: string; handle: string; href: string; icon: string }> = [];
-  if (a.email) {
-    contactRows.push({
-      platform: 'Email',
-      handle: a.email,
-      href: `mailto:${a.email}`,
-      icon: '📧',
-    });
-  }
-  for (const s of a.social ?? []) {
-    contactRows.push({
-      platform: s.platform,
-      handle: extractHandle(s.url),
-      href: s.url,
-      icon: socialIcon(s.platform),
-    });
-  }
-
-  const contactHtml = contactRows.length
-    ? `<ul class="wsa-about__contact" aria-label="联系方式">
-        ${contactRows
-          .map(
-            (r) => `
-            <li>
-              <a class="wsa-about__contact-row hf-hover" href="${esc(r.href)}" rel="noopener noreferrer">
-                <span class="wsa-about__contact-platform" style="font-size:13px;color:var(--ink-3)"><span aria-hidden="true">${esc(r.icon)}</span> ${esc(r.platform)}</span>
-                <span class="hf-mono hf-sm wsa-about__contact-handle">${esc(r.handle)}</span>
-              </a>
-            </li>`,
-          )
-          .join('')}
-      </ul>`
-    : '';
-
-  // 订阅 / 关注 — RSS + Newsletter (如果开启)
-  const subscribeRows: string[] = [];
-  subscribeRows.push(
-    `<a class="ui-btn" href="/feed.xml" aria-label="订阅 RSS"><span aria-hidden="true">📡</span> RSS</a>`,
-  );
-  if (config.features?.newsletter) {
-    subscribeRows.push(
-      `<a class="ui-btn" href="/newsletter" aria-label="订阅邮件通讯"><span aria-hidden="true">📬</span> Newsletter</a>`,
-    );
-  }
-  const githubLink = (a.social ?? []).find((s) => /github/i.test(s.platform));
-  if (githubLink) {
-    subscribeRows.push(
-      `<a class="ui-btn" href="${esc(githubLink.url)}" rel="noopener noreferrer" aria-label="GitHub"><span aria-hidden="true">🐙</span> GitHub</a>`,
-    );
-  }
-
-  const description = a.bio ?? `${a.name} · ${config.site.title}`;
-
+  const description = config.author.bio ?? `${config.site.title} 的技术分享阵地`;
   const body = `
-    <div class="wsa-about">
-      <div class="wsa-about__hero">
-        <div class="wsa-about__avatar" aria-hidden="true">${esc(avatarChar)}</div>
-        <div>
-          <div class="hf-mono hf-tiny hf-muted wsa-about__pre">About</div>
-          <h1 class="wsa-about__title">嘿,我是 ${esc(a.name)}</h1>
-          ${a.bio ? `<div class="wsa-about__sub hf-sm hf-muted">${esc(a.bio)}</div>` : ''}
+    ${renderPageHead('About', '关于 Lumio', '我们是一群热爱游戏与技术的开发者,在这里记录、分享与沉淀。')}
+    <main class="page">
+      <p class="about-lead">
+        Lumio Game Tech Blog 是 <b>Lumio.games</b> 团队的技术分享阵地。我们相信,把踩过的坑、想明白的原理、打磨过的工具<b>公开地写下来</b>,既能帮到同行,也能让自己走得更稳更远。
+      </p>
+
+      <div class="feat-row">
+        <div class="feat">
+          <div class="feat__icon i-blue" aria-hidden="true">${shieldIcon()}</div>
+          <div class="feat__title">实战为先</div>
+          <p class="feat__txt">每篇文章都来自真实项目,可复现、能落地,而非纸上谈兵。</p>
+        </div>
+        <div class="feat">
+          <div class="feat__icon i-mint" aria-hidden="true">${sunIcon()}</div>
+          <div class="feat__title">原理透彻</div>
+          <p class="feat__txt">不止于"怎么做",更讲清"为什么",帮你建立可迁移的认知。</p>
+        </div>
+        <div class="feat">
+          <div class="feat__icon i-amber" aria-hidden="true">${starIcon()}</div>
+          <div class="feat__title">持续更新</div>
+          <p class="feat__txt">紧跟引擎与硬件演进,保持内容的新鲜度与前瞻性。</p>
         </div>
       </div>
 
-      ${bioHtml}
+      <h2 class="section-title">核心团队</h2>
+      <div class="team">
+        ${member('L', '林辰', '主程 · 渲染', 'linear-gradient(160deg,#B6C0FF,#7C8CFF)')}
+        ${member('Y', '叶舟', '性能优化', 'linear-gradient(160deg,#8DEBD4,#43C9AD)')}
+        ${member('Z', '周岩', '引擎架构', 'linear-gradient(160deg,#FFD08A,#F39A47)')}
+        ${member('M', '明月', '工具 · TA', 'linear-gradient(160deg,#C7B6FF,#8E76F0)')}
+      </div>
 
-      ${
-        contactHtml
-          ? `<div class="wsa-side__h hf-mono hf-tiny wsa-about__sec-h">▸ 联系我</div>
-             <div class="wsa-about__card ui-card">${contactHtml}</div>`
-          : ''
-      }
-
-      <div class="wsa-side__h hf-mono hf-tiny wsa-about__sec-h">▸ 订阅 / 关注</div>
-      <div class="wsa-about__subscribe">${subscribeRows.join('')}</div>
-    </div>`;
+      ${renderSubscribe('想和我们聊聊?', '合作、投稿或交流,欢迎留下你的邮箱', '联系我们')}
+    </main>`;
 
   return layout({
     title: `关于 · ${config.site.title}`,
@@ -104,32 +50,23 @@ export function renderAbout(config: SiteConfig): string {
   });
 }
 
-/** 极简 markdown:把空行分隔的段落转成 <p>;不解析行内 */
-function renderSimpleParagraphs(md: string): string {
-  return md
-    .split(/\n\s*\n/)
-    .map((p) => p.trim())
-    .filter(Boolean)
-    .map((p) => `<p>${esc(p).replace(/\n/g, '<br>')}</p>`)
-    .join('\n');
+function member(initial: string, name: string, role: string, background: string): string {
+  return `
+    <div class="member">
+      <div class="member__face" style="background:${esc(background)};">${esc(initial)}</div>
+      <div class="member__name">${esc(name)}</div>
+      <div class="member__role">${esc(role)}</div>
+    </div>`;
 }
 
-function extractHandle(url: string): string {
-  try {
-    const u = new URL(url);
-    const path = u.pathname.replace(/^\/+|\/+$/g, '');
-    return path ? `@${path.split('/')[0]}` : u.hostname;
-  } catch {
-    return url;
-  }
+function shieldIcon(): string {
+  return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l8 4v5c0 5-3.5 8-8 9-4.5-1-8-4-8-9V7z"></path><path d="M9 12l2 2 4-4"></path></svg>';
 }
 
-function socialIcon(platform: string): string {
-  const p = platform.toLowerCase();
-  if (p.includes('github')) return '🐙';
-  if (p.includes('twitter') || p === 'x') return '💬';
-  if (p.includes('mastodon')) return '🐘';
-  if (p.includes('mail')) return '📧';
-  if (p.includes('rss')) return '📡';
-  return '🔗';
+function sunIcon(): string {
+  return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v4M12 18v4M2 12h4M18 12h4M5 5l3 3M16 16l3 3M19 5l-3 3M8 16l-3 3"></path><circle cx="12" cy="12" r="3"></circle></svg>';
+}
+
+function starIcon(): string {
+  return '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2l2.4 6.5H21l-5.3 4 2 6.5L12 15l-5.7 4 2-6.5L3 8.5h6.6z"></path></svg>';
 }

@@ -1,0 +1,123 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>专栏 · Lumio.games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="gametech.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <a class="brand" href="Game Tech Blog.html">
+      <span class="brand__mark"><span class="brand__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
+      <span class="brand__txt"><span class="brand__name">LUMIO</span><span class="brand__sub">.GAMES</span></span>
+    </a>
+    <div class="nav__links">
+      <a class="nav__link" href="Game Tech Blog.html">首页</a>
+      <a class="nav__link" href="Articles.html">文章</a>
+      <a class="nav__link is-active" href="Columns.html">专栏</a>
+      <a class="nav__link" href="Tags.html">标签</a>
+      <a class="nav__link" href="About.html">关于</a>
+    </div>
+    <div class="nav__spacer"></div>
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+      <input type="text" placeholder="搜索文章、标签">
+    </label>
+    <button class="icon-btn" aria-label="切换主题">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
+    </button>
+    <a class="avatar" href="Admin.html" title="管理后台">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+    </a>
+  </nav>
+
+  <header class="page-head">
+    <div class="page-head__grid"></div>
+    <div class="page-head__eyebrow">Columns</div>
+    <h1 class="page-head__title">技术专栏</h1>
+    <p class="page-head__sub">成体系的系列文章,跟随专栏由浅入深,系统掌握一个领域。</p>
+  </header>
+
+  <main class="page">
+    <div class="cols">
+
+      <a class="col-card" href="#">
+        <div class="col-card__cover thumb t-blue">
+          <div class="thumb__grid"></div>
+          <div class="thumb__art">
+            <div class="cube float" style="--s:34px; left:38%; top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            <div class="cube c-mint float" style="--s:24px; left:56%; top:58%; animation-delay:-1.3s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+          </div>
+        </div>
+        <div class="col-card__body">
+          <div class="col-card__name">渲染管线精讲</div>
+          <p class="col-card__dek">从光栅化到延迟渲染,逐篇拆解现代渲染管线的核心机制。</p>
+          <div class="col-card__foot">
+            <span class="col-card__count"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>9 篇文章</span>
+            <span class="btn-ghost">订阅专栏</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="col-card" href="#">
+        <div class="col-card__cover thumb t-mint">
+          <div class="thumb__grid"></div>
+          <div class="thumb__art">
+            <div class="cube c-mint float" style="--s:38px; left:50%; top:46%; margin:-19px 0 0 -19px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+          </div>
+        </div>
+        <div class="col-card__body">
+          <div class="col-card__name">性能优化之道</div>
+          <p class="col-card__dek">CPU、GPU、内存、加载,全链路性能优化的实战方法论。</p>
+          <div class="col-card__foot">
+            <span class="col-card__count"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>7 篇文章</span>
+            <span class="btn-ghost">订阅专栏</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="col-card" href="#">
+        <div class="col-card__cover thumb t-amber">
+          <div class="thumb__grid"></div>
+          <div class="thumb__art"><div class="orb" style="left:32%;top:28%;"></div></div>
+        </div>
+        <div class="col-card__body">
+          <div class="col-card__name">Shader 实验室</div>
+          <p class="col-card__dek">用一系列可运行的案例,带你从零写出炫酷的着色器效果。</p>
+          <div class="col-card__foot">
+            <span class="col-card__count"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>6 篇文章</span>
+            <span class="btn-ghost">订阅专栏</span>
+          </div>
+        </div>
+      </a>
+
+      <a class="col-card" href="#">
+        <div class="col-card__cover thumb t-violet">
+          <div class="thumb__grid"></div>
+          <div class="thumb__art">
+            <div class="cube float" style="--s:28px; left:30%; top:36%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            <div class="cube float" style="--s:28px; left:54%; top:52%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0; animation-delay:-1.6s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+          </div>
+        </div>
+        <div class="col-card__body">
+          <div class="col-card__name">架构演进实录</div>
+          <p class="col-card__dek">真实项目中架构如何随规模演进,踩过的坑与得到的经验。</p>
+          <div class="col-card__foot">
+            <span class="col-card__count"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>8 篇文章</span>
+            <span class="btn-ghost">订阅专栏</span>
+          </div>
+        </div>
+      </a>
+
+    </div>
+  </main>
+</div>
+</body>
+</html>

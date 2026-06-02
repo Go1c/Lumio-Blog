@@ -1,0 +1,243 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Game Tech Blog · Lumio.games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="gametech.css">
+</head>
+<body>
+<div class="shell">
+
+  <!-- ───────── NAV ───────── -->
+  <nav class="nav">
+    <a class="brand" href="#">
+      <span class="brand__mark">
+        <span class="brand__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+      </span>
+      <span class="brand__txt">
+        <span class="brand__name">LUMIO</span>
+        <span class="brand__sub">.GAMES</span>
+      </span>
+    </a>
+    <div class="nav__links">
+      <a class="nav__link is-active" href="Game Tech Blog.html">首页</a>
+      <a class="nav__link" href="Articles.html">文章</a>
+      <a class="nav__link" href="Columns.html">专栏</a>
+      <a class="nav__link" href="Tags.html">标签</a>
+      <a class="nav__link" href="About.html">关于</a>
+    </div>
+    <div class="nav__spacer"></div>
+    <label class="search">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+      <input type="text" placeholder="搜索文章、标签">
+    </label>
+    <button class="icon-btn" aria-label="切换主题">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
+    </button>
+    <a class="avatar" href="Admin.html" title="管理后台">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+    </a>
+  </nav>
+
+  <div class="body">
+
+    <!-- ───────── HERO ───────── -->
+    <aside class="hero">
+      <div class="hero__deco"><div class="hero__grid"></div></div>
+      <div class="hero__eyebrow">Lumio Dev Notes</div>
+      <h1 class="hero__title"><em>Game</em><em>Tech Blog</em></h1>
+      <p class="hero__sub"><b>技术文章</b><span class="dot"></span><b>游戏开发</b><span class="dot"></span><b>实践分享</b></p>
+      <a class="btn-primary" href="#">
+        阅读最新文章
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9M8 4l4 4-4 4"></path></svg>
+      </a>
+
+      <div class="hero__scene">
+        <!-- ground platform of voxel cubes -->
+        <div class="cube" style="--s:54px; left:8px; bottom:6px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <div class="cube c-mint" style="--s:54px; left:62px; bottom:6px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <div class="cube" style="--s:54px; left:116px; bottom:6px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <div class="cube c-mint" style="--s:54px; left:35px; bottom:42px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <div class="cube" style="--s:54px; left:89px; bottom:42px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <!-- floating cubes -->
+        <div class="cube c-amber float" style="--s:40px; right:30px; bottom:96px; animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <div class="cube float" style="--s:34px; right:88px; bottom:30px; animation-delay:-2.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+        <!-- pixel heart -->
+        <div class="px-heart float" style="--s:8px; right:140px; bottom:108px; animation-delay:-.6s;">
+          <i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i>
+        </div>
+        <!-- coin -->
+        <div class="coin float" style="right:46px; bottom:14px; animation-delay:-1.8s;"><span>★</span></div>
+      </div>
+    </aside>
+
+    <!-- ───────── CONTENT ───────── -->
+    <main class="content">
+      <div class="sec-head">
+        <h2 class="sec-title">最新文章</h2>
+        <a class="sec-more" href="#">查看全部
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9M8 4l4 4-4 4"></path></svg>
+        </a>
+      </div>
+
+      <div class="grid">
+        <!-- card 1 -->
+        <article class="card">
+          <div class="thumb t-blue">
+            <div class="thumb__grid"></div>
+            <span class="badge">渲染</span>
+            <div class="thumb__art">
+              <div class="cube float" style="--s:38px; left:50%; top:42%; margin:-19px 0 0 -42px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+              <div class="cube c-mint float" style="--s:30px; left:50%; top:54%; margin:-15px 0 0 6px; animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            </div>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">渲染优化实战</h3>
+            <p class="card__dek">从原理到实战,深入剖析渲染优化的关键技术与方法。</p>
+            <div class="card__meta">
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-28</span>
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>12 分钟</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- card 2 -->
+        <article class="card">
+          <div class="thumb t-mint">
+            <div class="thumb__grid"></div>
+            <span class="badge">性能</span>
+            <div class="thumb__art">
+              <div class="cube c-mint float" style="--s:42px; left:50%; top:46%; margin:-21px 0 0 -21px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            </div>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Unity 性能调优</h3>
+            <p class="card__dek">系统化的性能分析与优化策略,打造流畅稳定的游戏体验。</p>
+            <div class="card__meta">
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-25</span>
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>15 分钟</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- card 3 -->
+        <article class="card">
+          <div class="thumb t-amber">
+            <div class="thumb__grid"></div>
+            <span class="badge">图形学</span>
+            <div class="thumb__art">
+              <div class="orb"></div>
+              <div class="cube c-amber float" style="--s:30px; left:64%; top:60%; animation-delay:-1.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            </div>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">Shader 入门指南</h3>
+            <p class="card__dek">从基础概念到实战案例,快速上手 Shader 编写与调试。</p>
+            <div class="card__meta">
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-22</span>
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>10 分钟</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- ───────── 广告位 · 信息流横幅(替换 href 与图片即可) ───────── -->
+      <a class="ad ad__link" href="https://example.com/your-ad-target" target="_blank" rel="noopener sponsored">
+        <span class="ad__label">赞助 · Sponsored</span>
+        <!-- 上线时:把下面 .ad__ph 这块整体替换为 <img class="ad__img" src="广告图.png" alt="广告"> -->
+        <div class="ad__ph">
+          <span class="ad__ph-mark">
+            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>
+          </span>
+          <span class="ad__ph-txt">
+            <span class="ad__ph-title">广告位 · 728 × 90 横幅</span>
+            <span class="ad__ph-sub">替换为 <code>&lt;img class="ad__img" src="…"&gt;</code>,并把链接 <code>href</code> 改成跳转地址</span>
+          </span>
+        </div>
+      </a>
+
+      <div class="grid">
+        <!-- card 4 -->
+        <article class="card">
+          <div class="thumb t-violet">
+            <div class="thumb__grid"></div>
+            <span class="badge">架构</span>
+            <div class="thumb__art">
+              <div class="cube float" style="--s:30px; left:30%; top:36%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+              <div class="cube float" style="--s:30px; left:54%; top:52%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0; animation-delay:-1.6s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            </div>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">架构设计笔记</h3>
+            <p class="card__dek">分享可扩展、可维护的游戏架构设计思路与最佳实践。</p>
+            <div class="card__meta">
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-20</span>
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>14 分钟</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- card 5 -->
+        <article class="card">
+          <div class="thumb t-sky">
+            <div class="thumb__grid"></div>
+            <span class="badge">网络</span>
+            <div class="thumb__art">
+              <div class="cube float" style="--s:30px; left:24%; top:34%; --t:#BFE6FF; --r:#86C8FF; --l:#4FA0E8;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+              <div class="cube float" style="--s:30px; left:58%; top:34%; --t:#BFE6FF; --r:#86C8FF; --l:#4FA0E8; animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+              <div class="cube float" style="--s:30px; left:41%; top:58%; --t:#BFE6FF; --r:#86C8FF; --l:#4FA0E8; animation-delay:-2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            </div>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">网络同步方案</h3>
+            <p class="card__dek">对比主流同步方案,详解实现细节与优化技巧。</p>
+            <div class="card__meta">
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-18</span>
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>13 分钟</span>
+            </div>
+          </div>
+        </article>
+
+        <!-- card 6 -->
+        <article class="card">
+          <div class="thumb t-rose">
+            <div class="thumb__grid"></div>
+            <span class="badge">工具</span>
+            <div class="thumb__art">
+              <div class="cube c-pink float" style="--s:40px; left:50%; top:46%; margin:-20px 0 0 -20px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+            </div>
+          </div>
+          <div class="card__body">
+            <h3 class="card__title">工具链提效</h3>
+            <p class="card__dek">精选工具与自动化流程,全面提升开发效率与协作体验。</p>
+            <div class="card__meta">
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-15</span>
+              <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>11 分钟</span>
+            </div>
+          </div>
+        </article>
+      </div>
+
+      <!-- ───────── SUBSCRIBE ───────── -->
+      <div class="subscribe">
+        <span class="subscribe__icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg>
+        </span>
+        <div class="subscribe__txt">
+          <div class="subscribe__title">订阅更新</div>
+          <div class="subscribe__sub">不错过每一篇技术干货与实践分享</div>
+        </div>
+        <form class="subscribe__form" onsubmit="return false">
+          <input type="email" placeholder="输入邮箱地址">
+          <button type="submit">订阅</button>
+        </form>
+      </div>
+    </main>
+  </div>
+</div>
+</body>
+</html>

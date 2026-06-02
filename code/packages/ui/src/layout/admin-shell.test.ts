@@ -12,7 +12,7 @@ describe('default admin menu', () => {
     const item = findMenuItem('#/settings');
 
     expect(item).toMatchObject({
-      label: '设置',
+      label: '系统设置',
       href: '#/settings',
     });
     expect(item?.disabled).not.toBe(true);
