@@ -33,10 +33,10 @@ function fmtTs(iso: string): string {
   return iso.replace('T', ' ').slice(0, 19);
 }
 
-export function AuditPage() {
+export function AuditPage({ initialActionPrefix = '' }: { initialActionPrefix?: string }) {
   const [entries, setEntries] = useState<AuditEntry[] | null>(null);
   const [actor, setActor] = useState('');
-  const [actionPrefix, setActionPrefix] = useState('');
+  const [actionPrefix, setActionPrefix] = useState(initialActionPrefix);
   const [limit, setLimit] = useState(100);
   const [expanded, setExpanded] = useState<Set<number>>(new Set());
   const [error, setError] = useState<string | null>(null);
@@ -57,6 +57,9 @@ export function AuditPage() {
   };
 
   useEffect(() => { void load(); }, []);
+  useEffect(() => {
+    setActionPrefix(initialActionPrefix);
+  }, [initialActionPrefix]);
 
   const filtered = useMemo(() => {
     if (!entries) return null;
@@ -89,7 +92,7 @@ export function AuditPage() {
     <div class="ws-e">
       <WsEStyles />
       <div class="ws-e__header">
-        <h1 class="ws-e__h1"><span aria-hidden="true">📜 </span>Audit log</h1>
+        <h1 class="ws-e__h1"><span aria-hidden="true">📜 </span>审计日志</h1>
         <p class="ws-e__lead">
           所有写操作和登录都会被记录。最新在最上。
         </p>
@@ -173,7 +176,7 @@ export function AuditPage() {
                       key={`r-${e.id}`}
                       class={`ws-e__audit-row ${isOpen ? 'is-open' : ''} ${hasDiff ? 'has-diff' : ''}`}
                     >
-                      <td>
+                      <td data-label="展开">
                         {hasDiff && (
                           <button
                             type="button"
@@ -186,19 +189,19 @@ export function AuditPage() {
                           </button>
                         )}
                       </td>
-                      <td class="hf-mono hf-tiny hf-muted">
+                      <td data-label="时间" class="hf-mono hf-tiny hf-muted">
                         <time dateTime={e.ts}>{fmtTs(e.ts)}</time>
                       </td>
-                      <td><code class="hf-mono hf-tiny">{e.actor}</code></td>
-                      <td><code class="hf-mono hf-tiny ws-e__action">{e.action}</code></td>
-                      <td class="hf-mono hf-tiny hf-muted">{e.target ?? '—'}</td>
-                      <td class="hf-mono hf-tiny hf-muted">{e.ip ?? '—'}</td>
+                      <td data-label="Actor"><code class="hf-mono hf-tiny">{e.actor}</code></td>
+                      <td data-label="Action"><code class="hf-mono hf-tiny ws-e__action">{e.action}</code></td>
+                      <td data-label="Target" class="hf-mono hf-tiny hf-muted">{e.target ?? '—'}</td>
+                      <td data-label="IP" class="hf-mono hf-tiny hf-muted">{e.ip ?? '—'}</td>
                     </tr>,
                   ];
                   if (isOpen && hasDiff) {
                     rows.push(
                       <tr key={`d-${e.id}`} class="ws-e__audit-diff-row">
-                        <td colSpan={6}>
+                        <td colSpan={6} data-label="Diff">
                           <pre class="ws-e__code">{prettyJson(e.diff ?? null)}</pre>
                         </td>
                       </tr>,

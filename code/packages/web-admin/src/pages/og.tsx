@@ -16,6 +16,145 @@ const TEMPLATES: TemplateMeta[] = [
   { id: 'magazine', name: '画刊 · magazine', hint: '渐变 + 大封面' },
 ];
 
+export const OG_PAGE_STYLE = `
+.og-page { min-width: 0; }
+.og-page__hero {
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  padding: 18px;
+  margin-bottom: 18px;
+  background:
+    linear-gradient(135deg, rgba(0,102,255,.11), transparent 38%),
+    linear-gradient(180deg, var(--bg), var(--bg-soft));
+}
+.og-page__header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+.og-page__eyebrow {
+  margin: 0 0 4px;
+  color: var(--accent);
+  font-family: var(--mono);
+  font-size: 11px;
+  letter-spacing: .1em;
+  text-transform: uppercase;
+}
+.og-page__title { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+.og-page__lead {
+  margin: 6px 0 0;
+  color: var(--ink-3);
+  font-size: 13px;
+  line-height: 1.6;
+  max-width: 620px;
+}
+.og-page__actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.og-page__layout {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(300px, 360px);
+  gap: 18px;
+  align-items: start;
+}
+.og-page__preview { min-width: 0; }
+.og-page__preview-box {
+  width: 100%;
+  aspect-ratio: 1200 / 630;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-2);
+}
+.og-page__url {
+  display: block;
+  margin-top: 6px;
+  overflow-wrap: anywhere;
+}
+.og-page__section-label {
+  color: var(--ink-4);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  margin: 24px 0 8px;
+}
+.og-page__social-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 12px;
+}
+.og-page__batch {
+  margin-top: 24px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  background: var(--bg-soft);
+}
+.og-page__batch-head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+.og-page__settings {
+  position: sticky;
+  top: 12px;
+  align-self: start;
+  border: 1px solid var(--line);
+  border-radius: var(--radius-lg);
+  padding: 14px;
+  background: var(--bg);
+  box-shadow: var(--shadow-1);
+}
+.og-page__template-grid {
+  list-style: none;
+  margin: 0 0 18px;
+  padding: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+}
+.og-page__fields {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+.og-page__test-link {
+  margin-top: 14px;
+  padding: 10px;
+  background: var(--bg-sunk);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+}
+@media (max-width: 720px) {
+  .og-page__hero { padding: 16px; border-radius: 18px; }
+  .og-page__header { align-items: flex-start; }
+  .og-page__actions { width: 100%; }
+  .og-page__actions .ui-btn,
+  .og-page__actions button { flex: 1 1 auto; justify-content: center; }
+  .og-page__layout { grid-template-columns: 1fr; gap: 16px; }
+  .og-page__settings { position: static; }
+  .og-page__template-grid { grid-template-columns: 1fr; }
+  .og-page__social-grid { grid-template-columns: 1fr; }
+  .og-page__batch-head > .hf-grow { display: none; }
+  .og-page__batch-head button { width: 100%; }
+}
+`;
+
+let ogPageStyleInjected = false;
+
+function OgPageStyles(): null {
+  if (typeof document !== 'undefined' && !ogPageStyleInjected) {
+    ogPageStyleInjected = true;
+    const tag = document.createElement('style');
+    tag.setAttribute('data-og-page', '1');
+    tag.textContent = OG_PAGE_STYLE;
+    document.head.appendChild(tag);
+  }
+  return null;
+}
+
 interface Overrides {
   title?: string;
   description?: string;
@@ -94,23 +233,34 @@ export function OgPage(): JSX.Element {
   if (notes === null) return <p role="status" aria-live="polite">loading…</p>;
 
   return (
-    <div>
-      <header style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
-        <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700 }}>OG 图生成器</h2>
-        <Tag>1200 × 630</Tag>
-        <Tag tone="accent">每篇文章自动生成</Tag>
-        <div class="hf-grow" />
-        <Button size="sm" onClick={refreshPreview}>↻ 重新渲染</Button>
-        {slug && (
-          <a class="ui-btn ui-btn--sm" href={api.og.publicUrl(slug, tmpl)} download={`${slug}.png`}>
-            下载 PNG
-          </a>
-        )}
+    <div class="og-page">
+      <OgPageStyles />
+      <header class="og-page__hero">
+        <div class="og-page__header">
+          <div>
+            <p class="og-page__eyebrow">Share image lab</p>
+            <h2 class="og-page__title">OG 图生成器</h2>
+            <p class="og-page__lead">
+              为公开文章生成 1200 × 630 分享图，先预览真实社交卡片，再批量刷新缓存。
+            </p>
+          </div>
+          <Tag>1200 × 630</Tag>
+          <Tag tone="accent">每篇文章自动生成</Tag>
+          <div class="hf-grow" />
+          <div class="og-page__actions">
+            <Button size="sm" onClick={refreshPreview}>↻ 重新渲染</Button>
+            {slug && (
+              <a class="ui-btn ui-btn--sm" href={api.og.publicUrl(slug, tmpl)} download={`${slug}.png`}>
+                下载 PNG
+              </a>
+            )}
+          </div>
+        </div>
       </header>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 360px', gap: 18 }}>
+      <div class="og-page__layout">
         {/* main preview */}
-        <section aria-label="OG 预览" style={{ minWidth: 0 }}>
+        <section aria-label="OG 预览" class="og-page__preview">
           {/* 文章选择 */}
           <div style={{ marginBottom: 14 }}>
             <label htmlFor="og-slug" class="hf-tiny" style={{ color: 'var(--ink-3)', display: 'block', marginBottom: 4 }}>选择文章 (slug)</label>
@@ -130,17 +280,7 @@ export function OgPage(): JSX.Element {
 
           {/* 主预览框 1200x630 */}
           <figure style={{ margin: 0 }}>
-            <div
-              style={{
-                width: '100%',
-                aspectRatio: '1200 / 630',
-                background: 'var(--bg-sunk)',
-                border: '1px solid var(--line)',
-                borderRadius: 'var(--radius-lg)',
-                overflow: 'hidden',
-                boxShadow: 'var(--shadow-2)',
-              }}
-            >
+            <div class="og-page__preview-box">
               {slug ? (
                 <iframe
                   src={previewUrl}
@@ -153,24 +293,24 @@ export function OgPage(): JSX.Element {
                 </div>
               )}
             </div>
-            <figcaption class="hf-mono hf-tiny hf-muted" style={{ marginTop: 6 }}>
+            <figcaption class="hf-mono hf-tiny hf-muted og-page__url">
               {previewUrl || '/api/admin/og/preview?…'}
             </figcaption>
           </figure>
 
           {/* 社交平台预览 */}
-          <h3 class="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', letterSpacing: '.05em', margin: '24px 0 8px' }}>
+          <h3 class="hf-mono hf-tiny og-page__section-label">
             ▸ 社交平台预览
           </h3>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 12 }}>
+          <div class="og-page__social-grid">
             <SocialCard label="Twitter / X" platform="twitter" previewUrl={previewUrl} note={note} />
             <SocialCard label="微信 / WeChat" platform="wechat" previewUrl={previewUrl} note={note} />
             <SocialCard label="Telegram" platform="telegram" previewUrl={previewUrl} note={note} />
           </div>
 
           {/* 批量生成 */}
-          <section aria-labelledby="og-batch-h" style={{ marginTop: 24, padding: 16, border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', background: 'var(--bg-soft)' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+          <section aria-labelledby="og-batch-h" class="og-page__batch">
+            <div class="og-page__batch-head">
               <h3 id="og-batch-h" style={{ margin: 0, fontSize: 14 }}>批量生成</h3>
               <Tag tone="accent">{publicNotes.length} 篇公开文章</Tag>
               <div class="hf-grow" />
@@ -208,12 +348,12 @@ export function OgPage(): JSX.Element {
         </section>
 
         {/* sidebar — template + 变量 */}
-        <aside aria-label="OG 设置">
+        <aside aria-label="OG 设置" class="og-page__settings">
           {/* 模板选择 */}
           <h3 class="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', margin: '0 0 8px', letterSpacing: '.05em' }}>
             ▸ 模板
           </h3>
-          <ul role="radiogroup" aria-label="选择 OG 模板" style={{ listStyle: 'none', margin: 0, padding: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8, marginBottom: 18 }}>
+          <ul role="radiogroup" aria-label="选择 OG 模板" class="og-page__template-grid">
             {TEMPLATES.map((t) => (
               <li key={t.id}>
                 <button
@@ -263,7 +403,7 @@ export function OgPage(): JSX.Element {
           <h3 class="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', margin: '0 0 8px', letterSpacing: '.05em' }}>
             ▸ 变量(覆盖文章默认)
           </h3>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: 14 }}>
+          <div class="og-page__fields">
             <Field label="标题" placeholder={note?.title ?? ''} value={ovr.title ?? ''} onInput={onChangeOverride('title')} />
             <Field label="描述" placeholder="(空则用 frontmatter)" value={ovr.description ?? ''} onInput={onChangeOverride('description')} multiline />
             <Field label="作者" placeholder="(空则用站点作者)" value={ovr.author ?? ''} onInput={onChangeOverride('author')} />
@@ -275,7 +415,7 @@ export function OgPage(): JSX.Element {
             应用并刷新预览
           </Button>
 
-          <div style={{ marginTop: 14, padding: 10, background: 'var(--bg-sunk)', border: '1px solid var(--line)', borderRadius: 'var(--radius)' }}>
+          <div class="og-page__test-link">
             <div class="hf-mono hf-tiny" style={{ color: 'var(--ink-3)', marginBottom: 4 }}>测试链接</div>
             <code style={{ fontFamily: 'var(--mono)', fontSize: 10, wordBreak: 'break-all', color: 'var(--accent)' }}>
               {slug ? api.og.publicUrl(slug, tmpl) : '/og/<slug>.png'}

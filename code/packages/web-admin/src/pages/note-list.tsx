@@ -52,12 +52,13 @@ export function formatNoteListHeader(
   return `${noteCount} 篇`;
 }
 
-export function NoteList(): JSX.Element {
+export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean }): JSX.Element {
   const [view, setView] = useState<ViewMode>(readView);
   const [path, setPath] = useState<string>(readPath);
   const [tree, setTree] = useState<FolderTreeResponse | null>(null);
   const [notes, setNotes] = useState<NoteSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [idleSlugs, setIdleSlugs] = useState<Set<string> | null>(null);
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Visibility | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('updated');
@@ -91,6 +92,21 @@ export function NoteList(): JSX.Element {
     else void loadTree(path);
   }, [view, path]);
 
+  useEffect(() => {
+    if (!shortLinkIdle) {
+      setIdleSlugs(null);
+      return;
+    }
+    setView('flat');
+    api
+      .idleShortLinks(30)
+      .then((r) => {
+        setIdleSlugs(new Set(r.items.map((item) => item.slug)));
+        setError(null);
+      })
+      .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
+  }, [shortLinkIdle]);
+
   const reload = (): Promise<void> =>
     view === 'flat' ? loadFlat() : loadTree(path);
 
@@ -98,6 +114,7 @@ export function NoteList(): JSX.Element {
   const filteredFlat = useMemo(() => {
     if (!notes) return [];
     let arr = notes;
+    if (shortLinkIdle && idleSlugs) arr = arr.filter((n) => idleSlugs.has(n.slug));
     if (filter !== 'all') arr = arr.filter((n) => n.visibility === filter);
     const q = query.trim().toLowerCase();
     if (q) {
@@ -109,7 +126,7 @@ export function NoteList(): JSX.Element {
       );
     }
     return sortNotes(arr, sort);
-  }, [notes, query, filter, sort]);
+  }, [notes, query, filter, sort, shortLinkIdle, idleSlugs]);
 
   // 目录视图筛选(只在当前层笔记上跑)
   const filteredTreeNotes = useMemo(() => {
@@ -195,6 +212,22 @@ export function NoteList(): JSX.Element {
           }}
         >
           {error}
+        </div>
+      )}
+
+      {shortLinkIdle && (
+        <div
+          role="status"
+          class="hf-tiny"
+          style={{
+            padding: 10,
+            marginBottom: 12,
+            background: 'var(--warn-soft)',
+            borderRadius: 6,
+            color: 'var(--warn-text)',
+          }}
+        >
+          正在查看 30 天无访问的短链笔记。{idleSlugs ? `匹配 ${idleSlugs.size} 篇。` : '载入中…'}
         </div>
       )}
 
@@ -601,20 +634,15 @@ function NoteRow({
   onSetVisibility: (v: Visibility) => void;
   zebra: boolean;
 }): JSX.Element {
-  const [hover, setHover] = useState(false);
   return (
     <tr
-      onMouseEnter={() => setHover(true)}
-      onMouseLeave={() => setHover(false)}
-      onFocus={() => setHover(true)}
-      onBlur={() => setHover(false)}
       style={{
         background: zebra ? 'var(--bg-soft)' : 'transparent',
         opacity: isBusy ? 0.5 : 1,
         borderBottom: '1px solid var(--line)',
       }}
     >
-      <td style={td()}>
+      <td data-label="标题" style={td()}>
         <a
           href={`#/notes/${encodeURIComponent(note.slug)}`}
           style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 500 }}
@@ -625,7 +653,7 @@ function NoteRow({
           {note.source_path ?? note.slug}
         </div>
       </td>
-      <td style={td()}>
+      <td data-label="可见性" style={td()}>
         <span
           class={`ui-badge ui-badge--${note.visibility}`}
           aria-label={`可见性:${visLabel(note.visibility)}`}
@@ -633,10 +661,10 @@ function NoteRow({
           {visLabel(note.visibility)}
         </span>
       </td>
-      <td style={td()} aria-label={note.searchable ? '可搜索' : '不可搜索'}>
+      <td data-label="搜索" style={td()} aria-label={note.searchable ? '可搜索' : '不可搜索'}>
         {note.searchable ? '✓' : '—'}
       </td>
-      <td style={td()}>
+      <td data-label="短链" style={td()}>
         {note.short_id ? (
           <code class="hf-mono hf-tiny" style={{ color: 'var(--accent)' }}>
             /n/{note.short_id}
@@ -645,19 +673,18 @@ function NoteRow({
           <span class="hf-tiny hf-muted">—</span>
         )}
       </td>
-      <td style={td()} class="hf-mono hf-tiny">
+      <td data-label="字数" style={td()} class="hf-mono hf-tiny">
         {note.word_count}
       </td>
-      <td style={td()} class="hf-mono hf-tiny hf-muted">
+      <td data-label="更新" style={td()} class="hf-mono hf-tiny hf-muted">
         <time dateTime={note.updated_at.slice(0, 10)}>{note.updated_at.slice(0, 10)}</time>
       </td>
-      <td style={{ ...td(), textAlign: 'right' }}>
+      <td data-label="操作" style={{ ...td(), textAlign: 'right' }}>
         <div
           style={{
             display: 'flex',
             gap: 4,
             justifyContent: 'flex-end',
-            visibility: hover ? 'visible' : 'hidden',
           }}
         >
           <Dropdown

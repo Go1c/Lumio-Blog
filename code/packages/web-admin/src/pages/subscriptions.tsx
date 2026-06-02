@@ -180,14 +180,14 @@ export function SubscriptionsPage() {
                   const active = !s.unsubscribed_at;
                   return (
                     <tr key={s.email} class={active ? '' : 'ws-e__row--dim'}>
-                      <td><code class="hf-mono hf-tiny">{s.email}</code></td>
-                      <td><span class="hf-mono hf-tiny hf-muted">{s.source}</span></td>
-                      <td>
+                      <td data-label="邮箱"><code class="hf-mono hf-tiny">{s.email}</code></td>
+                      <td data-label="来源"><span class="hf-mono hf-tiny hf-muted">{s.source}</span></td>
+                      <td data-label="状态">
                         {active ? <Tag tone="ok">活跃</Tag> : <Tag tone="warn">退订</Tag>}
                       </td>
-                      <td class="hf-mono hf-tiny hf-muted">{fmtTs(s.subscribed_at)}</td>
-                      <td class="hf-mono hf-tiny hf-muted">{s.unsubscribed_at ? fmtTs(s.unsubscribed_at) : '—'}</td>
-                      <td>
+                      <td data-label="订阅时间" class="hf-mono hf-tiny hf-muted">{fmtTs(s.subscribed_at)}</td>
+                      <td data-label="退订时间" class="hf-mono hf-tiny hf-muted">{s.unsubscribed_at ? fmtTs(s.unsubscribed_at) : '—'}</td>
+                      <td data-label="操作">
                         {active && (
                           <button
                             type="button"

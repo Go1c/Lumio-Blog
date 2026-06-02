@@ -99,6 +99,7 @@ export function Dashboard(): JSX.Element {
   const [activity, setActivity] = useState<ActivityItem[]>([]);
   const [sseConnected, setSseConnected] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [syncMessage, setSyncMessage] = useState<{ msg: string; err?: boolean } | null>(null);
 
   useEffect(() => {
     let cancelled = false;
@@ -210,6 +211,18 @@ export function Dashboard(): JSX.Element {
   const totalNotes = notes?.length ?? 0;
   const visibleCount = (counts['public'] ?? 0) + (counts['link-only'] ?? 0);
   const recentActivityCount = activity.length;
+
+  const runManualSync = async (): Promise<void> => {
+    setSyncMessage({ msg: '正在同步…' });
+    try {
+      await api.sync();
+      setSyncMessage({ msg: '同步请求已完成。事件流会继续显示后续变化。' });
+      const h = await api.health().catch(() => null);
+      if (h) setHealth(h);
+    } catch (e) {
+      setSyncMessage({ msg: e instanceof Error ? e.message : String(e), err: true });
+    }
+  };
 
   return (
     <div class="dash">
@@ -429,10 +442,23 @@ export function Dashboard(): JSX.Element {
             </div>
           </div>
           <div class="hf-grow" />
-          <Button size="sm" onClick={() => void api.sync().catch(() => {/* ignore */})}>
+          <Button size="sm" onClick={() => void runManualSync()}>
             <HfIcon name="sync" size={12} /> 手动同步
           </Button>
         </div>
+        {syncMessage && (
+          <div
+            role={syncMessage.err ? 'alert' : 'status'}
+            aria-live="polite"
+            class="hf-tiny"
+            style={{
+              marginTop: 10,
+              color: syncMessage.err ? 'var(--danger-text)' : 'var(--ok-text)',
+            }}
+          >
+            {syncMessage.msg}
+          </div>
+        )}
       </div>
     </div>
   );

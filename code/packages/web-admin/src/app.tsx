@@ -21,13 +21,13 @@ import { AnalyticsOverviewPage } from './pages/analytics-overview.js';
 
 type Route =
   | { name: 'dashboard' }
-  | { name: 'list' }
+  | { name: 'list'; shortLinkIdle?: boolean }
   | { name: 'detail'; slug: string }
   | { name: 'analytics'; slug: string }
   | { name: 'tokens' }
   | { name: 'webhooks' }
   | { name: 'settings'; section: SettingsSectionId }
-  | { name: 'audit' }
+  | { name: 'audit'; actionPrefix?: string }
   | { name: 'media' }
   | { name: 'og' }
   | { name: 'backup' }
@@ -37,10 +37,23 @@ type Route =
   | { name: 'subscriptions' }
   | { name: 'analytics-overview' };
 
-function readRoute(): Route {
-  const hash = location.hash.replace(/^#\/?/, '');
+export interface ParsedRoute {
+  route: Route;
+  query: URLSearchParams;
+}
+
+export function parseRouteHash(rawHash: string): ParsedRoute {
+  const normalized = rawHash.replace(/^#\/?/, '');
+  const [hash = '', queryString = ''] = normalized.split('?');
+  const query = new URLSearchParams(queryString);
+
+  const route = routeFromHashPath(hash, query);
+  return { route, query };
+}
+
+function routeFromHashPath(hash: string, query: URLSearchParams): Route {
   if (hash === '' || hash === 'dashboard') return { name: 'dashboard' };
-  if (hash === 'notes') return { name: 'list' };
+  if (hash === 'notes') return { name: 'list', shortLinkIdle: query.get('short_link_idle') === '1' };
   if (hash.startsWith('notes/')) {
     const rest = hash.slice(6);
     // notes/<slug>/analytics
@@ -50,7 +63,10 @@ function readRoute(): Route {
   }
   if (hash === 'tokens') return { name: 'tokens' };
   if (hash === 'webhooks') return { name: 'webhooks' };
-  if (hash === 'audit') return { name: 'audit' };
+  if (hash === 'audit') {
+    const actionPrefix = query.get('action_prefix');
+    return actionPrefix ? { name: 'audit', actionPrefix } : { name: 'audit' };
+  }
   if (hash === 'media') return { name: 'media' };
   if (hash === 'og') return { name: 'og' };
   if (hash === 'backup') return { name: 'backup' };
@@ -68,6 +84,10 @@ function readRoute(): Route {
     return { name: 'settings', section: valid };
   }
   return { name: 'dashboard' };
+}
+
+function readRoute(): ParsedRoute {
+  return parseRouteHash(location.hash);
 }
 
 function currentPath(route: Route): string {
@@ -146,11 +166,13 @@ function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
 
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
-  const [route, setRoute] = useState<Route>(readRoute());
+  const [parsedRoute, setParsedRoute] = useState<ParsedRoute>(readRoute());
+  const [syncStatus, setSyncStatus] = useState<{ msg: string; err?: boolean } | null>(null);
+  const route = parsedRoute.route;
 
   useEffect(() => {
     api.me().then((r) => setAuthed(r.authenticated)).catch(() => setAuthed(false));
-    const onHash = () => setRoute(readRoute());
+    const onHash = () => setParsedRoute(readRoute());
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
@@ -158,7 +180,14 @@ export function App() {
   if (authed === null) return <main aria-busy="true"><p>loading…</p></main>;
   if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
 
-  const onSync = () => { void api.sync().then(() => location.reload()); };
+  const onSync = () => {
+    setSyncStatus({ msg: '正在同步内容…' });
+    void api.sync()
+      .then(() => setSyncStatus({ msg: '同步已完成。切换页面或刷新后可看到最新内容。' }))
+      .catch((e: unknown) => {
+        setSyncStatus({ msg: e instanceof Error ? e.message : String(e), err: true });
+      });
+  };
   const onLogout = () => { void api.logout().then(() => setAuthed(false)); };
 
   return (
@@ -170,14 +199,31 @@ export function App() {
       siteName="Lumio Blog"
       userInitials="L"
     >
+      {syncStatus && (
+        <div
+          role={syncStatus.err ? 'alert' : 'status'}
+          aria-live="polite"
+          class="hf-tiny"
+          style={{
+            padding: '10px 12px',
+            marginBottom: 12,
+            borderRadius: 8,
+            border: '1px solid var(--line)',
+            background: syncStatus.err ? 'var(--danger-soft)' : 'var(--ok-soft)',
+            color: syncStatus.err ? 'var(--danger-text)' : 'var(--ok-text)',
+          }}
+        >
+          {syncStatus.msg}
+        </div>
+      )}
       {route.name === 'dashboard' && <Dashboard />}
-      {route.name === 'list' && <NoteList />}
+      {route.name === 'list' && <NoteList shortLinkIdle={route.shortLinkIdle ?? false} />}
       {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
       {route.name === 'analytics' && <NoteAnalyticsPage slug={route.slug} />}
       {route.name === 'tokens' && <TokensPage />}
       {route.name === 'webhooks' && <WebhooksPage />}
       {route.name === 'settings' && <SettingsPage section={route.section} />}
-      {route.name === 'audit' && <AuditPage />}
+      {route.name === 'audit' && <AuditPage initialActionPrefix={route.actionPrefix ?? ''} />}
       {route.name === 'media' && <MediaPage />}
       {route.name === 'og' && <OgPage />}
       {route.name === 'backup' && <BackupPage />}

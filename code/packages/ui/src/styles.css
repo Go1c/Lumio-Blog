@@ -319,6 +319,7 @@ button.ui-tag { cursor: pointer; }
 @media (max-width: 720px) {
   .ui-admin {
     grid-template-columns: 1fr;
+    grid-template-rows: 74px auto;
     height: auto;
     min-height: 100vh;
     overflow-x: hidden;
@@ -331,6 +332,7 @@ button.ui-tag { cursor: pointer; }
     align-items: center;
     gap: 8px;
     padding: 8px 10px;
+    height: 74px;
     max-height: 74px;
     border-right: 0;
     border-bottom: 1px solid var(--line);

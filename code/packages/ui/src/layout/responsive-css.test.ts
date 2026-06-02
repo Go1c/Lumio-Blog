@@ -6,7 +6,9 @@ describe('shared responsive shell CSS', () => {
     expect(ALL_CSS).toContain('@media (max-width: 720px)');
     expect(ALL_CSS).toContain('.ui-admin {');
     expect(ALL_CSS).toContain('grid-template-columns: 1fr');
+    expect(ALL_CSS).toContain('grid-template-rows: 74px auto');
     expect(ALL_CSS).toContain('.ui-admin__sidebar');
+    expect(ALL_CSS).toContain('\n    height: 74px;');
     expect(ALL_CSS).toContain('max-height: 74px');
     expect(ALL_CSS).toContain('.ui-admin__group-label { display: none; }');
     expect(ALL_CSS).toContain('.ui-admin__brand-text { display: none; }');
