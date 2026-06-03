@@ -4,6 +4,7 @@ import {
   buildLumioArticles,
   categoryCounts,
   LUMIO_ARTICLE_TOTAL,
+  LUMIO_CATEGORY_COUNTS,
   LUMIO_FEATURED_ARTICLE,
   renderArticleCard,
   renderFeatureArticle,
@@ -16,15 +17,17 @@ export function renderArticles(
   config: SiteConfig,
 ): string {
   const articles = buildLumioArticles(posts, byTag);
-  const counts = categoryCounts(articles);
+  const hasPosts = posts.length > 0;
+  const total = hasPosts ? articles.length : LUMIO_ARTICLE_TOTAL;
+  const counts = hasPosts ? categoryCounts(articles) : LUMIO_CATEGORY_COUNTS;
   const chips = [
-    `<button class="chip is-active" type="button" data-filter="全部">全部<span class="chip__n">${LUMIO_ARTICLE_TOTAL}</span></button>`,
+    `<button class="chip is-active" type="button" data-filter="全部">全部<span class="chip__n">${total}</span></button>`,
     ...counts.map(
       ({ name, count }) =>
         `<button class="chip" type="button" data-filter="${esc(name)}">${esc(name)}<span class="chip__n">${count}</span></button>`,
     ),
   ].join('');
-  const feature = renderFeatureArticle(LUMIO_FEATURED_ARTICLE);
+  const feature = renderFeatureArticle(hasPosts ? articles[0]! : LUMIO_FEATURED_ARTICLE);
   const cards = articles
     .map((article) => renderArticleCard(article, `data-cat="${esc(article.category)}"`))
     .join('');

@@ -1,6 +1,6 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
-import { renderPageHead } from './lumio-design.js';
+import { buildLumioArticles, renderPageHead } from './lumio-design.js';
 
 interface ColumnItem {
   name: string;
@@ -51,8 +51,7 @@ export function renderColumns(
   byTag: Map<string, NoteRow[]>,
   config: SiteConfig,
 ): string {
-  void posts;
-  void byTag;
+  const counts = posts.length ? countByCategory(posts, byTag) : null;
   const cards = COLUMNS.map((column) => `
     <a class="col-card" href="/articles/index.html?cat=${encodeURIComponent(column.cat)}">
       <div class="col-card__cover thumb ${esc(column.tone)}">
@@ -65,7 +64,7 @@ export function renderColumns(
         <div class="col-card__foot">
           <span class="col-card__count">
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>
-            ${column.fallbackCount} 篇文章
+            ${counts ? counts.get(column.cat) ?? 0 : column.fallbackCount} 篇文章
           </span>
           <span class="btn-ghost">订阅专栏</span>
         </div>
@@ -85,4 +84,12 @@ export function renderColumns(
     body,
     active: 'columns',
   });
+}
+
+function countByCategory(posts: NoteRow[], byTag: Map<string, NoteRow[]>): Map<string, number> {
+  const counts = new Map<string, number>();
+  for (const article of buildLumioArticles(posts, byTag)) {
+    counts.set(article.category, (counts.get(article.category) ?? 0) + 1);
+  }
+  return counts;
 }

@@ -26,6 +26,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
   const articles = buildLumioArticles(sortHomePosts(data.posts), data.byTag);
   const firstRow = articles.slice(0, 3).map((article) => renderArticleCard(article)).join('');
   const secondRow = articles.slice(3, 6).map((article) => renderArticleCard(article)).join('');
+  const secondGrid = secondRow ? `<div class="grid">${secondRow}</div>` : '';
 
   const body = `
     <div class="body">
@@ -50,7 +51,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
         </div>
         <div class="grid">${firstRow}</div>
         ${renderAdSlot(config)}
-        <div class="grid">${secondRow || articles.slice(0, 3).map((article) => renderArticleCard(article)).join('')}</div>
+        ${secondGrid}
         ${renderSubscribe()}
       </main>
     </div>`;

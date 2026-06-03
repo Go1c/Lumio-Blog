@@ -38,11 +38,12 @@ function note(overrides: Partial<Record<string, unknown>>) {
   } as any;
 }
 
-describe('renderHome design fidelity', () => {
-  it('keeps the Lumio handoff article cards instead of leaking live post titles into the showcase', () => {
+describe('renderHome article data', () => {
+  it('renders backend posts with clickable post links when posts exist', () => {
     const livePost = note({
       slug: 'live',
       title: '一个提示词,让 Codex 自动写代码',
+      summary: '真实后端文章摘要',
       word_count: 800,
       updated_at: '2026-06-02T00:00:00.000Z',
     });
@@ -59,10 +60,28 @@ describe('renderHome design fidelity', () => {
       config,
     );
 
+    expect(html).toContain('一个提示词,让 Codex 自动写代码');
+    expect(html).toContain('真实后端文章摘要');
+    expect(html).toContain('href="/posts/live.html"');
+    expect(html).not.toContain('Unity 性能调优');
+  });
+
+  it('uses Lumio design cards only as the empty-state fallback', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      config,
+    );
+
     expect(html).toContain('渲染优化实战');
     expect(html).toContain('Unity 性能调优');
-    expect(html).toContain('工具链提效');
-    expect(html).not.toContain('一个提示词,让 Codex 自动写代码');
+    expect(html).not.toContain('href="#"');
   });
 });
 

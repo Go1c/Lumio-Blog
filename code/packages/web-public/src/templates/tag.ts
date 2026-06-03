@@ -2,6 +2,7 @@ import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { isoDate } from '../partials/shared.js';
 import {
+  buildLumioArticles,
   LUMIO_RENDER_TAG_ARTICLES,
   LUMIO_TAGS,
   renderArticleCard,
@@ -12,22 +13,24 @@ import {
  * 全部标签索引页
  */
 export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig): string {
-  void byTag;
-  const tagItems = LUMIO_TAGS
-    .map((tag) => {
-      const size = tag.size ? ` ${tag.size}` : '';
-      const tone = tag.tone ? ` ${tag.tone}` : '';
-      return `<a class="tag-pill${size}${tone}" href="/tags/${esc(encodeURIComponent(tag.name))}.html">${esc(tag.name)}<span class="tag-pill__n">${tag.count}</span></a>`;
-    })
+  const tags = buildTagCloud(byTag);
+  const tagItems = tags
+    .map((tag) => renderTagPill(tag))
     .join('');
-  const cards = LUMIO_RENDER_TAG_ARTICLES.map((article) => renderArticleCard(article)).join('');
+  const topTag = tags[0];
+  const topTagNotes = topTag ? byTag.get(topTag.name) ?? [] : [];
+  const topTagTitle = topTag && topTagNotes.length ? topTag.name : '渲染';
+  const topArticles = topTagNotes.length
+    ? buildLumioArticles(sortTagNotes(topTagNotes), byTag).slice(0, 3)
+    : LUMIO_RENDER_TAG_ARTICLES;
+  const cards = topArticles.map((article) => renderArticleCard(article)).join('');
   const body = `
     ${renderPageHead('Tags', '标签', '按主题快速找到你关心的内容,标签越大代表文章越多。')}
     <main class="page">
       <h2 class="section-title">热门标签</h2>
       <div class="tagcloud" aria-label="所有标签">${tagItems}</div>
 
-      <h2 class="section-title" style="margin-top:34px;">#渲染 下的文章</h2>
+      <h2 class="section-title" style="margin-top:34px;">#${esc(topTagTitle)} 下的文章</h2>
       <div class="grid-4">${cards}</div>
     </main>`;
   return layout({
@@ -38,6 +41,47 @@ export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig
     active: 'tags',
     path: '/tags/index.html',
   });
+}
+
+function buildTagCloud(byTag: Map<string, NoteRow[]>): typeof LUMIO_TAGS {
+  const entries = [...byTag.entries()]
+    .filter(([, notes]) => notes.length > 0)
+    .sort((a, b) => {
+      const count = b[1].length - a[1].length;
+      if (count !== 0) return count;
+      return a[0].localeCompare(b[0], 'zh-Hans-CN');
+    });
+  if (!entries.length) return LUMIO_TAGS;
+
+  const tones = ['', 's-mint', 's-amber', 's-violet', 's-sky', 's-rose'];
+  return entries.map(([name, notes], index) => {
+    const tag: (typeof LUMIO_TAGS)[number] = { name, count: notes.length };
+    if (index < 2) tag.size = 'is-big';
+    else if (index < 6) tag.size = 'is-mid';
+    const tone = tones[index % tones.length];
+    if (tone) tag.tone = tone;
+    return tag;
+  });
+}
+
+function renderTagPill(tag: (typeof LUMIO_TAGS)[number]): string {
+  const size = tag.size ? ` ${tag.size}` : '';
+  const tone = tag.tone ? ` ${tag.tone}` : '';
+  return `<a class="tag-pill${size}${tone}" href="/tags/${esc(encodeURIComponent(tag.name))}.html">${esc(tag.name)}<span class="tag-pill__n">${tag.count}</span></a>`;
+}
+
+function sortTagNotes(notes: NoteRow[]): NoteRow[] {
+  return [...notes].sort((a, b) => {
+    const date = sortDateMs(b) - sortDateMs(a);
+    if (date !== 0) return date;
+    return a.slug.localeCompare(b.slug, 'zh-Hans-CN');
+  });
+}
+
+function sortDateMs(n: NoteRow): number {
+  const raw = n.published_at || n.updated_at || n.created_at || '';
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? ms : 0;
 }
 
 /**

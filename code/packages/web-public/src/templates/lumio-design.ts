@@ -1,4 +1,5 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
+import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { esc } from './layout.js';
 
 export interface LumioArticle {
@@ -12,6 +13,8 @@ export interface LumioArticle {
   href: string;
   art: string;
 }
+
+const CATEGORY_ORDER = ['渲染', '性能', '图形学', '架构', '网络', '工具'];
 
 const TONE_BY_CATEGORY = new Map<string, string>([
   ['渲染', 't-blue'],
@@ -104,20 +107,38 @@ function articleFallback(
     date,
     minutes,
     views: `${(2.4 + index * 0.2).toFixed(1)}k`,
-    href: '#',
+    href: `/articles/index.html?cat=${encodeURIComponent(category)}`,
     art: artForTone(tone, index),
   };
 }
 
 export function buildLumioArticles(posts: NoteRow[], byTag: Map<string, NoteRow[]>): LumioArticle[] {
-  void posts;
-  void byTag;
-  return LUMIO_DESIGN_ARTICLES;
+  if (!posts.length) return LUMIO_DESIGN_ARTICLES;
+  return posts.map((post, index) => {
+    const tags = tagsForSlug(byTag, post.slug);
+    const category = pickCategory(tags, index);
+    const tone = TONE_BY_CATEGORY.get(category) ?? toneByIndex(index);
+    const bodyExcerpt = post.body_text.trim().slice(0, 96);
+    return {
+      title: post.title,
+      description: post.summary?.trim() || bodyExcerpt || '这篇文章记录了游戏开发过程中的关键实践与技术取舍。',
+      category,
+      tone,
+      date: isoDate(post),
+      minutes: post.reading_minutes || Math.max(1, Math.round((post.word_count || 400) / 400)),
+      views: `${Math.max(1.2, (post.word_count || 1200) / 780).toFixed(1)}k`,
+      href: `/posts/${post.slug}.html`,
+      art: artForTone(tone, index),
+    };
+  });
 }
 
 export function categoryCounts(articles: LumioArticle[]): Array<{ name: string; count: number }> {
-  void articles;
-  return LUMIO_CATEGORY_COUNTS;
+  const counts = new Map<string, number>();
+  for (const article of articles) counts.set(article.category, (counts.get(article.category) ?? 0) + 1);
+  const ordered = CATEGORY_ORDER.filter((name) => counts.has(name));
+  const extras = [...counts.keys()].filter((name) => !CATEGORY_ORDER.includes(name)).sort((a, b) => a.localeCompare(b, 'zh-Hans-CN'));
+  return [...ordered, ...extras].map((name) => ({ name, count: counts.get(name) ?? 0 }));
 }
 
 export function renderPageHead(eyebrow: string, title: string, sub: string): string {
@@ -134,7 +155,7 @@ export function renderArticleCard(article: LumioArticle, attrs = ''): string {
   const data = attrs ? ` ${attrs}` : '';
   return `
     <article class="card"${data}>
-      <a class="card__link" href="${article.href}">
+      <a class="card__link" href="${esc(article.href)}">
         <div class="thumb ${esc(article.tone)}">
           <div class="thumb__grid" aria-hidden="true"></div>
           <span class="badge">${esc(article.category)}</span>
@@ -152,7 +173,7 @@ export function renderArticleCard(article: LumioArticle, attrs = ''): string {
 export function renderFeatureArticle(article: LumioArticle): string {
   return `
     <article class="feature">
-      <a class="feature__link" href="${article.href}">
+      <a class="feature__link" href="${esc(article.href)}">
         <div class="feature__art thumb ${esc(article.tone)}">
           <div class="thumb__grid" aria-hidden="true"></div>
           <span class="badge">置顶</span>
@@ -233,6 +254,21 @@ function renderMeta(article: LumioArticle, includeViews = false): string {
       <span>${clockIcon()}${article.minutes} 分钟</span>
       ${includeViews ? `<span>${eyeIcon()}${esc(article.views)} 阅读</span>` : ''}
     </div>`;
+}
+
+function pickCategory(tags: string[], index: number): string {
+  const normalized = tags.join(' ').toLowerCase();
+  if (/渲染|render|gpu|draw|光栅/.test(normalized)) return '渲染';
+  if (/性能|perf|优化|内存|gc|profile/.test(normalized)) return '性能';
+  if (/shader|图形|lighting|光照|阴影/.test(normalized)) return '图形学';
+  if (/架构|ecs|engine|系统|模块/.test(normalized)) return '架构';
+  if (/网络|同步|net|server|socket/.test(normalized)) return '网络';
+  if (/工具|tool|workflow|自动化|cli/.test(normalized)) return '工具';
+  return CATEGORY_ORDER[index % CATEGORY_ORDER.length]!;
+}
+
+function toneByIndex(index: number): string {
+  return TONE_BY_CATEGORY.get(CATEGORY_ORDER[index % CATEGORY_ORDER.length]!) ?? 't-blue';
 }
 
 function artForTone(tone: string, index: number): string {
