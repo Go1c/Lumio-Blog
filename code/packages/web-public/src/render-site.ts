@@ -25,7 +25,7 @@ import { HOME_MOBILE_CSS } from './templates/home.js';
 import { POST_MOBILE_CSS } from './templates/post.js';
 import { TAG_MOBILE_CSS } from './templates/tag.js';
 import { HF_AD_CSS } from './partials/hf-ad.js';
-import { LUMIO_CSS } from './templates/lumio-design.js';
+import { LUMIO_CSS, LUMIO_POST_FINAL_CSS } from './templates/lumio-design.js';
 
 export interface RenderOptions {
   db: Database;
@@ -255,7 +255,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
 
   // CSS = ui token + 站点 CSS + obsidian.css(运行时 readFile,避免 build 时 inline)
   const obsidianCss = await readObsidianCss();
-  await writeFile(join(opts.out, 'styles.css'), CSS + '\n' + obsidianCss, 'utf-8');
+  await writeFile(join(opts.out, 'styles.css'), composeStyles(obsidianCss), 'utf-8');
 
   // 注入 obsidian 客户端运行时(canvas panzoom + html-embed iframe 自适应)
   await writeFile(
@@ -1380,3 +1380,8 @@ const CSS =
   HF_AD_CSS +
   '\n' +
   LUMIO_CSS;
+
+export function composeStyles(obsidianCss: string): string {
+  // Lumio post overrides must be last because obsidian.css owns .hf-prose defaults.
+  return CSS + '\n' + obsidianCss + '\n' + LUMIO_POST_FINAL_CSS;
+}

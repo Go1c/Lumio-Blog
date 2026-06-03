@@ -1395,3 +1395,88 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   .team { grid-template-columns: 1fr; }
 }
 `;
+
+export const LUMIO_POST_FINAL_CSS = `
+body.ui-public.lumio-public .post-head,
+body.ui-public.lumio-public .post-head__title,
+body.ui-public.lumio-public .post-head__sub,
+body.ui-public.lumio-public .post-head__meta {
+  color: #1E2A3A;
+}
+
+body.ui-public.lumio-public .post-head__title {
+  color: #243056;
+}
+
+body.ui-public.lumio-public .post-head__sub,
+body.ui-public.lumio-public .post-head__meta {
+  color: #4D5B7E;
+}
+
+body.ui-public.lumio-public .post-prose {
+  --ob-bg: #FFFFFF;
+  --ob-bg-soft: #F8FAFF;
+  --ob-bg-sunk: #F1F5FF;
+  --ob-text-normal: #1E2A3A;
+  --ob-text-muted: #4D5B7E;
+  --ob-text-faint: #6B7894;
+  --ob-text-accent: #6171F0;
+  --ob-line: #E7ECF6;
+  --ob-line-strong: #D4DCF5;
+  --ob-link-color: #6171F0;
+  color: #1E2A3A;
+  background: #FFFFFF;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose,
+body.ui-public.lumio-public .post-prose.hf-prose p,
+body.ui-public.lumio-public .post-prose.hf-prose li,
+body.ui-public.lumio-public .post-prose.hf-prose td,
+body.ui-public.lumio-public .post-prose.hf-prose th,
+body.ui-public.lumio-public .post-prose.hf-prose .callout__body {
+  color: #1E2A3A;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose h1,
+body.ui-public.lumio-public .post-prose.hf-prose h2,
+body.ui-public.lumio-public .post-prose.hf-prose h3,
+body.ui-public.lumio-public .post-prose.hf-prose h4,
+body.ui-public.lumio-public .post-prose.hf-prose h5,
+body.ui-public.lumio-public .post-prose.hf-prose h6 {
+  color: #243056;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose blockquote {
+  color: #4D5B7E;
+  background: #F3F6FF;
+  border-left-color: #6171F0;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose a {
+  color: #6171F0;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose code:not([class*="language-"]):not(.shiki *) {
+  color: #2F63E8;
+  background: #F1F5FF;
+  border-color: #D4DCF5;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose pre,
+body.ui-public.lumio-public .post-prose.hf-prose pre.shiki {
+  color: #1E2A3A;
+  background: #F8FAFF;
+  border-color: #D4DCF5;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose pre.shiki,
+body.ui-public.lumio-public .post-prose.hf-prose pre.shiki * {
+  color: var(--shiki-light, inherit) !important;
+  background-color: var(--shiki-light-bg, #F8FAFF) !important;
+}
+
+body.ui-public.lumio-public .post-prose.hf-prose table {
+  color: #1E2A3A;
+  border-color: #E7ECF6;
+}
+`;

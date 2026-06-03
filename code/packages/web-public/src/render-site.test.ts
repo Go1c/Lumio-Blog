@@ -2,7 +2,7 @@ import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { describe, expect, it } from 'vitest';
-import { HTML_ALIAS_FILES, removeStaleHtmlFiles, STATIC_ASSETS } from './render-site.js';
+import { composeStyles, HTML_ALIAS_FILES, removeStaleHtmlFiles, STATIC_ASSETS } from './render-site.js';
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -38,5 +38,20 @@ describe('static assets', () => {
   it('publishes extensionless-friendly aliases for about and RSS URLs', () => {
     expect(HTML_ALIAS_FILES).toContainEqual({ source: 'about.html', alias: 'about/index.html' });
     expect(HTML_ALIAS_FILES).toContainEqual({ source: 'feed.xml', alias: 'rss.xml' });
+  });
+});
+
+describe('composeStyles', () => {
+  it('appends Lumio article contrast overrides after Obsidian prose defaults', () => {
+    const obsidianCss = '.hf-prose { color: var(--ob-text-normal); }';
+    const styles = composeStyles(obsidianCss);
+    const obsidianIndex = styles.indexOf(obsidianCss);
+    const lumioIndex = styles.indexOf('body.ui-public.lumio-public .post-prose {');
+
+    expect(obsidianIndex).toBeGreaterThan(-1);
+    expect(lumioIndex).toBeGreaterThan(obsidianIndex);
+    expect(styles).toContain('--ob-text-normal: #1E2A3A');
+    expect(styles).toContain('body.ui-public.lumio-public .post-prose.hf-prose p');
+    expect(styles).toContain('color: #1E2A3A');
   });
 });
