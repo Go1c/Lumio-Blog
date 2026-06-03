@@ -3,6 +3,8 @@ import { layout, esc } from './layout.js';
 import {
   buildLumioArticles,
   categoryCounts,
+  LUMIO_ARTICLE_TOTAL,
+  LUMIO_FEATURED_ARTICLE,
   renderArticleCard,
   renderFeatureArticle,
   renderPageHead,
@@ -16,13 +18,13 @@ export function renderArticles(
   const articles = buildLumioArticles(posts, byTag);
   const counts = categoryCounts(articles);
   const chips = [
-    `<button class="chip is-active" type="button" data-filter="全部">全部<span class="chip__n">${articles.length}</span></button>`,
+    `<button class="chip is-active" type="button" data-filter="全部">全部<span class="chip__n">${LUMIO_ARTICLE_TOTAL}</span></button>`,
     ...counts.map(
       ({ name, count }) =>
         `<button class="chip" type="button" data-filter="${esc(name)}">${esc(name)}<span class="chip__n">${count}</span></button>`,
     ),
   ].join('');
-  const feature = renderFeatureArticle(articles[0]!);
+  const feature = renderFeatureArticle(LUMIO_FEATURED_ARTICLE);
   const cards = articles
     .map((article) => renderArticleCard(article, `data-cat="${esc(article.category)}"`))
     .join('');

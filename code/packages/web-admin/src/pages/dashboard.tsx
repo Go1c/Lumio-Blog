@@ -1,8 +1,6 @@
 import type { JSX } from 'preact';
-import { useEffect, useMemo, useState } from 'preact/hooks';
-import type { AnalyticsOverview, TimeSeriesPoint } from '@opennote/core';
+import { useState } from 'preact/hooks';
 import { HfIcon } from '@opennote/ui';
-import { api, type NoteSummary, type SubscriberCounts } from '../api.js';
 
 interface AdItem {
   id: string;
@@ -12,31 +10,48 @@ interface AdItem {
   enabled: boolean;
 }
 
+interface TrendPoint {
+  label: string;
+  height: number;
+}
+
+interface DashboardRow {
+  slug: string;
+  title: string;
+  author: string;
+  category: string;
+  categoryClass: string;
+  status: string;
+  statusClass: string;
+  views: string;
+  date: string;
+}
+
 const ADS_SEED: AdItem[] = [
-  { id: 'top-banner', name: '首页横幅广告', url: 'https://partner.example.com/banner', weeklyClicks: 428, enabled: true },
-  { id: 'shader-kit', name: 'Shader 工具包', url: 'https://partner.example.com/shader-kit', weeklyClicks: 286, enabled: true },
-  { id: 'engine-course', name: '游戏引擎课程', url: 'https://partner.example.com/engine', weeklyClicks: 141, enabled: false },
+  { id: 'home-feed-banner', name: '首页信息流横幅', url: 'example.com/promo', weeklyClicks: 728, enabled: true },
+  { id: 'sidebar-square', name: '侧边栏方图', url: 'partner.io/x', weeklyClicks: 214, enabled: true },
+  { id: 'post-footer-promo', name: '文末推广', url: '-', weeklyClicks: 116, enabled: false },
 ];
 
-const DEFAULT_TREND: TimeSeriesPoint[] = [
-  { date: 'Mon', value: 42 },
-  { date: 'Tue', value: 58 },
-  { date: 'Wed', value: 49 },
-  { date: 'Thu', value: 71 },
-  { date: 'Fri', value: 64 },
-  { date: 'Sat', value: 88 },
-  { date: 'Sun', value: 76 },
+const TREND: TrendPoint[] = [
+  { label: '周一', height: 52 },
+  { label: '周二', height: 68 },
+  { label: '周三', height: 45 },
+  { label: '周四', height: 80 },
+  { label: '周五', height: 62 },
+  { label: '周六', height: 91 },
+  { label: '周日', height: 74 },
 ];
 
-const WEEKDAY_LABELS: Record<string, string> = {
-  Mon: '周一',
-  Tue: '周二',
-  Wed: '周三',
-  Thu: '周四',
-  Fri: '周五',
-  Sat: '周六',
-  Sun: '周日',
-};
+const ROWS: DashboardRow[] = [
+  row('render-pipeline', '深入 GPU 渲染管线:从顶点到像素', '林辰', '渲染', 'c-blue', '已发布', 'pub', '3.2k', '2026-05-30'),
+  row('render-optimization', '渲染优化实战', '林辰', '渲染', 'c-blue', '已发布', 'pub', '2.1k', '2026-05-28'),
+  row('unity-performance', 'Unity 性能调优', '叶舟', '性能', 'c-mint', '已发布', 'pub', '1.8k', '2026-05-25'),
+  row('shader-guide', 'Shader 入门指南', '明月', '图形学', 'c-amber', '待审核', 'review', '-', '2026-05-22'),
+  row('architecture-notes', '架构设计笔记', '周岩', '架构', 'c-violet', '已发布', 'pub', '1.5k', '2026-05-20'),
+  row('network-sync', '网络同步方案', '周岩', '网络', 'c-sky', '草稿', 'draft', '-', '2026-05-18'),
+  row('toolchain-boost', '工具链提效', '明月', '工具', 'c-rose', '已发布', 'pub', '980', '2026-05-15'),
+];
 
 export const DASHBOARD_RESPONSIVE_STYLE = `
 .adm-body { min-width: 0; }
@@ -81,81 +96,44 @@ function DashboardStyles(): null {
 }
 
 export function Dashboard(): JSX.Element {
-  const [overview, setOverview] = useState<AnalyticsOverview | null>(null);
-  const [series, setSeries] = useState<TimeSeriesPoint[] | null>(null);
-  const [notes, setNotes] = useState<NoteSummary[]>([]);
-  const [subscribers, setSubscribers] = useState<SubscriberCounts | null>(null);
   const [ads, setAds] = useState<AdItem[]>(ADS_SEED);
-  const [error, setError] = useState<string | null>(null);
-
-  useEffect(() => {
-    let cancelled = false;
-    void Promise.allSettled([
-      api.analytics.overview('30d'),
-      api.analytics.timeseries('7d', 'views'),
-      api.listNotes(),
-      api.subscribers.list(true),
-    ]).then(([overviewResult, seriesResult, notesResult, subscribersResult]) => {
-      if (cancelled) return;
-      if (overviewResult.status === 'fulfilled') setOverview(overviewResult.value);
-      if (seriesResult.status === 'fulfilled') setSeries(seriesResult.value.points);
-      if (notesResult.status === 'fulfilled') setNotes(notesResult.value.notes);
-      if (subscribersResult.status === 'fulfilled') setSubscribers(subscribersResult.value.counts);
-      const failed = [overviewResult, seriesResult, notesResult, subscribersResult].find((r) => r.status === 'rejected');
-      if (failed && failed.status === 'rejected') {
-        setError(failed.reason instanceof Error ? failed.reason.message : String(failed.reason));
-      }
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  const publishedCount = useMemo(
-    () => notes.filter((n) => n.visibility === 'public' || n.visibility === 'link-only').length,
-    [notes],
-  );
-  const adClicks = ads.reduce((sum, ad) => sum + ad.weeklyClicks, 0);
-  const trend = series && series.length ? series.slice(-7) : DEFAULT_TREND;
-  const rows = notes.length ? notes.slice(0, 7) : fallbackRows();
 
   return (
     <div class="adm-body">
       <DashboardStyles />
-      {error && <p class="lumio-alert" role="alert">部分数据加载失败: {error}</p>}
 
       <section class="stat-row" aria-label="核心指标">
         <StatCard
           icon="eye"
           tone="i-blue"
-          delta="+12.4%"
+          delta="▲ 12.4%"
           deltaTone="up"
-          value={overview ? formatNum(overview.total_views) : '48,210'}
+          value="48,210"
           label="本月访问量"
         />
         <StatCard
           icon="note"
           tone="i-mint"
-          delta="+8"
+          delta="▲ 3 篇"
           deltaTone="up"
-          value={publishedCount || 28}
+          value="28"
           label="已发布文章"
         />
         <StatCard
           icon="mail"
           tone="i-amber"
-          delta="+5.6%"
+          delta="▲ 8.1%"
           deltaTone="up"
-          value={subscribers ? formatNum(subscribers.active) : '3,642'}
-          label="邮件订阅"
+          value="3,642"
+          label="邮件订阅数"
         />
         <StatCard
           icon="chart"
           tone="i-rose"
-          delta="-2.1%"
+          delta="▼ 2.3%"
           deltaTone="down"
-          value={formatNum(adClicks || 1058)}
-          label="广告点击"
+          value="1,058"
+          label="广告点击量"
         />
       </section>
 
@@ -168,18 +146,18 @@ export function Dashboard(): JSX.Element {
           </div>
           <div class="chart" aria-label="近 7 日访问趋势">
             <div class="chart__bars">
-              {trend.map((point, index) => (
+              {TREND.map((point, index) => (
                 <div
-                  key={`${point.date}-${index}`}
+                  key={`${point.label}-${index}`}
                   class="chart__bar"
-                  style={{ height: `${barPct(point.value, trend)}%` }}
-                  title={`${formatDate(point.date)}: ${point.value}`}
+                  style={{ height: `${point.height}%` }}
+                  title={`${point.label}: ${point.height}%`}
                 />
               ))}
             </div>
             <div class="chart__x">
-              {trend.map((point, index) => (
-                <span key={`${point.date}-x-${index}`}>{formatDate(point.date)}</span>
+              {TREND.map((point, index) => (
+                <span key={`${point.label}-x-${index}`}>{point.label}</span>
               ))}
             </div>
           </div>
@@ -189,7 +167,7 @@ export function Dashboard(): JSX.Element {
           <div class="panel__head">
             <div class="panel__title">广告位管理</div>
             <div class="panel__spacer" />
-            <a class="panel__link" href="#/media">管理</a>
+            <a class="panel__link" href="#/media">+ 新建</a>
           </div>
           <div class="adlist">
             {ads.map((ad) => (
@@ -203,7 +181,7 @@ export function Dashboard(): JSX.Element {
                 </div>
                 <div class="adrow__stat">
                   <b>{formatNum(ad.weeklyClicks)}</b>
-                  <small>周点击</small>
+                  <small>点击 / 周</small>
                 </div>
                 <button
                   type="button"
@@ -222,7 +200,7 @@ export function Dashboard(): JSX.Element {
         <div class="panel__head">
           <div class="panel__title">文章管理</div>
           <div class="panel__spacer" />
-          <a class="panel__link" href="#/notes">查看全部</a>
+          <a class="panel__link" href="/articles/index.html">前台查看</a>
         </div>
         <table class="tbl">
           <thead>
@@ -236,37 +214,33 @@ export function Dashboard(): JSX.Element {
             </tr>
           </thead>
           <tbody>
-            {rows.map((note, index) => {
-              const cat = categoryOf(note, index);
-              const status = statusOf(note.visibility);
-              return (
-                <tr key={note.slug}>
-                  <td>
-                    <div class="tbl__title">
-                      {note.title}
-                      <small>{note.source_path ?? note.slug}</small>
-                    </div>
-                  </td>
-                  <td><span class={`tag-cat ${cat.className}`}>{cat.name}</span></td>
-                  <td><span class={`st ${status.className}`}>{status.label}</span></td>
-                  <td>{formatNum(viewsFor(note, index))}</td>
-                  <td>{formatDate(note.updated_at)}</td>
-                  <td>
-                    <div class="row-act">
-                      <a href={`#/notes/${encodeURIComponent(note.slug)}`} aria-label={`编辑 ${note.title}`}>
-                        <HfIcon name="edit" size={13} />
-                      </a>
-                      <a href={`/posts/${encodeURIComponent(note.slug)}.html`} target="_blank" rel="noreferrer" aria-label={`预览 ${note.title}`}>
-                        <HfIcon name="eye" size={13} />
-                      </a>
-                      <button type="button" class="danger" aria-label={`删除 ${note.title}`}>
-                        <HfIcon name="trash" size={13} />
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {ROWS.map((note) => (
+              <tr key={note.slug}>
+                <td>
+                  <div class="tbl__title">
+                    {note.title}
+                    <small>作者 · {note.author}</small>
+                  </div>
+                </td>
+                <td><span class={`tag-cat ${note.categoryClass}`}>{note.category}</span></td>
+                <td><span class={`st ${note.statusClass}`}>{note.status}</span></td>
+                <td>{note.views}</td>
+                <td>{note.date}</td>
+                <td>
+                  <div class="row-act">
+                    <a href={`#/notes/${encodeURIComponent(note.slug)}`} aria-label={`编辑 ${note.title}`}>
+                      <HfIcon name="edit" size={13} />
+                    </a>
+                    <a href={`/posts/${encodeURIComponent(note.slug)}.html`} target="_blank" rel="noreferrer" aria-label={`预览 ${note.title}`}>
+                      <HfIcon name="eye" size={13} />
+                    </a>
+                    <button type="button" class="danger" aria-label={`删除 ${note.title}`}>
+                      <HfIcon name="trash" size={13} />
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
           </tbody>
         </table>
       </section>
@@ -310,75 +284,26 @@ function formatNum(n: number | string): string {
   return String(n);
 }
 
-function formatDate(value: string): string {
-  if (WEEKDAY_LABELS[value]) return WEEKDAY_LABELS[value];
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return value.slice(0, 10);
-  return d.toISOString().slice(0, 10);
-}
-
-function barPct(value: number, points: TimeSeriesPoint[]): number {
-  const max = Math.max(...points.map((p) => p.value), 1);
-  return Math.max(8, Math.round((value / max) * 100));
-}
-
-function categoryOf(note: NoteSummary, index: number): { name: string; className: string } {
-  const src = `${note.title} ${note.slug} ${note.source_path ?? ''}`.toLowerCase();
-  if (/render|渲染|gpu|draw/.test(src)) return { name: '渲染', className: 'c-blue' };
-  if (/perf|性能|优化|memory|内存|gc/.test(src)) return { name: '性能', className: 'c-mint' };
-  if (/shader|图形|light|光照/.test(src)) return { name: '图形学', className: 'c-amber' };
-  if (/arch|架构|ecs|engine/.test(src)) return { name: '架构', className: 'c-violet' };
-  if (/net|网络|sync|同步/.test(src)) return { name: '网络', className: 'c-sky' };
-  if (/tool|工具|cli/.test(src)) return { name: '工具', className: 'c-rose' };
-  const fallback = [
-    { name: '渲染', className: 'c-blue' },
-    { name: '性能', className: 'c-mint' },
-    { name: '图形学', className: 'c-amber' },
-    { name: '架构', className: 'c-violet' },
-    { name: '网络', className: 'c-sky' },
-    { name: '工具', className: 'c-rose' },
-  ];
-  return fallback[index % fallback.length]!;
-}
-
-function statusOf(visibility: NoteSummary['visibility']): { label: string; className: string } {
-  if (visibility === 'public' || visibility === 'link-only') return { label: '已发布', className: 'pub' };
-  if (visibility === 'private') return { label: '草稿', className: 'draft' };
-  return { label: '待审核', className: 'review' };
-}
-
-function viewsFor(note: NoteSummary, index: number): number {
-  return Math.max(320, Math.round((note.word_count || 1200) * (0.9 + index * 0.13)));
-}
-
-function fallbackRows(): NoteSummary[] {
-  const now = new Date().toISOString();
-  return [
-    row('render-pipeline', '深入 GPU 渲染管线:从顶点到像素', 'public', 3600, now),
-    row('render-optimization', '渲染优化实战', 'public', 2460, now),
-    row('unity-performance', 'Unity 性能调优', 'public', 3200, now),
-    row('shader-guide', 'Shader 入门指南', 'unlisted', 1800, now),
-    row('architecture-notes', '架构设计笔记', 'public', 2100, now),
-    row('network-sync', '网络同步方案', 'private', 1700, now),
-    row('toolchain-boost', '工具链提效', 'public', 1300, now),
-  ];
-}
-
 function row(
   slug: string,
   title: string,
-  visibility: NoteSummary['visibility'],
-  wordCount: number,
-  updatedAt: string,
-): NoteSummary {
+  author: string,
+  category: string,
+  categoryClass: string,
+  status: string,
+  statusClass: string,
+  views: string,
+  date: string,
+): DashboardRow {
   return {
     slug,
     title,
-    visibility,
-    searchable: true,
-    short_id: null,
-    updated_at: updatedAt,
-    word_count: wordCount,
-    source_path: `posts/${slug}.md`,
+    author,
+    category,
+    categoryClass,
+    status,
+    statusClass,
+    views,
+    date,
   };
 }

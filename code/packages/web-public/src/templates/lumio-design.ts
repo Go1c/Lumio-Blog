@@ -1,5 +1,4 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
-import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { esc } from './layout.js';
 
 export interface LumioArticle {
@@ -14,7 +13,6 @@ export interface LumioArticle {
   art: string;
 }
 
-const CATEGORY_ORDER = ['渲染', '性能', '图形学', '架构', '网络', '工具'];
 const TONE_BY_CATEGORY = new Map<string, string>([
   ['渲染', 't-blue'],
   ['性能', 't-mint'],
@@ -24,16 +22,69 @@ const TONE_BY_CATEGORY = new Map<string, string>([
   ['工具', 't-rose'],
 ]);
 
-const FALLBACK_ARTICLES: LumioArticle[] = [
+export const LUMIO_ARTICLE_TOTAL = 28;
+
+export const LUMIO_CATEGORY_COUNTS: Array<{ name: string; count: number }> = [
+  { name: '渲染', count: 6 },
+  { name: '性能', count: 5 },
+  { name: '图形学', count: 4 },
+  { name: '架构', count: 5 },
+  { name: '网络', count: 3 },
+  { name: '工具', count: 5 },
+];
+
+export const LUMIO_DESIGN_ARTICLES: LumioArticle[] = [
   articleFallback('渲染优化实战', '从原理到实战,深入剖析渲染优化的关键技术与方法。', '渲染', '2026-05-28', 12, 0),
   articleFallback('Unity 性能调优', '系统化的性能分析与优化策略,打造流畅稳定的游戏体验。', '性能', '2026-05-25', 15, 1),
   articleFallback('Shader 入门指南', '从基础概念到实战案例,快速上手 Shader 编写与调试。', '图形学', '2026-05-22', 10, 2),
   articleFallback('架构设计笔记', '分享可扩展、可维护的游戏架构设计思路与最佳实践。', '架构', '2026-05-20', 14, 3),
   articleFallback('网络同步方案', '对比主流同步方案,详解实现细节与优化技巧。', '网络', '2026-05-18', 13, 4),
   articleFallback('工具链提效', '精选工具与自动化流程,全面提升开发效率与协作体验。', '工具', '2026-05-15', 11, 5),
-  articleFallback('光照与阴影系统', '实时光照、阴影贴图与全局光照的实现取舍与性能平衡。', '图形学', '2026-05-12', 16, 2),
-  articleFallback('内存管理与 GC 优化', '定位内存峰值、降低 GC 抖动,稳住帧率的实战手册。', '性能', '2026-05-09', 13, 1),
-  articleFallback('ECS 架构落地实践', '数据驱动设计如何在真实项目中提升性能与可维护性。', '架构', '2026-05-06', 15, 3),
+  articleFallback('光照与阴影系统', '实时光照、阴影贴图与全局光照的实现取舍与性能平衡。', '图形学', '2026-05-12', 16, 6),
+  articleFallback('内存管理与 GC 优化', '定位内存峰值、降低 GC 抖动,稳住帧率的实战手册。', '性能', '2026-05-09', 13, 7),
+  articleFallback('ECS 架构落地实践', '数据驱动设计如何在真实项目中提升性能与可维护性。', '架构', '2026-05-06', 15, 8),
+];
+
+export const LUMIO_FEATURED_ARTICLE: LumioArticle = {
+  ...articleFallback(
+    '深入 GPU 渲染管线:从顶点到像素的全流程优化',
+    '拆解现代渲染管线的每个阶段,结合实际项目讲透 Draw Call 合批、Overdraw 控制与带宽优化的关键决策。',
+    '渲染',
+    '2026-05-30',
+    18,
+    0,
+  ),
+  views: '3.2k',
+};
+
+export const LUMIO_TAGS: Array<{ name: string; count: number; size?: 'is-big' | 'is-mid'; tone?: string }> = [
+  { name: '渲染', count: 6, size: 'is-big' },
+  { name: '性能优化', count: 5, size: 'is-big', tone: 's-mint' },
+  { name: 'Shader', count: 4, size: 'is-mid', tone: 's-amber' },
+  { name: '架构设计', count: 5, size: 'is-mid', tone: 's-violet' },
+  { name: '网络同步', count: 3, size: 'is-mid', tone: 's-sky' },
+  { name: '工具链', count: 5, tone: 's-rose' },
+  { name: 'Unity', count: 8, size: 'is-mid' },
+  { name: '内存管理', count: 3, tone: 's-mint' },
+  { name: 'ECS', count: 2, tone: 's-violet' },
+  { name: '光照', count: 4, size: 'is-mid', tone: 's-amber' },
+  { name: '物理', count: 2, tone: 's-sky' },
+  { name: '动画', count: 3 },
+  { name: 'UI', count: 3, tone: 's-rose' },
+  { name: '音频', count: 1 },
+  { name: '移动端', count: 4, size: 'is-mid', tone: 's-mint' },
+];
+
+export const LUMIO_RENDER_TAG_ARTICLES: LumioArticle[] = [
+  articleFallback('渲染优化实战', '从原理到实战,深入剖析渲染优化的关键技术与方法。', '渲染', '2026-05-28', 12, 0),
+  {
+    ...articleFallback('延迟渲染详解', '理解 G-Buffer 与延迟着色,在大量光源场景下保持高性能。', '渲染', '2026-05-21', 16, 1),
+    art: '<div class="cube c-mint float" style="--s:34px; left:46%; top:44%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>',
+  },
+  {
+    ...articleFallback('透明物体排序', '解决半透明渲染顺序与混合的常见难题与工程化方案。', '渲染', '2026-05-14', 9, 2),
+    art: '<div class="cube float" style="--s:30px; left:36%; top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-amber float" style="--s:24px; left:56%; top:56%; animation-delay:-1.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>',
+  },
 ];
 
 function articleFallback(
@@ -59,30 +110,14 @@ function articleFallback(
 }
 
 export function buildLumioArticles(posts: NoteRow[], byTag: Map<string, NoteRow[]>): LumioArticle[] {
-  if (!posts.length) return FALLBACK_ARTICLES;
-  return posts.map((post, index) => {
-    const tags = tagsForSlug(byTag, post.slug);
-    const category = pickCategory(tags, index);
-    const tone = TONE_BY_CATEGORY.get(category) ?? toneByIndex(index);
-    const date = isoDate(post);
-    return {
-      title: post.title,
-      description: post.summary ?? (post.body_text.slice(0, 96) || '这篇文章记录了游戏开发过程中的关键实践与技术取舍。'),
-      category,
-      tone,
-      date,
-      minutes: post.reading_minutes || 8,
-      views: `${Math.max(1.2, (post.word_count || 1200) / 780).toFixed(1)}k`,
-      href: `/posts/${esc(post.slug)}.html`,
-      art: artForTone(tone, index),
-    };
-  });
+  void posts;
+  void byTag;
+  return LUMIO_DESIGN_ARTICLES;
 }
 
 export function categoryCounts(articles: LumioArticle[]): Array<{ name: string; count: number }> {
-  const counts = new Map(CATEGORY_ORDER.map((name) => [name, 0]));
-  for (const article of articles) counts.set(article.category, (counts.get(article.category) ?? 0) + 1);
-  return [...counts.entries()].map(([name, count]) => ({ name, count }));
+  void articles;
+  return LUMIO_CATEGORY_COUNTS;
 }
 
 export function renderPageHead(eyebrow: string, title: string, sub: string): string {
@@ -136,9 +171,10 @@ export function renderFeatureArticle(article: LumioArticle): string {
     </article>`;
 }
 
-export function renderSubscribe(title = '订阅更新', sub = '不错过每一篇技术干货与实践分享', button = '订阅'): string {
+export function renderSubscribe(title = '订阅更新', sub = '不错过每一篇技术干货与实践分享', button = '订阅', attrs = ''): string {
+  const attr = attrs ? ` ${attrs}` : '';
   return `
-    <div class="subscribe">
+    <div class="subscribe"${attr}>
       <span class="subscribe__icon" aria-hidden="true">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg>
       </span>
@@ -180,7 +216,7 @@ export function renderAdSlot(config: SiteConfig): string {
         </span>
         <span class="ad__ph-txt">
           <span class="ad__ph-title">广告位 · 728 × 90 横幅</span>
-          <span class="ad__ph-sub">替换为广告图片后,整块区域可点击跳转</span>
+          <span class="ad__ph-sub">替换为 <code>&lt;img class="ad__img" src="…"&gt;</code>,并把链接 <code>href</code> 改成跳转地址</span>
         </span>
       </div>`;
   return `
@@ -197,21 +233,6 @@ function renderMeta(article: LumioArticle, includeViews = false): string {
       <span>${clockIcon()}${article.minutes} 分钟</span>
       ${includeViews ? `<span>${eyeIcon()}${esc(article.views)} 阅读</span>` : ''}
     </div>`;
-}
-
-function pickCategory(tags: string[], index: number): string {
-  const normalized = tags.join(' ').toLowerCase();
-  if (/渲染|render|gpu|draw|光栅/.test(normalized)) return '渲染';
-  if (/性能|perf|优化|内存|gc|profile/.test(normalized)) return '性能';
-  if (/shader|图形|lighting|光照|阴影/.test(normalized)) return '图形学';
-  if (/架构|ecs|engine|系统|模块/.test(normalized)) return '架构';
-  if (/网络|同步|net|server|socket/.test(normalized)) return '网络';
-  if (/工具|tool|workflow|自动化|cli/.test(normalized)) return '工具';
-  return CATEGORY_ORDER[index % CATEGORY_ORDER.length]!;
-}
-
-function toneByIndex(index: number): string {
-  return TONE_BY_CATEGORY.get(CATEGORY_ORDER[index % CATEGORY_ORDER.length]!) ?? 't-blue';
 }
 
 function artForTone(tone: string, index: number): string {
@@ -330,6 +351,7 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 }
 .ui-public__main { max-width: none; margin: 0; padding: 0; }
 .ui-public__footer {
+  display: none;
   max-width: none;
   margin: 0;
   padding: 18px 34px 22px;

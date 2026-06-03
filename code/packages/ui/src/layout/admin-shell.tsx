@@ -1,7 +1,5 @@
 import type { JSX, ComponentChildren } from 'preact';
 import { HfIcon, type HfIconName } from '../components/HfIcon.js';
-import { useTheme } from '../hooks/useTheme.js';
-import { Button } from '../primitives/Button.js';
 import { Avatar } from '../primitives/Avatar.js';
 
 export interface AdminMenuItem {
@@ -61,16 +59,16 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '内容',
     items: [
-      { label: '文章管理', href: '#/notes', icon: 'note', match: (p) => p.startsWith('#/notes') },
-      { label: '专栏管理', href: '#/tags', icon: 'book' },
-      { label: '标签管理', href: '#/tags', icon: 'tag' },
-      { label: '评论审核', href: '#/comments', icon: 'comment', badge: 8 },
+      { label: '文章管理', href: '#/notes', icon: 'note', badge: 28, match: (p) => p.startsWith('#/notes') },
+      { label: '专栏管理', href: '#/columns', icon: 'book', badge: 4 },
+      { label: '标签管理', href: '#/tags', icon: 'tag', badge: 15 },
+      { label: '评论审核', href: '#/comments', icon: 'comment', badge: 6 },
     ],
   },
   {
     label: '运营',
     items: [
-      { label: '广告位', href: '#/media', icon: 'image' },
+      { label: '广告位', href: '#/media', icon: 'image', badge: 3 },
       { label: '数据统计', href: '#/analytics', icon: 'chart' },
       {
         label: '系统设置',
@@ -78,9 +76,6 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
         icon: 'settings',
         match: (p) => p === '#/settings' || p.startsWith('#/settings/'),
       },
-      { label: '令牌', href: '#/tokens', icon: 'lock' },
-      { label: 'Webhook', href: '#/webhooks', icon: 'webhook' },
-      { label: '备份', href: '#/backup', icon: 'database' },
     ],
   },
 ];
@@ -104,12 +99,13 @@ export function AdminShell({
   siteName = 'Lumio Blog',
   onOpenSearch,
 }: AdminShellProps): JSX.Element {
-  const { effective, toggle } = useTheme();
-  const pageTitle = breadcrumbs && breadcrumbs.length > 0
+  const pageTitle = currentPath === '#/'
+    ? '仪表盘'
+    : breadcrumbs && breadcrumbs.length > 0
     ? breadcrumbs[breadcrumbs.length - 1]?.label ?? '仪表盘'
     : '仪表盘';
   const pageSub = currentPath === '#/'
-    ? '游戏技术博客运营概览'
+    ? '欢迎回来,这是今天的数据概览'
     : 'Lumio Game Tech Blog 管理后台';
 
   return (
@@ -122,8 +118,8 @@ export function AdminShell({
             <span class="ui-admin__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
           </div>
           <div class="ui-admin__brand-text">
-            <div class="ui-admin__brand-name">LUMIO</div>
-            <div class="ui-admin__brand-sub">.GAMES ADMIN</div>
+            <div class="ui-admin__brand-name">LUMIO 后台</div>
+            <div class="ui-admin__brand-sub">ADMIN CONSOLE</div>
           </div>
         </div>
 
@@ -169,8 +165,8 @@ export function AdminShell({
         <div class="ui-admin__foot">
           <Avatar initials={userInitials} aria-label="当前用户" size={34} />
           <div>
-            <div class="ui-admin__foot-name">Lumio Editor</div>
-            <div class="ui-admin__foot-role">管理员</div>
+            <div class="ui-admin__foot-name">林辰</div>
+            <div class="ui-admin__foot-role">超级管理员</div>
           </div>
         </div>
       </aside>
@@ -191,38 +187,14 @@ export function AdminShell({
             aria-label="搜索"
           >
             <HfIcon name="search" size={13} />
-            <span class="hf-grow">搜索文章、广告、标签</span>
+            <span class="hf-grow">搜索文章、用户...</span>
           </button>
-
-          {onSync && (
-            <Button size="sm" onClick={onSync} aria-label="同步内容">
-              <HfIcon name="sync" size={12} /> 同步
-            </Button>
-          )}
 
           {topbarActions}
 
           <a class="btn-new" href="#/notes" aria-label="写文章">
             <HfIcon name="plus" size={13} /> 写文章
           </a>
-
-          <Button
-            size="icon"
-            onClick={toggle}
-            aria-label={effective === 'dark' ? '切换到浅色主题' : '切换到深色主题'}
-          >
-            <HfIcon name={effective === 'dark' ? 'sun' : 'moon'} size={14} />
-          </Button>
-
-          {userMenu ?? (
-            <Avatar initials={userInitials} aria-label="当前用户" size={28} />
-          )}
-
-          {onLogout && (
-            <Button size="sm" variant="ghost" onClick={onLogout} aria-label="退出登录">
-              退出
-            </Button>
-          )}
         </header>
 
         <main id="main-content" class="ui-admin__content" role="main">

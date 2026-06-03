@@ -37,7 +37,7 @@ export function renderAbout(config: SiteConfig): string {
         ${member('M', '明月', '工具 · TA', 'linear-gradient(160deg,#C7B6FF,#8E76F0)')}
       </div>
 
-      ${renderSubscribe('想和我们聊聊?', '合作、投稿或交流,欢迎留下你的邮箱', '联系我们')}
+      ${renderSubscribe('想和我们聊聊?', '合作、投稿或交流,欢迎留下你的邮箱', '联系我们', 'style="margin-top:34px;"')}
     </main>`;
 
   return layout({

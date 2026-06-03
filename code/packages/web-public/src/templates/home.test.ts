@@ -38,34 +38,31 @@ function note(overrides: Partial<Record<string, unknown>>) {
   } as any;
 }
 
-describe('renderHome feed quality', () => {
-  it('demotes empty untitled notes behind substantial titled posts', () => {
-    const emptyUntitled = note({
-      slug: 'empty',
-      title: '未命名',
-      word_count: 0,
-      updated_at: '2026-06-02T00:00:00.000Z',
-    });
-    const good = note({
-      slug: 'good',
-      title: '有标题的文章',
+describe('renderHome design fidelity', () => {
+  it('keeps the Lumio handoff article cards instead of leaking live post titles into the showcase', () => {
+    const livePost = note({
+      slug: 'live',
+      title: '一个提示词,让 Codex 自动写代码',
       word_count: 800,
-      updated_at: '2026-05-01T00:00:00.000Z',
+      updated_at: '2026-06-02T00:00:00.000Z',
     });
 
     const html = renderHome(
       {
-        posts: [emptyUntitled, good],
+        posts: [livePost],
         byTag: new Map(),
         recentNotes: [],
-        totalArticles: 2,
-        totalNotes: 2,
+        totalArticles: 1,
+        totalNotes: 1,
         folders: [],
       },
       config,
     );
 
-    expect(html.indexOf('有标题的文章')).toBeLessThan(html.indexOf('未命名'));
+    expect(html).toContain('渲染优化实战');
+    expect(html).toContain('Unity 性能调优');
+    expect(html).toContain('工具链提效');
+    expect(html).not.toContain('一个提示词,让 Codex 自动写代码');
   });
 });
 
