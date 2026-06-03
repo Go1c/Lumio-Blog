@@ -41,7 +41,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     ? outline
         .map(
           (h) =>
-            `<li class="wsa-outline__item wsa-outline__item--${h.level}">
+            `<li class="post-toc__item post-toc__item--${h.level}">
               <a href="#${esc(h.id)}">${esc(h.text)}</a>
             </li>`,
         )
@@ -56,19 +56,22 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     .map(
       (s) => `
         <li>
-          <a class="wsa-series__row" href="/posts/${esc(s.slug)}.html">${esc(s.title)}</a>
+          <a class="post-related__link" href="/posts/${esc(s.slug)}.html">${esc(s.title)}</a>
         </li>`,
     )
     .join('');
 
-  const tagChips = tags
+  const tagLinks = tags
     .map(
       (t, i) =>
-        `<li><a class="ui-tag${i === 0 ? ' ui-tag--accent' : ''}" href="/tags/${esc(encodeURIComponent(t))}.html">#${esc(t)}</a></li>`,
+        `<a class="chip post-tag${i === 0 ? ' is-active' : ''}" href="/tags/${esc(encodeURIComponent(t))}.html">#${esc(t)}</a>`,
     )
     .join('');
 
   const avatarChar = (author.name || 'L').charAt(0).toUpperCase();
+  const primaryTag = tags[0] ?? 'Article';
+  const summary = note.summary?.trim();
+  const postBody = renderPostBody(note);
 
   // 阅读进度条 + analytics view ping
   const progressScript = `<script>
@@ -127,82 +130,97 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     })();
   </script>`;
 
+  const commentsHtml = config.features?.comments === false
+    ? ''
+    : `<section class="post-panel post-comments" id="comments" aria-label="评论">
+        ${renderArticleComments({ slug: note.slug }, config)}
+      </section>`;
+
   const body = `
-    <div class="wsa-post">
-      <!-- progress bar -->
-      <div class="wsa-progress" role="progressbar" aria-label="阅读进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
+    <div class="wsa-post lumio-post">
+      <div class="wsa-progress lumio-post__progress" role="progressbar" aria-label="阅读进度" aria-valuemin="0" aria-valuemax="100" aria-valuenow="0">
         <div class="wsa-progress__bar" id="wsa-progress-bar" aria-hidden="true"></div>
       </div>
 
-      <div class="wsa-post__grid">
-        <!-- LEFT — series + outline + actions -->
-        <aside class="wsa-post__left" aria-label="文章导航">
-          ${
-            seriesItems
-              ? `<div class="wsa-side__h hf-mono hf-tiny">▸ ${esc(seriesPrimary ?? '系列')}</div>
-                 <ul class="wsa-series">${seriesItems}</ul>`
-              : ''
-          }
-          ${
-            outlineHtml
-              ? `<div class="wsa-side__h hf-mono hf-tiny">▸ 大纲</div>
-                 <ul class="wsa-outline">${outlineHtml}</ul>`
-              : ''
-          }
-          ${minigraphHtml}
+      <header class="page-head post-head">
+        <div class="page-head__grid" aria-hidden="true"></div>
+        <div class="page-head__eyebrow">Article / ${esc(primaryTag)}</div>
+        <h1 class="page-head__title post-head__title">${esc(note.title)}</h1>
+        ${summary ? `<p class="page-head__sub post-head__sub">${esc(summary)}</p>` : ''}
+        <div class="post-head__meta">
+          ${visibilityBadge}
+          <time datetime="${esc(iso)}">${esc(iso)}</time>
+          <span aria-hidden="true">·</span>
+          <span aria-label="阅读时长 ${note.reading_minutes} 分钟">${note.reading_minutes} 分钟</span>
+          <span aria-hidden="true">·</span>
+          <span aria-label="共 ${note.word_count} 字">${note.word_count.toLocaleString('en-US')} 字</span>
+        </div>
+        ${tagLinks ? `<nav class="post-head__tags" aria-label="文章标签">${tagLinks}</nav>` : ''}
+      </header>
 
-        </aside>
-
-        <!-- MIDDLE — article body -->
-        <article class="wsa-post__main">
-          ${tagChips ? `<ul class="wsa-post__tags" aria-label="标签">${tagChips}</ul>` : ''}
-          <h1 class="wsa-post__title">${esc(note.title)}</h1>
-          ${note.summary && config.features?.post_summary === true ? `<p class="wsa-post__summary">${esc(note.summary)}</p>` : ''}
-          <p class="wsa-post__meta hf-mono hf-tiny">
-            ${visibilityBadge}
-            <time datetime="${esc(iso)}">${esc(iso)}</time>
-            <span aria-hidden="true">·</span>
-            <span aria-label="阅读时长 ${note.reading_minutes} 分钟">${note.reading_minutes} min read</span>
-            <span aria-hidden="true">·</span>
-            <span aria-label="共 ${note.word_count} 字">${note.word_count} 字</span>
-          </p>
-          <hr class="hf-divider wsa-post__divider">
-
-          ${
-            note.kind === 'canvas'
-              ? `<div class="wsa-prose ob-canvas-host">${note.body_html}</div>`
-              : note.kind === 'html'
-              ? `<div class="wsa-prose ob-html-host">${note.body_html}</div>`
-              : `<div class="wsa-prose hf-prose">${note.body_html}</div>`
-          }
-
-          <hr class="hf-divider wsa-post__divider">
-
-          <!-- end-of-article subscribe CTA -->
-          <aside class="wsa-cta" aria-label="订阅作者">
-            <div class="wsa-cta__avatar" aria-hidden="true">${esc(avatarChar)}</div>
-            <div class="hf-grow">
-              <div class="wsa-cta__name">${esc(author.name)}</div>
-              <div class="wsa-cta__sub hf-sm hf-muted">订阅以收到下一篇</div>
+      <main class="page post-page">
+        <div class="post-layout">
+          <article class="post-article">
+            <div class="post-article__bar">
+              <a class="sec-more" href="/articles/index.html">
+                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H4M8 4 4 8l4 4"></path></svg>
+                全部文章
+              </a>
+              ${commentsHtml ? `<a class="sec-more" href="#comments">评论</a>` : ''}
             </div>
-            <a class="ui-btn ui-btn--primary" href="/feed.xml">订阅 RSS</a>
+
+            ${postBody}
+
+            <aside class="post-author" aria-label="订阅作者">
+              <div class="post-author__avatar" aria-hidden="true">${esc(avatarChar)}</div>
+              <div class="post-author__body">
+                <div class="post-author__name">${esc(author.name)}</div>
+                <div class="post-author__sub">订阅以收到下一篇技术笔记</div>
+              </div>
+              <a class="btn-ghost post-author__rss" href="/feed.xml">订阅 RSS</a>
+            </aside>
+
+            ${commentsHtml}
+          </article>
+
+          <aside class="post-rail" aria-label="文章信息">
+            <section class="post-panel post-stats">
+              <div class="post-panel__title">阅读信息</div>
+              <dl class="post-stats__grid">
+                <div><dt>日期</dt><dd>${esc(iso)}</dd></div>
+                <div><dt>时长</dt><dd>${note.reading_minutes} 分钟</dd></div>
+                <div><dt>字数</dt><dd>${note.word_count.toLocaleString('en-US')}</dd></div>
+              </dl>
+            </section>
+
+            ${
+              outlineHtml
+                ? `<section class="post-panel">
+                    <div class="post-panel__title">文章大纲</div>
+                    <ol class="post-toc">${outlineHtml}</ol>
+                  </section>`
+                : ''
+            }
+            ${
+              seriesItems
+                ? `<section class="post-panel">
+                    <div class="post-panel__title">${esc(seriesPrimary ?? '系列')}</div>
+                    <ul class="post-related">${seriesItems}</ul>
+                  </section>`
+                : ''
+            }
+            ${minigraphHtml ? `<section class="post-panel post-graph">${minigraphHtml}</section>` : ''}
           </aside>
-        </article>
+        </div>
+      </main>
 
-        <!-- RIGHT — comments rail (WS-B) -->
-        ${
-          config.features?.comments === false
-            ? ''
-            : `<aside class="wsa-post__right" id="comments" aria-label="评论">
-            ${renderArticleComments({ slug: note.slug }, config)}
-          </aside>`
-        }
-      </div>
-
-      <!-- WS-C — 移动端浮动操作 pill(桌面隐藏) -->
       <div class="wsc-pill" role="toolbar" aria-label="文章操作">
-        <button type="button" class="wsc-pill__btn" id="wsc-pill-link" aria-label="复制链接"><span aria-hidden="true">🔗</span></button>
-        <button type="button" class="wsc-pill__btn" id="wsc-pill-share" aria-label="分享"><span aria-hidden="true">↗</span></button>
+        <button type="button" class="wsc-pill__btn" id="wsc-pill-link" aria-label="复制链接">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M6.8 9.2a2.2 2.2 0 0 0 3.1 0l2.1-2.1A2.2 2.2 0 0 0 8.9 4L7.8 5.1"></path><path d="M9.2 6.8a2.2 2.2 0 0 0-3.1 0L4 8.9A2.2 2.2 0 0 0 7.1 12l1.1-1.1"></path></svg>
+        </button>
+        <button type="button" class="wsc-pill__btn" id="wsc-pill-share" aria-label="分享">
+          <svg width="18" height="18" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 5V2H9"></path><path d="M7 9 12 4"></path><path d="M13 8.5v3A1.5 1.5 0 0 1 11.5 13h-7A1.5 1.5 0 0 1 3 11.5v-7A1.5 1.5 0 0 1 4.5 3h3"></path></svg>
+        </button>
       </div>
     </div>
     ${progressScript}
@@ -229,7 +247,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     config,
     noindex: note.visibility !== 'public' || (note.seo_indexable ?? 1) === 0,
     body,
-    active: 'home',
+    active: 'articles',
     path: `/posts/${note.slug}.html`,
     ...(note.cover ? { image: String(note.cover) } : {}),
   });
@@ -248,6 +266,12 @@ function visBadgeClass(v: string): string {
   if (v === 'link-only') return 'ui-badge--link-only';
   if (v === 'private') return 'ui-badge--private';
   return '';
+}
+
+function renderPostBody(note: NoteRow): string {
+  if (note.kind === 'canvas') return `<div class="wsa-prose post-prose ob-canvas-host">${note.body_html}</div>`;
+  if (note.kind === 'html') return `<div class="wsa-prose post-prose ob-html-host">${note.body_html}</div>`;
+  return `<div class="wsa-prose post-prose hf-prose">${note.body_html}</div>`;
 }
 
 interface OutlineEntry {
