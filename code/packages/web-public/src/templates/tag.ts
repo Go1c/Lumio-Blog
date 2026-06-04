@@ -6,7 +6,9 @@ import {
   LUMIO_RENDER_TAG_ARTICLES,
   LUMIO_TAGS,
   renderArticleCard,
+  renderArticleRow,
   renderPageHead,
+  renderTagCloudPills,
 } from './lumio-design.js';
 
 /**
@@ -94,116 +96,65 @@ export function renderTagPage(
   byTag: Map<string, NoteRow[]>,
   config: SiteConfig,
 ): string {
-  // 按年分组(降序)
-  const byYear = new Map<string, NoteRow[]>();
-  for (const n of notes) {
-    const year = isoDate(n).slice(0, 4);
-    if (!byYear.has(year)) byYear.set(year, []);
-    byYear.get(year)!.push(n);
-  }
-  const years = [...byYear.keys()].sort((a, b) => (a < b ? 1 : -1));
-
-  const yearSections = years
-    .map((y) => {
-      const list = byYear.get(y)!;
-      const rows = list
-        .map((n) => {
-          const iso = isoDate(n);
-          const md = iso.length >= 10 ? iso.slice(5, 10) : iso;
-          return `
-            <article class="wsa-tag__row hf-hover">
-              <time datetime="${esc(iso)}" class="wsa-tag__date hf-mono hf-tiny hf-faint">${esc(md)}</time>
-              <div class="wsa-tag__main">
-                <h3 class="wsa-tag__title"><a href="/posts/${esc(n.slug)}.html">${esc(n.title)}</a></h3>
-                ${n.summary ? `<p class="wsa-tag__sum hf-tiny hf-muted">${esc(n.summary)}</p>` : ''}
-              </div>
-              <div class="wsa-tag__meta hf-mono hf-tiny hf-faint">
-                <span aria-label="阅读时长 ${n.reading_minutes} 分钟">${n.reading_minutes} min</span>
-              </div>
-            </article>`;
-        })
-        .join('');
-      return `
-        <section class="wsa-tag__year" aria-labelledby="wsa-y-${esc(y)}">
-          <header class="wsa-tag__year-head">
-            <h2 id="wsa-y-${esc(y)}" class="wsa-tag__year-h">${esc(y)}</h2>
-            <span class="hf-mono hf-tiny hf-faint">${list.length} 篇</span>
-          </header>
-          ${rows}
-        </section>`;
-    })
-    .join('');
-
-  // 相关标签 — 与当前 tag 共现的其他 tag,top 6
-  const related = computeRelatedTags(tag, notes, byTag).slice(0, 6);
-  const relatedHtml = related
-    .map(
-      ([t, c]) =>
-        `<li><a class="ui-tag" href="/tags/${esc(encodeURIComponent(t))}.html" style="font-size:11px">#${esc(t)}<span class="hf-mono hf-faint" aria-hidden="true" style="margin-left:3px;font-size:10px">${c}</span></a></li>`,
-    )
-    .join('');
-
-  // 标签下最热(按字数 / 阅读时长粗排)
-  const top = [...notes].sort((a, b) => b.word_count - a.word_count).slice(0, 3);
-  const topHtml = top
-    .map(
-      (n, i) => `
-        <a class="wsa-tag__hot ${i ? 'wsa-tag__hot--bordered' : ''}" href="/posts/${esc(n.slug)}.html">
-          <div class="wsa-tag__hot-title hf-sm">${esc(n.title)}</div>
-          <div class="wsa-tag__hot-meta hf-mono hf-tiny hf-faint">${n.reading_minutes} min · ${n.word_count} 字</div>
-        </a>`,
-    )
-    .join('');
-
-  // 计算总字数 / 最近活跃
-  const totalWords = notes.reduce((s, n) => s + n.word_count, 0);
-  const lastUpdated = notes
-    .map((n) => isoDate(n))
-    .sort((a, b) => (a < b ? 1 : -1))[0];
-
-  const description = `标签 ${tag} 下的所有文章和笔记。`;
+  const sorted = sortTagNotes(notes);
+  const articles = buildLumioArticles(sorted, byTag);
+  const rows = articles.map((article) => renderArticleRow(article, { kind: '文章' })).join('');
+  const tagCloud = renderTagCloudPills(buildTagCloud(byTag));
+  const description = `与 ${tag} 相关的技术文章、工具与实践经验,共 ${notes.length} 篇。`;
 
   const body = `
-    <div class="wsa-tag">
-      <!-- header -->
-      <header class="wsa-tag__head">
-        <div class="hf-blob wsa-tag__blob" aria-hidden="true"></div>
-        <div class="wsa-tag__head-inner">
-          <div class="hf-mono hf-tiny hf-muted wsa-tag__crumbs"><a href="/tags/index.html">所有标签</a> /</div>
-          <h1 class="wsa-tag__h"><span style="color:var(--accent)">#</span>${esc(tag)}</h1>
-          <p class="wsa-tag__desc">${esc(description)}</p>
-          <ul class="wsa-tag__stats" aria-label="统计">
-            <li><b class="hf-mono">${notes.length}</b> 文章</li>
-            <li aria-hidden="true">·</li>
-            <li><b class="hf-mono">${totalWords.toLocaleString('en-US')}</b> 字</li>
-            ${lastUpdated ? `<li aria-hidden="true">·</li><li>最近更新 <time datetime="${esc(lastUpdated)}" class="hf-mono">${esc(lastUpdated)}</time></li>` : ''}
-            <li class="wsa-tag__stats-spacer" aria-hidden="true"></li>
-            <li><a class="ui-btn ui-btn--sm" href="/feed.xml" aria-label="RSS 订阅">RSS</a></li>
-          </ul>
+    <main class="page">
+      <nav class="crumb" aria-label="面包屑">
+        <a href="/">首页</a>
+        <span class="crumb__sep">/</span>
+        <a href="/tags/index.html">标签</a>
+        <span class="crumb__sep">/</span>
+        <span class="crumb__cur">${esc(tag)}</span>
+      </nav>
+
+      <div class="layout">
+        <div>
+          <div class="tag-detail-head">
+            <h1>标签:<em>${esc(tag)}</em></h1>
+            <p>${esc(description)}</p>
+          </div>
+          <div class="tabs" role="tablist" aria-label="内容类型">
+            <button class="tab is-active" type="button" data-kind="全部">全部</button>
+            <button class="tab" type="button" data-kind="文章">文章</button>
+            <button class="tab" type="button" data-kind="专栏">专栏</button>
+          </div>
+          <div class="alist" id="tag-list">${rows || '<p class="lumio-empty">暂无内容</p>'}</div>
+          <p class="lumio-empty" id="tag-empty" hidden>暂无内容</p>
         </div>
-      </header>
-
-      <div class="wsa-tag__grid">
-        <main class="wsa-tag__main" aria-label="标签 ${esc(tag)} 下的文章">
-          ${yearSections || '<p class="hf-muted">这个标签下暂时没有文章。</p>'}
-        </main>
-
-        <aside class="wsa-tag__side" aria-label="相关">
-          ${
-            relatedHtml
-              ? `<div class="wsa-side__h hf-mono hf-tiny">▸ 相关标签</div>
-                 <ul class="wsa-tag__related">${relatedHtml}</ul>`
-              : ''
-          }
-          ${
-            topHtml
-              ? `<div class="wsa-side__h hf-mono hf-tiny">▸ 标签下最热</div>
-                 <div class="wsa-tag__hot-list">${topHtml}</div>`
-              : ''
-          }
+        <aside>
+          <div class="side-card">
+            <div class="side-card__title">标签云</div>
+            <div class="tagcloud">${tagCloud}</div>
+          </div>
         </aside>
       </div>
-    </div>`;
+    </main>
+    <script>
+      (function(){
+        var tabs = Array.prototype.slice.call(document.querySelectorAll('.tab[data-kind]'));
+        var rows = Array.prototype.slice.call(document.querySelectorAll('#tag-list .arow'));
+        var empty = document.getElementById('tag-empty');
+        function apply(kind){
+          var visible = 0;
+          tabs.forEach(function(tab){ tab.classList.toggle('is-active', tab.getAttribute('data-kind') === kind); });
+          rows.forEach(function(row){
+            var rowKind = row.getAttribute('data-kind') || '文章';
+            var show = kind === '全部' || rowKind === kind;
+            row.classList.toggle('is-filtered-out', !show);
+            if (show) visible += 1;
+          });
+          if (empty) empty.hidden = visible !== 0;
+        }
+        tabs.forEach(function(tab){
+          tab.addEventListener('click', function(){ apply(tab.getAttribute('data-kind') || '全部'); });
+        });
+      })();
+    </script>`;
 
   return layout({
     title: `#${tag} · ${config.site.title}`,
@@ -213,22 +164,6 @@ export function renderTagPage(
     active: 'tags',
     path: `/tags/${encodeURIComponent(tag)}.html`,
   });
-}
-
-function computeRelatedTags(
-  current: string,
-  notes: NoteRow[],
-  byTag: Map<string, NoteRow[]>,
-): Array<[string, number]> {
-  const slugs = new Set(notes.map((n) => n.slug));
-  const counts = new Map<string, number>();
-  for (const [t, list] of byTag) {
-    if (t === current) continue;
-    let n = 0;
-    for (const note of list) if (slugs.has(note.slug)) n += 1;
-    if (n > 0) counts.set(t, n);
-  }
-  return [...counts.entries()].sort((a, b) => b[1] - a[1]);
 }
 
 /**

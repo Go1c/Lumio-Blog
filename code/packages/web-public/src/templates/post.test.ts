@@ -60,16 +60,21 @@ describe('renderPost Lumio layout', () => {
       config,
     );
 
-    expect(html).toContain('class="page-head post-head"');
-    expect(html).toContain('Article / Unity');
     expect(html).toContain('HUD3DUI 中 TMP 独立 Canvas 排序异常分析');
+    expect(html).toContain('class="crumb"');
+    expect(html).toContain('href="/articles/index.html">文章</a>');
     expect(html).toContain('class="page post-page"');
-    expect(html).toContain('class="post-layout"');
-    expect(html).toContain('class="wsa-prose post-prose hf-prose"');
+    expect(html).toContain('class="layout layout--post"');
+    expect(html).toContain('class="post-title"');
+    expect(html).toContain('class="post-hero"');
+    expect(html).toContain('class="wsa-prose post-prose prose hf-prose"');
+    expect(html).toContain('class="side-card toc"');
     expect(html).toContain('<h2 id="intro">Intro</h2><p>Body</p>');
     expect(html).toContain('href="/tags/Unity.html"');
     expect(html).toContain('href="/posts/related.html"');
     expect(html).toContain('aria-current="page">文章</a>');
+    expect(html).not.toContain('class="page-head post-head"');
+    expect(html).not.toContain('class="post-layout"');
     expect(html).not.toContain('wsa-post__grid');
     expect(html).not.toContain('wsa-post__main');
   });

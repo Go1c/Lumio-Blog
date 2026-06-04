@@ -189,7 +189,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   await mkdir(join(opts.out, 'search'), { recursive: true });
   await writeFile(
     join(opts.out, 'search', 'index.html'),
-    renderSearch(opts.config),
+    renderSearch(opts.config, { byTag, posts: publicNotes }),
     'utf-8',
   );
   if (opts.config.features?.graph !== false) {

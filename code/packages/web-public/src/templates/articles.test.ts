@@ -67,6 +67,9 @@ describe('renderArticles article data', () => {
     );
 
     expect(html).toContain('全部<span class="chip__n">2</span>');
+    expect(html).toContain('class="layout"');
+    expect(html).toContain('class="alist" id="article-list"');
+    expect(html).toContain('class="arow" href="/posts/gpu-pipeline.html"');
     expect(html).toContain('真实 GPU 管线拆解');
     expect(html).toContain('来自后端的真实摘要');
     expect(html).toContain('href="/posts/gpu-pipeline.html"');
@@ -75,12 +78,36 @@ describe('renderArticles article data', () => {
     expect(html).not.toContain('深入 GPU 渲染管线:从顶点到像素的全流程优化');
   });
 
+  it('does not invent design categories or hot tags for real posts without tags', () => {
+    const livePost = note({
+      slug: 'untagged-real-post',
+      title: '无标签真实文章',
+      summary: '来自后端但没有标签',
+      word_count: 600,
+      reading_minutes: 2,
+    });
+
+    const html = renderArticles([livePost], new Map(), config);
+
+    expect(html).toContain('无标签真实文章');
+    expect(html).toContain('文章<span class="chip__n">1</span>');
+    expect(html).toContain('暂无标签');
+    expect(html).not.toContain('渲染<span class="chip__n">6</span>');
+    expect(html).not.toContain('性能优化');
+    expect(html).not.toContain('Shader');
+  });
+
   it('uses Lumio design content only for the empty-state fallback', () => {
     const html = renderArticles([], new Map(), config);
 
     expect(html).toContain('全部<span class="chip__n">28</span>');
-    expect(html).toContain('深入 GPU 渲染管线:从顶点到像素的全流程优化');
+    expect(html).toContain('class="layout"');
+    expect(html).toContain('class="alist" id="article-list"');
+    expect(html).toContain('class="sortbox"');
+    expect(html).toContain('class="side-card"');
     expect(html).toContain('渲染优化实战');
+    expect(html).toContain('href="/articles/index.html?cat=');
     expect(html).not.toContain('href="#"');
+    expect(html).not.toContain('深入 GPU 渲染管线:从顶点到像素的全流程优化');
   });
 });

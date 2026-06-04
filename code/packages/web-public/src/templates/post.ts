@@ -2,10 +2,8 @@ import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { renderArticleComments } from '../partials/article-comments.js';
-import {
-  renderBacklinksGraphSection,
-  type Neighborhood,
-} from '../partials/backlinks-graph.js';
+import { type Neighborhood } from '../partials/backlinks-graph.js';
+import { buildLumioArticles } from './lumio-design.js';
 
 export interface PostData {
   note: NoteRow;
@@ -21,13 +19,11 @@ export interface PostData {
  * 对应设计稿: doc/prototype/hf-article.jsx (不含侧栏评论 — WS-B)
  */
 export function renderPost(data: PostData, config: SiteConfig): string {
-  const { note, byTag, series, neighborhood } = data;
-  const minigraphHtml = neighborhood
-    ? renderBacklinksGraphSection(neighborhood)
-    : '';
+  const { note, byTag, series } = data;
   const iso = isoDate(note);
   const tags = tagsForSlug(byTag, note.slug);
   const author = config.author;
+  const articleDesign = buildLumioArticles([note], byTag)[0];
 
   const visibilityLabel = labelOf(note.visibility);
   const visibilityBadge =
@@ -41,36 +37,29 @@ export function renderPost(data: PostData, config: SiteConfig): string {
     ? outline
         .map(
           (h) =>
-            `<li class="post-toc__item post-toc__item--${h.level}">
-              <a href="#${esc(h.id)}">${esc(h.text)}</a>
-            </li>`,
+            `<a class="toc__link${h.level === 3 ? ' toc__link--sub' : ''}" href="#${esc(h.id)}">${esc(h.text)}</a>`,
         )
         .join('')
     : '';
 
-  // 系列(同主标签)
-  const seriesPrimary = tags[0] ?? null;
   const seriesItems = (series || [])
     .filter((s) => s.slug !== note.slug)
     .slice(0, 6)
-    .map(
-      (s) => `
-        <li>
-          <a class="post-related__link" href="/posts/${esc(s.slug)}.html">${esc(s.title)}</a>
-        </li>`,
-    )
+    .map((s, index) => renderRelatedItem(s, byTag, index))
     .join('');
 
   const tagLinks = tags
     .map(
       (t, i) =>
-        `<a class="chip post-tag${i === 0 ? ' is-active' : ''}" href="/tags/${esc(encodeURIComponent(t))}.html">#${esc(t)}</a>`,
+        `<a class="tag-inline${i === 1 ? ' s-mint' : ''}" href="/tags/${esc(encodeURIComponent(t))}.html">${esc(t)}</a>`,
     )
     .join('');
 
-  const avatarChar = (author.name || 'L').charAt(0).toUpperCase();
-  const primaryTag = tags[0] ?? 'Article';
-  const summary = note.summary?.trim();
+  const primaryTag = tags[0] ?? '文章';
+  const tagCrumb = tags[0]
+    ? `<span class="crumb__sep">/</span>
+          <a href="/tags/${esc(encodeURIComponent(tags[0]))}.html">${esc(tags[0])}</a>`
+    : '';
   const postBody = renderPostBody(note);
 
   // 阅读进度条 + analytics view ping
@@ -142,74 +131,66 @@ export function renderPost(data: PostData, config: SiteConfig): string {
         <div class="wsa-progress__bar" id="wsa-progress-bar" aria-hidden="true"></div>
       </div>
 
-      <header class="page-head post-head">
-        <div class="page-head__grid" aria-hidden="true"></div>
-        <div class="page-head__eyebrow">Article / ${esc(primaryTag)}</div>
-        <h1 class="page-head__title post-head__title">${esc(note.title)}</h1>
-        ${summary ? `<p class="page-head__sub post-head__sub">${esc(summary)}</p>` : ''}
-        <div class="post-head__meta">
-          ${visibilityBadge}
-          <time datetime="${esc(iso)}">${esc(iso)}</time>
-          <span aria-hidden="true">·</span>
-          <span aria-label="阅读时长 ${note.reading_minutes} 分钟">${note.reading_minutes} 分钟</span>
-          <span aria-hidden="true">·</span>
-          <span aria-label="共 ${note.word_count} 字">${note.word_count.toLocaleString('en-US')} 字</span>
-        </div>
-        ${tagLinks ? `<nav class="post-head__tags" aria-label="文章标签">${tagLinks}</nav>` : ''}
-      </header>
-
       <main class="page post-page">
-        <div class="post-layout">
+        <nav class="crumb" aria-label="面包屑">
+          <a href="/">首页</a>
+          <span class="crumb__sep">/</span>
+          <a href="/articles/index.html">文章</a>
+          ${tagCrumb}
+          <span class="crumb__sep">/</span>
+          <span class="crumb__cur">${esc(note.title)}</span>
+        </nav>
+
+        <div class="layout layout--post">
           <article class="post-article">
-            <div class="post-article__bar">
-              <a class="sec-more" href="/articles/index.html">
-                <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M13 8H4M8 4 4 8l4 4"></path></svg>
-                全部文章
-              </a>
-              ${commentsHtml ? `<a class="sec-more" href="#comments">评论</a>` : ''}
+            <h1 class="post-title">${esc(note.title)}</h1>
+            <div class="post-tags">
+              ${tagLinks || `<span class="tag-inline">${esc(primaryTag)}</span>`}
+              ${visibilityBadge}
+              <span class="diff">
+                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 11l3-3 2 2 4-4 3 3"></path></svg>
+                中级
+              </span>
+            </div>
+            <div class="post-meta">
+              <span class="post-meta__author">
+                <span class="post-meta__face">${userIcon()}</span>
+                <span class="post-meta__name">${esc(author.name)}</span>
+              </span>
+              <span class="m">${calendarIcon()}<time datetime="${esc(iso)}">${esc(iso)}</time></span>
+              <span class="m">${clockIcon()}${note.reading_minutes} 分钟</span>
+              <span class="m">${eyeIcon()}${displayViews(note)} 阅读</span>
+            </div>
+
+            <div class="post-hero">
+              <div class="thumb__grid" aria-hidden="true"></div>
+              <div class="post-hero__art" aria-hidden="true">
+                ${articleDesign?.art ?? ''}
+                <div class="cube c-mint float" style="--s:40px; left:58%; top:46%; animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
+              </div>
             </div>
 
             ${postBody}
-
-            <aside class="post-author" aria-label="订阅作者">
-              <div class="post-author__avatar" aria-hidden="true">${esc(avatarChar)}</div>
-              <div class="post-author__body">
-                <div class="post-author__name">${esc(author.name)}</div>
-                <div class="post-author__sub">订阅以收到下一篇技术笔记</div>
-              </div>
-              <a class="btn-ghost post-author__rss" href="/feed.xml">订阅 RSS</a>
-            </aside>
-
             ${commentsHtml}
           </article>
 
           <aside class="post-rail" aria-label="文章信息">
-            <section class="post-panel post-stats">
-              <div class="post-panel__title">阅读信息</div>
-              <dl class="post-stats__grid">
-                <div><dt>日期</dt><dd>${esc(iso)}</dd></div>
-                <div><dt>时长</dt><dd>${note.reading_minutes} 分钟</dd></div>
-                <div><dt>字数</dt><dd>${note.word_count.toLocaleString('en-US')}</dd></div>
-              </dl>
-            </section>
-
             ${
               outlineHtml
-                ? `<section class="post-panel">
-                    <div class="post-panel__title">文章大纲</div>
-                    <ol class="post-toc">${outlineHtml}</ol>
+                ? `<section class="side-card toc">
+                    <div class="side-card__title">文章目录</div>
+                    <nav class="toc__list" id="toc">${outlineHtml}</nav>
                   </section>`
                 : ''
             }
             ${
               seriesItems
-                ? `<section class="post-panel">
-                    <div class="post-panel__title">${esc(seriesPrimary ?? '系列')}</div>
-                    <ul class="post-related">${seriesItems}</ul>
+                ? `<section class="side-card">
+                    <div class="side-card__title">相关文章</div>
+                    <div class="related">${seriesItems}</div>
                   </section>`
                 : ''
             }
-            ${minigraphHtml ? `<section class="post-panel post-graph">${minigraphHtml}</section>` : ''}
           </aside>
         </div>
       </main>
@@ -238,6 +219,30 @@ export function renderPost(data: PostData, config: SiteConfig): string {
             try { navigator.clipboard.writeText(location.href); sh.setAttribute('aria-label','已复制链接(浏览器不支持原生分享)'); } catch (e) {}
           }
         });
+      })();
+    </script>
+    <script>
+      (function(){
+        var links = Array.prototype.slice.call(document.querySelectorAll('.toc__link'));
+        if (!links.length) return;
+        var heads = links.map(function(link){ return document.querySelector(link.getAttribute('href') || ''); });
+        function spy(){
+          var active = 0;
+          heads.forEach(function(head, i){
+            if (head && head.getBoundingClientRect().top < 120) active = i;
+          });
+          links.forEach(function(link, i){ link.classList.toggle('is-active', i === active); });
+        }
+        links.forEach(function(link){
+          link.addEventListener('click', function(event){
+            var target = document.querySelector(link.getAttribute('href') || '');
+            if (!target) return;
+            event.preventDefault();
+            window.scrollTo({ top: target.getBoundingClientRect().top + window.scrollY - 24, behavior: 'smooth' });
+          });
+        });
+        window.addEventListener('scroll', spy, { passive: true });
+        spy();
       })();
     </script>`;
 
@@ -271,7 +276,43 @@ function visBadgeClass(v: string): string {
 function renderPostBody(note: NoteRow): string {
   if (note.kind === 'canvas') return `<div class="wsa-prose post-prose ob-canvas-host">${note.body_html}</div>`;
   if (note.kind === 'html') return `<div class="wsa-prose post-prose ob-html-host">${note.body_html}</div>`;
-  return `<div class="wsa-prose post-prose hf-prose">${note.body_html}</div>`;
+  return `<div class="wsa-prose post-prose prose hf-prose">${note.body_html}</div>`;
+}
+
+function renderRelatedItem(note: NoteRow, byTag: Map<string, NoteRow[]>, index: number): string {
+  const article = buildLumioArticles([note], byTag)[0];
+  return `
+    <a class="related__item" href="/posts/${esc(note.slug)}.html">
+      <span class="related__thumb thumb ${esc(article?.tone ?? 't-blue')}">
+        <span class="thumb__grid" aria-hidden="true"></span>
+        ${article?.art ?? ''}
+      </span>
+      <span>
+        <span class="related__t">${esc(note.title)}</span>
+        <span class="related__d">${esc(isoDate(note))}</span>
+      </span>
+    </a>`;
+}
+
+function displayViews(note: NoteRow): string {
+  const value = Math.max(1.1, (note.word_count || 1200) / 900);
+  return `${value.toFixed(1)}k`;
+}
+
+function userIcon(): string {
+  return '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>';
+}
+
+function calendarIcon(): string {
+  return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>';
+}
+
+function clockIcon(): string {
+  return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
+}
+
+function eyeIcon(): string {
+  return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5z"></path><circle cx="8" cy="8" r="2"></circle></svg>';
 }
 
 interface OutlineEntry {

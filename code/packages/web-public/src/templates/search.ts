@@ -1,92 +1,63 @@
-import type { SiteConfig } from '@opennote/core';
+import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
+import { renderHotTags } from './lumio-design.js';
+
+export interface SearchTemplateData {
+  byTag?: Map<string, NoteRow[]>;
+  posts?: NoteRow[];
+}
 
 /**
- * 搜索结果页 — SSR 骨架 + 客户端 JS 联想/请求
- *
- * 设计稿:doc/prototype/hf-extras.jsx §3 HFSearchResults
- *
- * 无 JS 时:`<form action="/search/" method="get">` 仍可工作 — 用户提交后,
- * 页面 reload,query string `?q=xxx` 由客户端 JS 读取并触发首次请求(JS 启用时)。
- * 当 JS 关闭,服务端会 404 这个 query;在 web-public 静态站场景下,fallback
- * 是显示空骨架 + 引导用户使用其他方式(暂无后端 SSR 渲染)。
- *
+ * 搜索结果页 — Lumio 搜索壳 + 客户端真实 API 请求。
  * 客户端 JS 行为(/search.js):
  *  - input 200ms debounce → GET /api/search/suggest?q=
- *  - submit / Enter → GET /api/search?q=&type=&from=&to=
- *  - facet 切换 → 重新请求
+ *  - submit / Enter → GET /api/search?q=
+ *  - 结果渲染为最新设计稿的 .arow 行列表
  */
-export function renderSearch(config: SiteConfig): string {
+export function renderSearch(config: SiteConfig, data: SearchTemplateData = {}): string {
+  const hotTags = buildHotTags(data.byTag);
+  const suggestions = buildSuggestions(hotTags, data.posts);
+  const suggestionHtml = suggestions.length
+    ? suggestions.map((item) => `
+                  <a class="suggest__item" href="/search/index.html?q=${esc(encodeURIComponent(item))}">
+                    ${searchIcon()}${esc(item)}
+                  </a>`).join('')
+    : '<p class="rank__empty">暂无搜索建议</p>';
   const body = `
-    <div class="wsb-search" data-component="search">
-      <!-- search bar prominent -->
-      <div class="wsb-search__bar">
-        <div class="wsb-search__bar-inner">
-          <form class="wsb-search__form" action="/search/" method="get" role="search" aria-label="站内搜索">
-            <span class="wsb-search__icon" aria-hidden="true">
-              <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><path d="m11 11 3 3"/></svg>
-            </span>
-            <label for="wsb-search-input" class="sr-only">搜索关键词</label>
-            <input
-              id="wsb-search-input"
-              class="wsb-search__input"
-              type="search"
-              name="q"
-              autocomplete="off"
-              spellcheck="false"
-              placeholder="搜索文章 / 笔记 / 标签…"
-              aria-controls="wsb-search-results"
-              aria-describedby="wsb-search-status"
-            >
-            <span class="wsb-search__kbd hf-mono hf-tiny hf-faint" aria-hidden="true">↵ enter</span>
-            <kbd class="hf-kbd" aria-hidden="true">esc</kbd>
-          </form>
-          <div id="wsb-search-status" class="hf-mono hf-tiny hf-muted wsb-search__status" aria-live="polite"></div>
-          <ul id="wsb-search-suggest" class="wsb-search__suggest" role="listbox" aria-label="搜索建议" hidden></ul>
+    <div class="lumio-search" data-component="search">
+      <header class="page-head">
+        <div class="page-head__grid" aria-hidden="true"></div>
+        <div class="page-head__eyebrow">Search</div>
+        <h1 class="page-head__title">搜索结果:<span id="wsb-search-query">输入关键词</span></h1>
+        <p class="page-head__sub result-count" id="wsb-search-status" aria-live="polite">输入关键词开始搜索</p>
+      </header>
+
+      <main class="page">
+        <ul id="wsb-search-suggest" class="wsb-search__suggest" role="listbox" aria-label="搜索建议" hidden></ul>
+        <div class="layout">
+          <div>
+            <div id="wsb-search-results" aria-busy="false">
+              <div class="lumio-empty" data-empty>
+                <p>输入关键词开始搜索</p>
+              </div>
+              <div class="alist" data-results hidden></div>
+            </div>
+          </div>
+          <aside>
+            <div class="side-card">
+              <div class="side-card__title">搜索建议</div>
+              <div class="suggest">
+                ${suggestionHtml}
+              </div>
+            </div>
+
+            <div class="side-card">
+              <div class="side-card__title">热门标签</div>
+              <div class="rank">${renderHotTags(hotTags, 5, 'empty')}</div>
+            </div>
+          </aside>
         </div>
-      </div>
-
-      <div class="wsb-search__grid">
-        <!-- filters -->
-        <aside class="wsb-search__filters" aria-label="筛选">
-          <div class="wsb-search__facet" data-facet="type">
-            <div class="wsb-search__facet-h hf-mono hf-tiny">▸ 类型</div>
-            <div class="wsb-search__facet-list" role="radiogroup" aria-label="按类型筛选">
-              ${renderFacet([
-                ['', '全部'],
-                ['post', '文章'],
-                ['note', '笔记'],
-                ['tag', '标签'],
-              ])}
-            </div>
-          </div>
-
-          <div class="wsb-search__facet" data-facet="time">
-            <div class="wsb-search__facet-h hf-mono hf-tiny">▸ 时间</div>
-            <div class="wsb-search__facet-list" role="radiogroup" aria-label="按时间筛选">
-              ${renderFacet([
-                ['', '全部时间'],
-                ['7d', '近 7 天'],
-                ['30d', '近 30 天'],
-                ['1y', '近 1 年'],
-              ])}
-            </div>
-          </div>
-        </aside>
-
-        <!-- results -->
-        <main class="wsb-search__main" id="wsb-search-results" aria-busy="false">
-          <div class="wsb-search__sort hf-mono hf-tiny hf-muted">排序: 相关度 ↓</div>
-          <div class="wsb-search__empty" data-empty>
-            <div class="wsb-search__empty-icon" aria-hidden="true">
-              <svg width="48" height="48" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"><circle cx="7" cy="7" r="4.5"/><path d="m11 11 3 3"/></svg>
-            </div>
-            <p class="hf-muted">输入关键词开始搜索</p>
-            <p class="hf-tiny hf-faint">支持中文、英文、缩写;空格分隔多个词</p>
-          </div>
-          <ol class="wsb-search__list" data-results hidden></ol>
-        </main>
-      </div>
+      </main>
     </div>
     <script src="/search.js" defer></script>`;
 
@@ -100,15 +71,30 @@ export function renderSearch(config: SiteConfig): string {
   });
 }
 
-function renderFacet(items: Array<[string, string]>): string {
-  return items
-    .map(
-      ([value, label], i) => `
-      <label class="wsb-search__facet-item${i === 0 ? ' is-active' : ''}">
-        <input type="radio" value="${esc(value)}" ${i === 0 ? 'checked' : ''}>
-        <span>${esc(label)}</span>
-        <span class="hf-mono hf-tiny hf-faint" data-count></span>
-      </label>`,
-    )
-    .join('');
+function searchIcon(): string {
+  return '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>';
+}
+
+function buildHotTags(byTag?: Map<string, NoteRow[]>): Array<{ name: string; count: number }> {
+  if (!byTag) return [];
+  return [...byTag.entries()]
+    .filter(([, notes]) => notes.length > 0)
+    .map(([name, notes]) => ({ name, count: notes.length }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-Hans-CN'));
+}
+
+function buildSuggestions(tags: Array<{ name: string; count: number }>, posts?: NoteRow[]): string[] {
+  const seen = new Set<string>();
+  const out: string[] = [];
+  for (const item of [
+    ...tags.map((tag) => tag.name),
+    ...(posts ?? []).slice(0, 5).map((post) => post.title),
+  ]) {
+    const value = item.trim();
+    if (!value || seen.has(value)) continue;
+    seen.add(value);
+    out.push(value);
+    if (out.length >= 5) break;
+  }
+  return out;
 }
