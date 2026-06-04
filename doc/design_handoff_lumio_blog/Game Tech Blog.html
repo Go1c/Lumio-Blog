@@ -33,7 +33,7 @@
     <div class="nav__spacer"></div>
     <label class="search">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
-      <input type="text" placeholder="搜索文章、标签">
+      <input type="text" placeholder="搜索文章、标签" onkeydown="if(event.key==='Enter'&&this.value.trim())location.href='Search.html'">
     </label>
     <button class="icon-btn" aria-label="切换主题">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
@@ -51,7 +51,7 @@
       <div class="hero__eyebrow">Lumio Dev Notes</div>
       <h1 class="hero__title"><em>Game</em><em>Tech Blog</em></h1>
       <p class="hero__sub"><b>技术文章</b><span class="dot"></span><b>游戏开发</b><span class="dot"></span><b>实践分享</b></p>
-      <a class="btn-primary" href="#">
+      <a class="btn-primary" href="Post.html">
         阅读最新文章
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9M8 4l4 4-4 4"></path></svg>
       </a>
@@ -79,7 +79,7 @@
     <main class="content">
       <div class="sec-head">
         <h2 class="sec-title">最新文章</h2>
-        <a class="sec-more" href="#">查看全部
+        <a class="sec-more" href="Articles.html">查看全部
           <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8h9M8 4l4 4-4 4"></path></svg>
         </a>
       </div>
@@ -239,5 +239,9 @@
     </main>
   </div>
 </div>
+<script>
+  // make article cards navigate to the detail page
+  document.querySelectorAll('.grid .card').forEach(c => c.addEventListener('click', () => location.href = 'Post.html'));
+</script>
 </body>
 </html>

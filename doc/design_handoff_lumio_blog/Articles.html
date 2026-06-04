@@ -28,7 +28,7 @@
     <div class="nav__spacer"></div>
     <label class="search">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
-      <input type="text" placeholder="搜索文章、标签">
+      <input type="text" placeholder="搜索文章、标签" onkeydown="if(event.key==='Enter'&&this.value.trim())location.href='Search.html'">
     </label>
     <button class="icon-btn" aria-label="切换主题">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
@@ -41,96 +41,118 @@
   <header class="page-head">
     <div class="page-head__grid"></div>
     <div class="page-head__eyebrow">All Articles</div>
-    <h1 class="page-head__title">全部文章</h1>
+    <h1 class="page-head__title">文章</h1>
     <p class="page-head__sub">从渲染、性能到架构与工具链,系统沉淀的游戏开发技术干货。</p>
   </header>
 
   <main class="page">
-    <div class="chips">
-      <a class="chip is-active" href="#">全部<span class="chip__n">28</span></a>
-      <a class="chip" href="#">渲染<span class="chip__n">6</span></a>
-      <a class="chip" href="#">性能<span class="chip__n">5</span></a>
-      <a class="chip" href="#">图形学<span class="chip__n">4</span></a>
-      <a class="chip" href="#">架构<span class="chip__n">5</span></a>
-      <a class="chip" href="#">网络<span class="chip__n">3</span></a>
-      <a class="chip" href="#">工具<span class="chip__n">5</span></a>
+    <div class="layout">
+      <!-- ───────── MAIN ───────── -->
+      <div>
+        <div class="list-bar">
+          <div class="chips">
+            <a class="chip is-active" href="#" data-cat="全部">全部<span class="chip__n">28</span></a>
+            <a class="chip" href="#" data-cat="渲染">渲染<span class="chip__n">6</span></a>
+            <a class="chip" href="#" data-cat="性能">性能<span class="chip__n">5</span></a>
+            <a class="chip" href="#" data-cat="图形学">图形学<span class="chip__n">4</span></a>
+            <a class="chip" href="#" data-cat="架构">架构<span class="chip__n">5</span></a>
+            <a class="chip" href="#" data-cat="网络">网络<span class="chip__n">3</span></a>
+            <a class="chip" href="#" data-cat="工具">工具<span class="chip__n">5</span></a>
+          </div>
+          <button class="sortbox" id="sort">
+            <span id="sort-label">最新发布</span>
+            <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6l4 4 4-4"></path></svg>
+          </button>
+        </div>
+
+        <div class="alist" id="article-list"></div>
+      </div>
+
+      <!-- ───────── SIDEBAR ───────── -->
+      <aside>
+        <div class="side-card">
+          <div class="side-card__title">热门标签</div>
+          <div class="rank">
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">1</span><span class="rank__name">Unity</span><span class="rank__n">128</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">2</span><span class="rank__name">渲染</span><span class="rank__n">96</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">3</span><span class="rank__name">性能优化</span><span class="rank__n">84</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">4</span><span class="rank__name">Shader</span><span class="rank__n">68</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">5</span><span class="rank__name">架构设计</span><span class="rank__n">56</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">6</span><span class="rank__name">网络同步</span><span class="rank__n">42</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">7</span><span class="rank__name">C#</span><span class="rank__n">36</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">8</span><span class="rank__name">URP</span><span class="rank__n">30</span></a>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-card__title">最近更新</div>
+          <div class="recent">
+            <a class="recent__item" href="Post.html"><span class="recent__t">渲染优化实战</span><span class="recent__d">2026-05-28</span></a>
+            <a class="recent__item" href="Post.html"><span class="recent__t">Unity 性能调优</span><span class="recent__d">2026-05-25</span></a>
+            <a class="recent__item" href="Post.html"><span class="recent__t">Shader 入门指南</span><span class="recent__d">2026-05-22</span></a>
+            <a class="recent__item" href="Post.html"><span class="recent__t">架构设计笔记</span><span class="recent__d">2026-05-20</span></a>
+          </div>
+        </div>
+      </aside>
     </div>
-
-    <!-- featured -->
-    <article class="feature">
-      <div class="feature__art thumb t-blue">
-        <div class="thumb__grid"></div>
-        <span class="badge">置顶</span>
-        <div class="thumb__art">
-          <div class="cube float" style="--s:48px; left:42%; top:38%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
-          <div class="cube c-mint float" style="--s:36px; left:54%; top:56%; animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
-          <div class="cube c-amber float" style="--s:28px; left:30%; top:58%; animation-delay:-2.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
-        </div>
-      </div>
-      <div class="feature__body">
-        <div class="chips" style="margin:0 0 4px;"><span class="chip is-active" style="cursor:default;">渲染</span></div>
-        <h2 class="feature__title">深入 GPU 渲染管线:从顶点到像素的全流程优化</h2>
-        <p class="feature__dek">拆解现代渲染管线的每个阶段,结合实际项目讲透 Draw Call 合批、Overdraw 控制与带宽优化的关键决策。</p>
-        <div class="card__meta">
-          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>2026-05-30</span>
-          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>18 分钟</span>
-          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5z"></path><circle cx="8" cy="8" r="2"></circle></svg>3.2k 阅读</span>
-        </div>
-      </div>
-    </article>
-
-    <div class="grid-4" id="article-grid"></div>
   </main>
 </div>
 
 <script>
-  // 文章数据 —— 后续可由后台 / 接口替换
   const ARTICLES = [
-    { t:'渲染优化实战', d:'从原理到实战,深入剖析渲染优化的关键技术与方法。', cat:'渲染', tone:'t-blue', date:'2026-05-28', min:12, art:'<div class="cube float" style="--s:36px; left:42%; top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-mint float" style="--s:28px; left:54%; top:56%; animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'Unity 性能调优', d:'系统化的性能分析与优化策略,打造流畅稳定的游戏体验。', cat:'性能', tone:'t-mint', date:'2026-05-25', min:15, art:'<div class="cube c-mint float" style="--s:40px; left:50%; top:44%; margin:-20px 0 0 -20px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'Shader 入门指南', d:'从基础概念到实战案例,快速上手 Shader 编写与调试。', cat:'图形学', tone:'t-amber', date:'2026-05-22', min:10, art:'<div class="orb" style="left:34%;top:30%;"></div><div class="cube c-amber float" style="--s:28px; left:62%; top:60%; animation-delay:-1.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'架构设计笔记', d:'分享可扩展、可维护的游戏架构设计思路与最佳实践。', cat:'架构', tone:'t-violet', date:'2026-05-20', min:14, art:'<div class="cube float" style="--s:30px; left:30%; top:36%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube float" style="--s:30px; left:54%; top:52%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0; animation-delay:-1.6s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'网络同步方案', d:'对比主流同步方案,详解实现细节与优化技巧。', cat:'网络', tone:'t-sky', date:'2026-05-18', min:13, art:'<div class="cube float" style="--s:28px; left:26%; top:34%; --t:#BFE6FF; --r:#86C8FF; --l:#4FA0E8;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube float" style="--s:28px; left:56%; top:34%; --t:#BFE6FF; --r:#86C8FF; --l:#4FA0E8; animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube float" style="--s:28px; left:42%; top:58%; --t:#BFE6FF; --r:#86C8FF; --l:#4FA0E8; animation-delay:-2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'工具链提效', d:'精选工具与自动化流程,全面提升开发效率与协作体验。', cat:'工具', tone:'t-rose', date:'2026-05-15', min:11, art:'<div class="cube c-pink float" style="--s:38px; left:50%; top:46%; margin:-19px 0 0 -19px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'光照与阴影系统', d:'实时光照、阴影贴图与全局光照的实现取舍与性能平衡。', cat:'图形学', tone:'t-amber', date:'2026-05-12', min:16, art:'<div class="orb" style="left:36%;top:28%;"></div>' },
-    { t:'内存管理与 GC 优化', d:'定位内存峰值、降低 GC 抖动,稳住帧率的实战手册。', cat:'性能', tone:'t-mint', date:'2026-05-09', min:13, art:'<div class="cube c-mint float" style="--s:34px; left:40%; top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-mint float" style="--s:26px; left:58%; top:56%; animation-delay:-1.3s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
-    { t:'ECS 架构落地实践', d:'数据驱动设计如何在真实项目中提升性能与可维护性。', cat:'架构', tone:'t-violet', date:'2026-05-06', min:15, art:'<div class="cube float" style="--s:28px; left:28%; top:34%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube float" style="--s:28px; left:56%; top:34%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0; animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' }
+    { t:'渲染优化实战', d:'从原理到实战,深入剖析渲染优化的关键技术与方法,打造高性能稳定的游戏体验。', cat:'渲染', tone:'t-blue', date:'2026-05-28', min:12, read:2100, art:'<span class="cube float" style="--s:30px;left:42%;top:38%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube c-mint float" style="--s:22px;left:56%;top:56%;animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'Unity 性能调优', d:'系统化的性能分析与优化策略,打造流畅稳定的游戏体验。', cat:'性能', tone:'t-mint', date:'2026-05-25', min:15, read:1800, art:'<span class="cube c-mint float" style="--s:34px;left:50%;top:46%;margin:-17px 0 0 -17px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'Shader 入门指南', d:'从基础概念到实战案例,快速上手 Shader 编写与调试。', cat:'图形学', tone:'t-amber', date:'2026-05-22', min:10, read:1600, art:'<span class="orb" style="left:28%;top:18%;width:38px;height:38px;"></span>' },
+    { t:'架构设计笔记', d:'分享可扩展、可维护的游戏架构设计思路与最佳实践。', cat:'架构', tone:'t-violet', date:'2026-05-20', min:14, read:1300, art:'<span class="cube float" style="--s:24px;left:28%;top:34%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube float" style="--s:24px;left:54%;top:52%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;animation-delay:-1.6s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'网络同步方案', d:'对比主流同步方案,详解实现细节与优化技巧,打造稳定的多人体验。', cat:'网络', tone:'t-sky', date:'2026-05-18', min:13, read:1200, art:'<span class="cube float" style="--s:22px;left:26%;top:34%;--t:#BFE6FF;--r:#86C8FF;--l:#4FA0E8;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube float" style="--s:22px;left:56%;top:34%;--t:#BFE6FF;--r:#86C8FF;--l:#4FA0E8;animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube float" style="--s:22px;left:42%;top:58%;--t:#BFE6FF;--r:#86C8FF;--l:#4FA0E8;animation-delay:-2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'工具链提效', d:'精选工具与自动化流程,全面提升开发效率与协作体验。', cat:'工具', tone:'t-rose', date:'2026-05-15', min:11, read:1100, art:'<span class="cube c-pink float" style="--s:32px;left:50%;top:46%;margin:-16px 0 0 -16px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'光照与阴影系统', d:'实时光照、阴影贴图与全局光照的实现取舍与性能平衡。', cat:'图形学', tone:'t-amber', date:'2026-05-12', min:16, read:980, art:'<span class="orb" style="left:30%;top:16%;width:36px;height:36px;"></span>' },
+    { t:'内存管理与 GC 优化', d:'定位内存峰值、降低 GC 抖动,稳住帧率的实战手册。', cat:'性能', tone:'t-mint', date:'2026-05-09', min:13, read:870, art:'<span class="cube c-mint float" style="--s:28px;left:40%;top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube c-mint float" style="--s:20px;left:58%;top:56%;animation-delay:-1.3s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'ECS 架构落地实践', d:'数据驱动设计如何在真实项目中提升性能与可维护性。', cat:'架构', tone:'t-violet', date:'2026-05-06', min:15, read:760, art:'<span class="cube float" style="--s:24px;left:28%;top:34%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube float" style="--s:24px;left:56%;top:34%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' }
   ];
-  const meta = (a) => `
-    <div class="card__meta">
-      <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>${a.date}</span>
-      <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>${a.min} 分钟</span>
-    </div>`;
-  document.getElementById('article-grid').innerHTML = ARTICLES.map(a => `
-    <article class="card">
-      <div class="thumb ${a.tone}">
-        <div class="thumb__grid"></div>
-        <span class="badge">${a.cat}</span>
-        <div class="thumb__art">${a.art}</div>
-      </div>
-      <div class="card__body">
-        <h3 class="card__title">${a.t}</h3>
-        <p class="card__dek">${a.d}</p>
-        ${meta(a)}
-      </div>
-    </article>`).join('');
+  const toneTag = { 't-blue':'', 't-mint':'s-mint', 't-amber':'s-amber', 't-violet':'s-violet', 't-sky':'s-sky', 't-rose':'s-rose' };
+  const fmtRead = (n) => n >= 1000 ? (n/1000).toFixed(1) + 'k' : '' + n;
+  const row = (a) => `
+    <a class="arow" href="Post.html">
+      <span class="arow__thumb thumb ${a.tone}"><span class="thumb__grid"></span><span class="thumb__art">${a.art}</span></span>
+      <span class="arow__body">
+        <span class="arow__head">
+          <span class="arow__title">${a.t}</span>
+          <span class="tag-inline ${toneTag[a.tone]}">${a.cat}</span>
+        </span>
+        <span class="arow__dek">${a.d}</span>
+        <span class="arow__meta">
+          <span class="arow__author"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>Lumio</span>
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>${a.date}</span>
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>${a.min} 分钟</span>
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5z"></path><circle cx="8" cy="8" r="2"></circle></svg>${fmtRead(a.read)} 阅读</span>
+        </span>
+      </span>
+    </a>`;
 
-  // chip filter
-  document.querySelectorAll('.chips .chip').forEach(c => {
-    if (c.style.cursor === 'default') return;
-    c.addEventListener('click', e => {
-      e.preventDefault();
-      document.querySelectorAll('#article-grid ~ *, .chips .chip').forEach(x=>{});
-      document.querySelectorAll('.page > .chips .chip').forEach(x => x.classList.remove('is-active'));
-      c.classList.add('is-active');
-      const cat = c.firstChild.textContent.trim();
-      const list = cat === '全部' ? ARTICLES : ARTICLES.filter(a => a.cat === cat);
-      document.getElementById('article-grid').innerHTML = list.map(a => `
-        <article class="card">
-          <div class="thumb ${a.tone}"><div class="thumb__grid"></div><span class="badge">${a.cat}</span><div class="thumb__art">${a.art}</div></div>
-          <div class="card__body"><h3 class="card__title">${a.t}</h3><p class="card__dek">${a.d}</p>${meta(a)}</div>
-        </article>`).join('') || '<p style="color:var(--muted);font-family:var(--font-zh);padding:20px;">该分类暂无文章</p>';
-    });
+  let curCat = '全部', curSort = 'new';
+  function render() {
+    let list = curCat === '全部' ? ARTICLES.slice() : ARTICLES.filter(a => a.cat === curCat);
+    if (curSort === 'hot') list.sort((a,b) => b.read - a.read);
+    else list.sort((a,b) => b.date.localeCompare(a.date));
+    document.getElementById('article-list').innerHTML = list.map(row).join('') ||
+      '<p style="color:var(--muted);font-family:var(--font-zh);padding:24px;text-align:center;">该分类暂无文章</p>';
+  }
+  render();
+
+  document.querySelectorAll('.chip').forEach(c => c.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.chip').forEach(x => x.classList.remove('is-active'));
+    c.classList.add('is-active');
+    curCat = c.dataset.cat;
+    render();
+  }));
+
+  const sortBtn = document.getElementById('sort');
+  sortBtn.addEventListener('click', () => {
+    curSort = curSort === 'new' ? 'hot' : 'new';
+    document.getElementById('sort-label').textContent = curSort === 'new' ? '最新发布' : '最多阅读';
+    render();
   });
 </script>
 </body>

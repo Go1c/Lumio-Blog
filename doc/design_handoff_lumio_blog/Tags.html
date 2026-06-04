@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<title>标签 · Lumio.games</title>
+<title>标签:Unity · Lumio.games</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
@@ -28,7 +28,7 @@
     <div class="nav__spacer"></div>
     <label class="search">
       <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
-      <input type="text" placeholder="搜索文章、标签">
+      <input type="text" placeholder="搜索文章、标签" onkeydown="if(event.key==='Enter'&&this.value.trim())location.href='Search.html'">
     </label>
     <button class="icon-btn" aria-label="切换主题">
       <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
@@ -38,61 +38,99 @@
     </a>
   </nav>
 
-  <header class="page-head">
-    <div class="page-head__grid"></div>
-    <div class="page-head__eyebrow">Tags</div>
-    <h1 class="page-head__title">标签</h1>
-    <p class="page-head__sub">按主题快速找到你关心的内容,标签越大代表文章越多。</p>
-  </header>
-
   <main class="page">
-    <h2 class="section-title">热门标签</h2>
-    <div class="tagcloud">
-      <a class="tag-pill is-big"          href="#">渲染<span class="tag-pill__n">6</span></a>
-      <a class="tag-pill is-big s-mint"   href="#">性能优化<span class="tag-pill__n">5</span></a>
-      <a class="tag-pill is-mid s-amber"  href="#">Shader<span class="tag-pill__n">4</span></a>
-      <a class="tag-pill is-mid s-violet" href="#">架构设计<span class="tag-pill__n">5</span></a>
-      <a class="tag-pill is-mid s-sky"    href="#">网络同步<span class="tag-pill__n">3</span></a>
-      <a class="tag-pill s-rose"          href="#">工具链<span class="tag-pill__n">5</span></a>
-      <a class="tag-pill is-mid"          href="#">Unity<span class="tag-pill__n">8</span></a>
-      <a class="tag-pill s-mint"          href="#">内存管理<span class="tag-pill__n">3</span></a>
-      <a class="tag-pill s-violet"        href="#">ECS<span class="tag-pill__n">2</span></a>
-      <a class="tag-pill is-mid s-amber"  href="#">光照<span class="tag-pill__n">4</span></a>
-      <a class="tag-pill s-sky"           href="#">物理<span class="tag-pill__n">2</span></a>
-      <a class="tag-pill"                 href="#">动画<span class="tag-pill__n">3</span></a>
-      <a class="tag-pill s-rose"          href="#">UI<span class="tag-pill__n">3</span></a>
-      <a class="tag-pill"                 href="#">音频<span class="tag-pill__n">1</span></a>
-      <a class="tag-pill is-mid s-mint"   href="#">移动端<span class="tag-pill__n">4</span></a>
-    </div>
+    <nav class="crumb">
+      <a href="Game Tech Blog.html">首页</a>
+      <span class="crumb__sep">/</span>
+      <a href="Tags.html">标签</a>
+      <span class="crumb__sep">/</span>
+      <span class="crumb__cur">Unity</span>
+    </nav>
 
-    <h2 class="section-title" style="margin-top:34px;">#渲染 下的文章</h2>
-    <div class="grid-4">
-      <article class="card">
-        <div class="thumb t-blue"><div class="thumb__grid"></div><span class="badge">渲染</span>
-          <div class="thumb__art"><div class="cube float" style="--s:36px; left:42%; top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div></div>
+    <div class="layout">
+      <!-- ───────── MAIN ───────── -->
+      <div>
+        <div class="tag-detail-head">
+          <h1>标签:<em>Unity</em></h1>
+          <p>与 Unity 相关的技术文章、工具与实践经验，共 <strong>128</strong> 篇。</p>
         </div>
-        <div class="card__body"><h3 class="card__title">渲染优化实战</h3><p class="card__dek">从原理到实战,深入剖析渲染优化的关键技术与方法。</p>
-          <div class="card__meta"><span>2026-05-28</span><span>12 分钟</span></div>
+
+        <div class="tabs">
+          <a class="tab is-active" href="#" data-kind="全部">全部</a>
+          <a class="tab" href="#" data-kind="文章">文章</a>
+          <a class="tab" href="#" data-kind="专栏">专栏</a>
         </div>
-      </article>
-      <article class="card">
-        <div class="thumb t-blue"><div class="thumb__grid"></div><span class="badge">渲染</span>
-          <div class="thumb__art"><div class="cube c-mint float" style="--s:34px; left:46%; top:44%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div></div>
+
+        <div class="alist" id="tag-list"></div>
+      </div>
+
+      <!-- ───────── SIDEBAR ───────── -->
+      <aside>
+        <div class="side-card">
+          <div class="side-card__title">标签云</div>
+          <div class="tagcloud">
+            <a class="tag-pill is-big"          href="Tags.html">Unity<span class="tag-pill__n">128</span></a>
+            <a class="tag-pill is-big s-mint"   href="Tags.html">渲染<span class="tag-pill__n">96</span></a>
+            <a class="tag-pill is-mid s-amber"  href="Tags.html">性能优化<span class="tag-pill__n">84</span></a>
+            <a class="tag-pill is-mid"          href="Tags.html">Shader<span class="tag-pill__n">68</span></a>
+            <a class="tag-pill is-mid s-violet" href="Tags.html">架构设计<span class="tag-pill__n">56</span></a>
+            <a class="tag-pill s-sky"           href="Tags.html">网络同步<span class="tag-pill__n">42</span></a>
+            <a class="tag-pill"                 href="Tags.html">C#<span class="tag-pill__n">36</span></a>
+            <a class="tag-pill s-mint"          href="Tags.html">URP<span class="tag-pill__n">30</span></a>
+            <a class="tag-pill is-mid s-rose"   href="Tags.html">工具链<span class="tag-pill__n">28</span></a>
+            <a class="tag-pill s-amber"         href="Tags.html">物理引擎<span class="tag-pill__n">22</span></a>
+            <a class="tag-pill s-violet"        href="Tags.html">AI<span class="tag-pill__n">18</span></a>
+            <a class="tag-pill s-sky"           href="Tags.html">动画系统<span class="tag-pill__n">16</span></a>
+            <a class="tag-pill"                 href="Tags.html">美术技术<span class="tag-pill__n">14</span></a>
+          </div>
         </div>
-        <div class="card__body"><h3 class="card__title">延迟渲染详解</h3><p class="card__dek">理解 G-Buffer 与延迟着色,在大量光源场景下保持高性能。</p>
-          <div class="card__meta"><span>2026-05-21</span><span>16 分钟</span></div>
-        </div>
-      </article>
-      <article class="card">
-        <div class="thumb t-blue"><div class="thumb__grid"></div><span class="badge">渲染</span>
-          <div class="thumb__art"><div class="cube float" style="--s:30px; left:36%; top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-amber float" style="--s:24px; left:56%; top:56%; animation-delay:-1.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div></div>
-        </div>
-        <div class="card__body"><h3 class="card__title">透明物体排序</h3><p class="card__dek">解决半透明渲染顺序与混合的常见难题与工程化方案。</p>
-          <div class="card__meta"><span>2026-05-14</span><span>9 分钟</span></div>
-        </div>
-      </article>
+      </aside>
     </div>
   </main>
 </div>
+
+<script>
+  const ITEMS = [
+    { t:'Unity 性能调优', d:'系统化可视化性能分析与优化策略,打造高性能稳定的游戏体验。', cat:'性能', tone:'t-mint', date:'2026-05-25', min:15, read:1800, kind:'文章', art:'<span class="cube c-mint float" style="--s:32px;left:50%;top:46%;margin:-16px 0 0 -16px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'Unity ECS 入门', d:'从 ECS 的基本概念到实践应用,助你构建高性能游戏架构。', cat:'架构', tone:'t-violet', date:'2026-05-10', min:16, read:1400, kind:'文章', art:'<span class="cube float" style="--s:24px;left:30%;top:34%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube float" style="--s:24px;left:54%;top:50%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'Unity 编辑器扩展实战', d:'通过 Editor 扩展提升开发效率,打造自己的工作流。', cat:'工具', tone:'t-blue', date:'2026-05-05', min:12, read:1200, kind:'文章', art:'<span class="cube float" style="--s:32px;left:46%;top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'URP 渲染管线入门', d:'Universal Render Pipeline 的核心概念与使用指南,搭建可扩展渲染基线。', cat:'渲染', tone:'t-mint', date:'2026-05-12', min:11, read:1100, kind:'文章', art:'<span class="cube c-mint float" style="--s:30px;left:48%;top:44%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'专栏 · 性能优化之道', d:'CPU、GPU、内存、加载,全链路性能优化的实战方法论(7 篇)。', cat:'专栏', tone:'t-mint', date:'2026-05-08', min:0, read:3200, kind:'专栏', art:'<span class="cube c-mint float" style="--s:30px;left:40%;top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube c-mint float" style="--s:20px;left:58%;top:56%;animation-delay:-1.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' },
+    { t:'专栏 · 架构演进实录', d:'真实项目中架构如何随规模演进,踩过的坑与得到的经验(8 篇)。', cat:'专栏', tone:'t-violet', date:'2026-04-30', min:0, read:2600, kind:'专栏', art:'<span class="cube float" style="--s:24px;left:30%;top:36%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span><span class="cube float" style="--s:24px;left:54%;top:52%;--t:#D9D2FF;--r:#B5A6FF;--l:#8E76F0;animation-delay:-1.6s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></span>' }
+  ];
+  const toneTag = { 't-blue':'', 't-mint':'s-mint', 't-amber':'s-amber', 't-violet':'s-violet', 't-sky':'s-sky', 't-rose':'s-rose' };
+  const fmtRead = (n) => n >= 1000 ? (n/1000).toFixed(1) + 'k' : '' + n;
+  const row = (a) => `
+    <a class="arow" href="Post.html">
+      <span class="arow__thumb thumb ${a.tone}"><span class="thumb__grid"></span><span class="thumb__art">${a.art}</span></span>
+      <span class="arow__body">
+        <span class="arow__head">
+          <span class="arow__title">${a.t}</span>
+          <span class="tag-inline ${toneTag[a.tone]}">${a.cat}</span>
+        </span>
+        <span class="arow__dek">${a.d}</span>
+        <span class="arow__meta">
+          <span class="arow__author"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>Lumio</span>
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>${a.date}</span>
+          ${a.min ? `<span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>${a.min} 分钟</span>` : ''}
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5z"></path><circle cx="8" cy="8" r="2"></circle></svg>${fmtRead(a.read)} 阅读</span>
+        </span>
+      </span>
+    </a>`;
+  let curKind = '全部';
+  function render() {
+    const list = curKind === '全部' ? ITEMS : ITEMS.filter(a => a.kind === curKind);
+    document.getElementById('tag-list').innerHTML = list.map(row).join('') ||
+      '<p style="color:var(--muted);font-family:var(--font-zh);padding:24px;text-align:center;">暂无内容</p>';
+  }
+  render();
+  document.querySelectorAll('.tab').forEach(t => t.addEventListener('click', e => {
+    e.preventDefault();
+    document.querySelectorAll('.tab').forEach(x => x.classList.remove('is-active'));
+    t.classList.add('is-active');
+    curKind = t.dataset.kind;
+    render();
+  }));
+</script>
 </body>
 </html>

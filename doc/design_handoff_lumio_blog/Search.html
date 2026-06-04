@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>搜索:渲染优化 · Lumio.games</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
+<link rel="stylesheet" href="gametech.css">
+<link rel="stylesheet" href="pages.css">
+</head>
+<body>
+<div class="shell">
+
+  <nav class="nav">
+    <a class="brand" href="Game Tech Blog.html">
+      <span class="brand__mark"><span class="brand__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span></span>
+      <span class="brand__txt"><span class="brand__name">LUMIO</span><span class="brand__sub">.GAMES</span></span>
+    </a>
+    <div class="nav__links">
+      <a class="nav__link" href="Game Tech Blog.html">首页</a>
+      <a class="nav__link" href="Articles.html">文章</a>
+      <a class="nav__link" href="Columns.html">专栏</a>
+      <a class="nav__link" href="Tags.html">标签</a>
+      <a class="nav__link" href="About.html">关于</a>
+    </div>
+    <div class="nav__spacer"></div>
+    <label class="search search--active">
+      <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+      <input type="text" id="q" value="渲染优化" placeholder="搜索文章、标签">
+      <button class="search__clear" id="clear" aria-label="清除" type="button">
+        <svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"></path></svg>
+      </button>
+    </label>
+    <button class="icon-btn" aria-label="切换主题">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
+    </button>
+    <a class="avatar" href="Admin.html" title="管理后台">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
+    </a>
+  </nav>
+
+  <header class="page-head">
+    <div class="page-head__grid"></div>
+    <div class="page-head__eyebrow">Search</div>
+    <h1 class="page-head__title">搜索结果:<span id="kw">渲染优化</span></h1>
+    <p class="page-head__sub result-count" style="margin-bottom:0;">找到 <b id="count">8</b> 条相关结果</p>
+  </header>
+
+  <main class="page">
+    <div class="layout">
+      <div class="alist" id="results"></div>
+
+      <aside>
+        <div class="side-card">
+          <div class="side-card__title">搜索建议</div>
+          <div class="suggest">
+            <a class="suggest__item" href="Search.html"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>渲染优化</a>
+            <a class="suggest__item" href="Search.html"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>渲染优化 Unity</a>
+            <a class="suggest__item" href="Search.html"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>移动端渲染优化</a>
+            <a class="suggest__item" href="Search.html"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>URP 渲染管线</a>
+            <a class="suggest__item" href="Search.html"><svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>渲染性能分析</a>
+          </div>
+        </div>
+
+        <div class="side-card">
+          <div class="side-card__title">热门标签</div>
+          <div class="rank">
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">1</span><span class="rank__name">Unity</span><span class="rank__n">128</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">2</span><span class="rank__name">渲染</span><span class="rank__n">96</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">3</span><span class="rank__name">性能优化</span><span class="rank__n">84</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">4</span><span class="rank__name">Shader</span><span class="rank__n">68</span></a>
+            <a class="rank__item" href="Tags.html"><span class="rank__idx">5</span><span class="rank__name">架构设计</span><span class="rank__n">56</span></a>
+          </div>
+        </div>
+      </aside>
+    </div>
+  </main>
+</div>
+
+<script>
+  const RESULTS = [
+    { t:'渲染优化实战', d:'从原理到实战,深入剖析渲染优化的关键技术与方法,打造高性能稳定的游戏体验。', cat:'渲染', tone:'t-blue', date:'2026-05-28', min:12, art:'<div class="cube float" style="--s:30px;left:42%;top:38%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-mint float" style="--s:22px;left:56%;top:56%;animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
+    { t:'移动端渲染优化指南', d:'针对移动 GPU 的带宽与发热约束,讲透降分辨率、合批与后处理裁剪的取舍。', cat:'渲染', tone:'t-blue', date:'2026-04-20', min:14, art:'<div class="cube float" style="--s:34px;left:46%;top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
+    { t:'后处理性能优化', d:'Bloom、SSAO、色调映射的成本拆解,以及移动端可用的轻量替代方案。', cat:'渲染', tone:'t-blue', date:'2026-04-15', min:10, art:'<div class="cube float" style="--s:26px;left:36%;top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-amber float" style="--s:20px;left:58%;top:56%;animation-delay:-1.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
+    { t:'Shader 性能优化技巧', d:'把计算上移到顶点、减少分支与采样,系统提升着色器在移动端的表现。', cat:'图形学', tone:'t-amber', date:'2026-04-10', min:9, art:'<div class="orb" style="left:30%;top:22%;width:40px;height:40px;"></div>' },
+    { t:'Draw Call 合批实践', d:'静态合批、动态合批与 GPU Instancing 的适用边界与踩坑记录。', cat:'渲染', tone:'t-blue', date:'2026-04-02', min:11, art:'<div class="cube float" style="--s:24px;left:30%;top:38%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube float" style="--s:24px;left:54%;top:38%;animation-delay:-1s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
+    { t:'Overdraw 排查与控制', d:'用 Overdraw 视图定位填充瓶颈,通过排序与剔除压低重复绘制。', cat:'性能', tone:'t-mint', date:'2026-03-26', min:8, art:'<div class="cube c-mint float" style="--s:30px;left:44%;top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
+    { t:'纹理压缩与显存优化', d:'ASTC / BC7 选型、Mipmap 策略与图集打包,稳住显存与带宽预算。', cat:'渲染', tone:'t-blue', date:'2026-03-18', min:13, art:'<div class="cube float" style="--s:28px;left:40%;top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' },
+    { t:'URP 渲染管线入门', d:'Universal Render Pipeline 的核心概念与使用指南,搭建可扩展的渲染基线。', cat:'渲染', tone:'t-blue', date:'2026-03-10', min:11, art:'<div class="cube float" style="--s:30px;left:44%;top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>' }
+  ];
+  const KW = '渲染优化';
+  const hl = (s) => s.replace(/(渲染|优化)/g, '<mark class="hl">$1</mark>');
+  const toneTag = { 't-blue':'', 't-mint':'s-mint', 't-amber':'s-amber', 't-violet':'s-violet', 't-sky':'s-sky', 't-rose':'s-rose' };
+  document.getElementById('results').innerHTML = RESULTS.map(a => `
+    <a class="arow" href="Post.html">
+      <span class="arow__thumb thumb ${a.tone}"><span class="thumb__grid"></span><span class="thumb__art">${a.art}</span></span>
+      <span class="arow__body">
+        <span class="arow__head">
+          <span class="arow__title">${hl(a.t)}</span>
+          <span class="tag-inline ${toneTag[a.tone]}">${a.cat}</span>
+        </span>
+        <span class="arow__dek">${hl(a.d)}</span>
+        <span class="arow__meta">
+          <span class="arow__author"><svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>Lumio</span>
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2.5" y="3.5" width="11" height="10" rx="1.5"></rect><path d="M2.5 6.5h11M5.5 2v3M10.5 2v3" stroke-linecap="round"></path></svg>${a.date}</span>
+          <span><svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>${a.min} 分钟</span>
+        </span>
+      </span>
+    </a>`).join('');
+  document.getElementById('count').textContent = RESULTS.length;
+
+  document.getElementById('clear').addEventListener('click', () => { document.getElementById('q').value=''; document.getElementById('q').focus(); });
+  document.getElementById('q').addEventListener('keydown', e => { if (e.key==='Enter' && e.target.value.trim()) location.reload(); });
+</script>
+</body>
+</html>

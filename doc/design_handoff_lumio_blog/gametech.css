@@ -59,7 +59,7 @@ body::after  { top: 14px; right: 14px; transform: scaleX(-1); }
   border: 1px solid var(--line);
   border-radius: 26px;
   box-shadow: 0 30px 80px -40px rgba(40,54,110,.45), 0 2px 4px rgba(30,42,58,.04);
-  overflow: hidden;
+  overflow: clip; /* clip (not hidden) so position:sticky sidebars still stick to viewport */
 }
 
 /* ───────── NAV ───────── */
