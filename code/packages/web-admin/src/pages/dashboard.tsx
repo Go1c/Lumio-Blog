@@ -1,57 +1,13 @@
 import type { JSX } from 'preact';
-import { useState } from 'preact/hooks';
+import { useEffect, useMemo, useState } from 'preact/hooks';
 import { HfIcon } from '@opennote/ui';
-
-interface AdItem {
-  id: string;
-  name: string;
-  url: string;
-  weeklyClicks: number;
-  enabled: boolean;
-}
+import { api, type HealthInfo, type NoteSummary, type CommentCounts, type SubscriberCounts } from '../api.js';
 
 interface TrendPoint {
   label: string;
+  value: number;
   height: number;
 }
-
-interface DashboardRow {
-  slug: string;
-  title: string;
-  author: string;
-  category: string;
-  categoryClass: string;
-  status: string;
-  statusClass: string;
-  views: string;
-  date: string;
-}
-
-const ADS_SEED: AdItem[] = [
-  { id: 'home-feed-banner', name: '首页信息流横幅', url: 'example.com/promo', weeklyClicks: 728, enabled: true },
-  { id: 'sidebar-square', name: '侧边栏方图', url: 'partner.io/x', weeklyClicks: 214, enabled: true },
-  { id: 'post-footer-promo', name: '文末推广', url: '-', weeklyClicks: 116, enabled: false },
-];
-
-const TREND: TrendPoint[] = [
-  { label: '周一', height: 52 },
-  { label: '周二', height: 68 },
-  { label: '周三', height: 45 },
-  { label: '周四', height: 80 },
-  { label: '周五', height: 62 },
-  { label: '周六', height: 91 },
-  { label: '周日', height: 74 },
-];
-
-const ROWS: DashboardRow[] = [
-  row('render-pipeline', '深入 GPU 渲染管线:从顶点到像素', '林辰', '渲染', 'c-blue', '已发布', 'pub', '3.2k', '2026-05-30'),
-  row('render-optimization', '渲染优化实战', '林辰', '渲染', 'c-blue', '已发布', 'pub', '2.1k', '2026-05-28'),
-  row('unity-performance', 'Unity 性能调优', '叶舟', '性能', 'c-mint', '已发布', 'pub', '1.8k', '2026-05-25'),
-  row('shader-guide', 'Shader 入门指南', '明月', '图形学', 'c-amber', '待审核', 'review', '-', '2026-05-22'),
-  row('architecture-notes', '架构设计笔记', '周岩', '架构', 'c-violet', '已发布', 'pub', '1.5k', '2026-05-20'),
-  row('network-sync', '网络同步方案', '周岩', '网络', 'c-sky', '草稿', 'draft', '-', '2026-05-18'),
-  row('toolchain-boost', '工具链提效', '明月', '工具', 'c-rose', '已发布', 'pub', '980', '2026-05-15'),
-];
 
 export const DASHBOARD_RESPONSIVE_STYLE = `
 .adm-body { min-width: 0; }
@@ -65,6 +21,11 @@ export const DASHBOARD_RESPONSIVE_STYLE = `
   grid-template-columns: 1.55fr 1fr;
   gap: 24px;
 }
+.task-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
 .adrow {
   display: flex;
   align-items: center;
@@ -77,6 +38,7 @@ export const DASHBOARD_RESPONSIVE_STYLE = `
 @media (max-width: 680px) {
   .stat-row { grid-template-columns: 1fr; }
   .adrow { align-items: flex-start; }
+  .task-row { align-items: flex-start; }
   .tbl { min-width: 760px; }
   .panel { overflow: auto; }
 }
@@ -95,45 +57,114 @@ function DashboardStyles(): null {
   return null;
 }
 
+interface DashboardState {
+  health: HealthInfo | null;
+  notes: NoteSummary[];
+  views30d: number | null;
+  trend: TrendPoint[];
+  comments: CommentCounts | null;
+  subscribers: SubscriberCounts | null;
+}
+
+const EMPTY_STATE: DashboardState = {
+  health: null,
+  notes: [],
+  views30d: null,
+  trend: [],
+  comments: null,
+  subscribers: null,
+};
+
 export function Dashboard(): JSX.Element {
-  const [ads, setAds] = useState<AdItem[]>(ADS_SEED);
+  const [state, setState] = useState<DashboardState>(EMPTY_STATE);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    void Promise.allSettled([
+      api.health(),
+      api.listNotes(),
+      api.analytics.overview('30d'),
+      api.analytics.timeseries('7d', 'views'),
+      api.comments.list({ status: 'pending', limit: 5 }),
+      api.subscribers.list(true),
+    ]).then(([health, notes, overview, series, comments, subscribers]) => {
+      if (cancelled) return;
+      const failures = [health, notes, overview, series, comments, subscribers]
+        .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
+      if (failures.length > 0) {
+        setError(failures[0]?.reason instanceof Error ? failures[0].reason.message : String(failures[0]?.reason));
+      }
+      const rawTrend = series.status === 'fulfilled' ? series.value.points : [];
+      setState({
+        health: health.status === 'fulfilled' ? health.value : null,
+        notes: notes.status === 'fulfilled' ? notes.value.notes : [],
+        views30d: overview.status === 'fulfilled' ? overview.value.total_views : null,
+        trend: makeTrend(rawTrend),
+        comments: comments.status === 'fulfilled' ? comments.value.counts : null,
+        subscribers: subscribers.status === 'fulfilled' ? subscribers.value.counts : null,
+      });
+      setLoading(false);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const recentNotes = useMemo(
+    () => [...state.notes].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, 7),
+    [state.notes],
+  );
+  const privateCount = state.health?.visibility_counts.private ?? 0;
+  const publishedCount = state.health?.visibility_counts.public ?? 0;
+  const pendingComments = state.comments?.pending ?? 0;
+  const activeSubscribers = state.subscribers?.active ?? 0;
 
   return (
     <div class="adm-body">
       <DashboardStyles />
 
-      <section class="stat-row" aria-label="核心指标">
+      {error && (
+        <p role="alert" class="lumio-alert">
+          部分后台数据载入失败:{error}
+        </p>
+      )}
+
+      <section class="stat-row" aria-label="核心指标" aria-busy={loading ? 'true' : 'false'}>
         <StatCard
           icon="eye"
           tone="i-blue"
-          delta="▲ 12.4%"
+          delta="analytics · 30d"
           deltaTone="up"
-          value="48,210"
-          label="本月访问量"
+          value={state.views30d === null ? '—' : formatNum(state.views30d)}
+          label="近 30 日访问量"
         />
         <StatCard
           icon="note"
           tone="i-mint"
-          delta="▲ 3 篇"
-          deltaTone="up"
-          value="28"
-          label="已发布文章"
+          delta={`${privateCount} 篇待公开`}
+          deltaTone={privateCount > 0 ? 'down' : 'up'}
+          value={formatNum(publishedCount)}
+          label="已公开文章"
         />
         <StatCard
           icon="mail"
           tone="i-amber"
-          delta="▲ 8.1%"
+          delta="本地订阅表"
           deltaTone="up"
-          value="3,642"
+          value={formatNum(activeSubscribers)}
           label="邮件订阅数"
         />
         <StatCard
-          icon="chart"
+          icon="comment"
           tone="i-rose"
-          delta="▼ 2.3%"
-          deltaTone="down"
-          value="1,058"
-          label="广告点击量"
+          delta={pendingComments > 0 ? '需要审核' : '暂无待审'}
+          deltaTone={pendingComments > 0 ? 'down' : 'up'}
+          value={formatNum(pendingComments)}
+          label="待审评论"
         />
       </section>
 
@@ -145,104 +176,112 @@ export function Dashboard(): JSX.Element {
             <a class="panel__link" href="#/analytics">查看详情</a>
           </div>
           <div class="chart" aria-label="近 7 日访问趋势">
-            <div class="chart__bars">
-              {TREND.map((point, index) => (
-                <div
-                  key={`${point.label}-${index}`}
-                  class="chart__bar"
-                  style={{ height: `${point.height}%` }}
-                  title={`${point.label}: ${point.height}%`}
-                />
-              ))}
-            </div>
-            <div class="chart__x">
-              {TREND.map((point, index) => (
-                <span key={`${point.label}-x-${index}`}>{point.label}</span>
-              ))}
-            </div>
+            {state.trend.length === 0 ? (
+              <p class="hf-sm hf-muted" style={{ padding: 24, textAlign: 'center' }}>暂无访问数据。</p>
+            ) : (
+              <>
+                <div class="chart__bars">
+                  {state.trend.map((point, index) => (
+                    <div
+                      key={`${point.label}-${index}`}
+                      class="chart__bar"
+                      style={{ height: `${point.height}%` }}
+                      title={`${point.label}: ${point.value}`}
+                    />
+                  ))}
+                </div>
+                <div class="chart__x">
+                  {state.trend.map((point, index) => (
+                    <span key={`${point.label}-x-${index}`}>{point.label}</span>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
         </div>
 
         <div class="panel">
           <div class="panel__head">
-            <div class="panel__title">广告位管理</div>
+            <div class="panel__title">待处理</div>
             <div class="panel__spacer" />
-            <a class="panel__link" href="#/media">+ 新建</a>
+            <a class="panel__link" href="#/comments">评论审核</a>
           </div>
           <div class="adlist">
-            {ads.map((ad) => (
-              <div class="adrow" key={ad.id}>
-                <div class="adrow__thumb" aria-hidden="true">
-                  <HfIcon name="image" size={18} />
-                </div>
-                <div class="adrow__info">
-                  <div class="adrow__name">{ad.name}</div>
-                  <div class="adrow__url">{ad.url}</div>
-                </div>
-                <div class="adrow__stat">
-                  <b>{formatNum(ad.weeklyClicks)}</b>
-                  <small>点击 / 周</small>
-                </div>
-                <button
-                  type="button"
-                  class={`switch ${ad.enabled ? '' : 'off'}`}
-                  aria-label={`${ad.name}${ad.enabled ? '已启用' : '已停用'}`}
-                  aria-pressed={ad.enabled}
-                  onClick={() => setAds((prev) => prev.map((item) => item.id === ad.id ? { ...item, enabled: !item.enabled } : item))}
-                />
-              </div>
-            ))}
+            <TaskRow
+              icon="comment"
+              name="待审评论"
+              detail="公开前需要管理员审核"
+              stat={pendingComments}
+              href="#/comments"
+            />
+            <TaskRow
+              icon="lock"
+              name="私有文章"
+              detail="默认不公开,需要手动发布"
+              stat={privateCount}
+              href="#/notes"
+            />
+            <TaskRow
+              icon="tag"
+              name="全部文章"
+              detail="来自后端同步数据库"
+              stat={state.health?.note_count ?? state.notes.length}
+              href="#/notes"
+            />
           </div>
         </div>
       </section>
 
       <section class="panel">
         <div class="panel__head">
-          <div class="panel__title">文章管理</div>
+          <div class="panel__title">最近文章</div>
           <div class="panel__spacer" />
-          <a class="panel__link" href="/articles/index.html">前台查看</a>
+          <a class="panel__link" href="#/notes">管理全部</a>
         </div>
-        <table class="tbl">
-          <thead>
-            <tr>
-              <th>标题</th>
-              <th>分类</th>
-              <th>状态</th>
-              <th>浏览</th>
-              <th>发布日期</th>
-              <th>操作</th>
-            </tr>
-          </thead>
-          <tbody>
-            {ROWS.map((note) => (
-              <tr key={note.slug}>
-                <td>
-                  <div class="tbl__title">
-                    {note.title}
-                    <small>作者 · {note.author}</small>
-                  </div>
-                </td>
-                <td><span class={`tag-cat ${note.categoryClass}`}>{note.category}</span></td>
-                <td><span class={`st ${note.statusClass}`}>{note.status}</span></td>
-                <td>{note.views}</td>
-                <td>{note.date}</td>
-                <td>
-                  <div class="row-act">
-                    <a href={`#/notes/${encodeURIComponent(note.slug)}`} aria-label={`编辑 ${note.title}`}>
-                      <HfIcon name="edit" size={13} />
-                    </a>
-                    <a href={`/posts/${encodeURIComponent(note.slug)}.html`} target="_blank" rel="noreferrer" aria-label={`预览 ${note.title}`}>
-                      <HfIcon name="eye" size={13} />
-                    </a>
-                    <button type="button" class="danger" aria-label={`删除 ${note.title}`}>
-                      <HfIcon name="trash" size={13} />
-                    </button>
-                  </div>
-                </td>
+        {recentNotes.length === 0 ? (
+          <p class="hf-sm hf-muted" style={{ padding: 22 }}>还没有同步文章。</p>
+        ) : (
+          <table class="tbl">
+            <thead>
+              <tr>
+                <th>标题</th>
+                <th>路径</th>
+                <th>状态</th>
+                <th>字数</th>
+                <th>更新日期</th>
+                <th>操作</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {recentNotes.map((note) => (
+                <tr key={note.slug}>
+                  <td>
+                    <div class="tbl__title">
+                      {note.title || note.slug}
+                      <small>{note.slug}</small>
+                    </div>
+                  </td>
+                  <td><span class="hf-mono hf-tiny hf-muted">{note.source_path ?? '—'}</span></td>
+                  <td><span class={`st ${statusClass(note.visibility)}`}>{visLabel(note.visibility)}</span></td>
+                  <td class="hf-mono hf-tiny">{note.word_count}</td>
+                  <td>{note.updated_at.slice(0, 10)}</td>
+                  <td>
+                    <div class="row-act">
+                      <a href={`#/notes/${encodeURIComponent(note.slug)}`} aria-label={`编辑 ${note.title}`}>
+                        <HfIcon name="edit" size={13} />
+                      </a>
+                      {note.visibility === 'public' && (
+                        <a href={`/posts/${encodeURIComponent(note.slug)}.html`} target="_blank" rel="noreferrer" aria-label={`预览 ${note.title}`}>
+                          <HfIcon name="eye" size={13} />
+                        </a>
+                      )}
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        )}
       </section>
     </div>
   );
@@ -256,7 +295,7 @@ function StatCard({
   value,
   label,
 }: {
-  icon: 'eye' | 'note' | 'mail' | 'chart';
+  icon: 'eye' | 'note' | 'mail' | 'comment';
   tone: string;
   delta: string;
   deltaTone: 'up' | 'down';
@@ -275,35 +314,77 @@ function StatCard({
   );
 }
 
-function formatNum(n: number): string;
-function formatNum(n: string): string;
-function formatNum(n: number | string): string {
-  if (typeof n === 'string') return n;
-  if (n >= 10000) return n.toLocaleString('en-US');
-  if (n >= 1000) return `${(n / 1000).toFixed(n >= 10000 ? 0 : 1)}k`;
+function TaskRow({
+  icon,
+  name,
+  detail,
+  stat,
+  href,
+}: {
+  icon: 'comment' | 'lock' | 'tag';
+  name: string;
+  detail: string;
+  stat: number;
+  href: string;
+}): JSX.Element {
+  return (
+    <a class="adrow task-row" href={href} style={{ color: 'inherit', textDecoration: 'none' }}>
+      <div class="adrow__thumb" aria-hidden="true">
+        <HfIcon name={icon} size={18} />
+      </div>
+      <div class="adrow__info">
+        <div class="adrow__name">{name}</div>
+        <div class="adrow__url">{detail}</div>
+      </div>
+      <div class="adrow__stat">
+        <b>{formatNum(stat)}</b>
+        <small>条目</small>
+      </div>
+    </a>
+  );
+}
+
+function makeTrend(points: { date: string; value: number }[]): TrendPoint[] {
+  if (!points.some((p) => p.value > 0)) return [];
+  const latest = fillLastSevenDays(points);
+  const max = Math.max(1, ...latest.map((p) => p.value));
+  return latest.map((p) => ({
+    label: p.date.slice(5),
+    value: p.value,
+    height: Math.max(6, Math.round((p.value / max) * 100)),
+  }));
+}
+
+function fillLastSevenDays(points: { date: string; value: number }[]): { date: string; value: number }[] {
+  const byDate = new Map(points.map((p) => [p.date, p.value]));
+  const now = new Date();
+  const out: { date: string; value: number }[] = [];
+  for (let i = 6; i >= 0; i -= 1) {
+    const d = new Date(now);
+    d.setDate(now.getDate() - i);
+    const date = d.toISOString().slice(0, 10);
+    out.push({ date, value: byDate.get(date) ?? 0 });
+  }
+  return out;
+}
+
+function formatNum(n: number): string {
+  if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
+  if (n >= 10_000) return n.toLocaleString('en-US');
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
 }
 
-function row(
-  slug: string,
-  title: string,
-  author: string,
-  category: string,
-  categoryClass: string,
-  status: string,
-  statusClass: string,
-  views: string,
-  date: string,
-): DashboardRow {
-  return {
-    slug,
-    title,
-    author,
-    category,
-    categoryClass,
-    status,
-    statusClass,
-    views,
-    date,
-  };
+function visLabel(v: string): string {
+  if (v === 'public') return '公开';
+  if (v === 'unlisted') return '不列出';
+  if (v === 'link-only') return '仅链接';
+  if (v === 'private') return '私有';
+  return v;
+}
+
+function statusClass(v: string): string {
+  if (v === 'public') return 'pub';
+  if (v === 'private') return 'draft';
+  return 'review';
 }

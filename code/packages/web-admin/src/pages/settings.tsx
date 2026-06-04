@@ -8,7 +8,7 @@ import { WsEStyles } from '../components/ws-e-styles.js';
  * 视觉对齐 hf-extras2 §13 HFSettings
  */
 
-export const SETTINGS_SECTIONS = ['site', 'author', 'theme', 'seo', 'home', 'features', 'fns'] as const;
+export const SETTINGS_SECTIONS = ['site', 'author', 'theme', 'seo', 'home', 'features', 'fns', 'security'] as const;
 export type SettingsSectionId = (typeof SETTINGS_SECTIONS)[number];
 
 const SECTION_META: Record<SettingsSectionId, { icon: string; label: string; hint: string }> = {
@@ -19,6 +19,7 @@ const SECTION_META: Record<SettingsSectionId, { icon: string; label: string; hin
   home:     { icon: '🏠', label: '首页', hint: '首屏文案 / 推荐文章数' },
   features: { icon: '🧩', label: '功能', hint: '开关功能 — 关掉对应 UI 隐藏' },
   fns:      { icon: '🔄', label: 'FNS 同步', hint: 'Obsidian 通过 FastNoteSync 推上来的笔记 / 鉴权' },
+  security: { icon: '🔐', label: '安全', hint: '管理员密码 / 登录凭据' },
 };
 
 type ToastTone = 'success' | 'error';
@@ -36,6 +37,7 @@ function nonEmpty(v: string | undefined): boolean { return !!(v && v.trim().leng
 
 export function validateSection(section: SettingsSectionId, draft: AdminSettings): ErrMap {
   const errs: ErrMap = {};
+  if (section === 'security') return errs;
   if (section === 'site') {
     const s = draft.site ?? { title: '', url: '' };
     if (!nonEmpty(s.title)) errs['site.title'] = '站点名必填';
@@ -82,6 +84,7 @@ export function validateSection(section: SettingsSectionId, draft: AdminSettings
 /** 取出指定 section 的当前 draft 值,组装成 PATCH payload */
 export function pickPatch(section: SettingsSectionId, draft: AdminSettings): AdminSettingsPatch {
   const patch: AdminSettingsPatch = {};
+  if (section === 'security') return patch;
   if (section === 'site') patch.site = draft.site;
   if (section === 'author') patch.author = draft.author;
   if (section === 'theme') patch.theme = draft.theme;
@@ -220,21 +223,23 @@ export function SettingsPage({ section }: { section: SettingsSectionId }) {
           {section === 'home' && <HomeForm draft={draft} update={update} errs={errs} />}
           {section === 'features' && <FeaturesForm draft={draft} update={update} />}
           {section === 'fns' && <FnsForm draft={draft} update={update} errs={errs} />}
+          {section === 'security' && <SecurityForm pushToast={pushToast} />}
 
-          {/* save bar */}
-          <div class="ws-e__save-bar" role="region" aria-label="保存操作">
-            {dirty ? (
-              <span class="hf-mono hf-tiny ws-e__dirty">● 有未保存的更改</span>
-            ) : (
-              <span class="hf-mono hf-tiny hf-faint">● 无更改</span>
-            )}
-            <div class="hf-grow" />
-            {saveErr && <span class="error" role="alert">{saveErr}</span>}
-            <button type="button" disabled={!dirty || busy} onClick={reset}>放弃</button>
-            <button type="button" class="primary" disabled={!dirty || busy} onClick={save}>
-              {busy ? '保存中…' : '保存'}
-            </button>
-          </div>
+          {section !== 'security' && (
+            <div class="ws-e__save-bar" role="region" aria-label="保存操作">
+              {dirty ? (
+                <span class="hf-mono hf-tiny ws-e__dirty">● 有未保存的更改</span>
+              ) : (
+                <span class="hf-mono hf-tiny hf-faint">● 无更改</span>
+              )}
+              <div class="hf-grow" />
+              {saveErr && <span class="error" role="alert">{saveErr}</span>}
+              <button type="button" disabled={!dirty || busy} onClick={reset}>放弃</button>
+              <button type="button" class="primary" disabled={!dirty || busy} onClick={save}>
+                {busy ? '保存中…' : '保存'}
+              </button>
+            </div>
+          )}
         </div>
       </div>
 
@@ -260,6 +265,90 @@ function FieldErr({ field, errs }: { field: string; errs: ErrMap }) {
   const msg = errs[field];
   if (!msg) return null;
   return <p class="error ws-e__field-err" role="alert" id={`${field}-err`}>{msg}</p>;
+}
+
+function SecurityForm({ pushToast }: { pushToast: (msg: string, tone?: ToastTone) => void }) {
+  const [currentPassword, setCurrentPassword] = useState('');
+  const [newPassword, setNewPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
+  const [error, setError] = useState<string | null>(null);
+  const [busy, setBusy] = useState(false);
+
+  const canSubmit = currentPassword.length > 0 && newPassword.length >= 8 && confirmPassword.length > 0 && !busy;
+
+  const submit = async () => {
+    setError(null);
+    if (newPassword.length < 8) {
+      setError('新密码至少 8 位');
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError('两次输入的新密码不一致');
+      return;
+    }
+    setBusy(true);
+    try {
+      await api.changePassword(currentPassword, newPassword);
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+      pushToast('管理员密码已更新', 'success');
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setError(msg);
+      pushToast('密码更新失败', 'error');
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <section class="ws-e__panel">
+      <header class="ws-e__panel-head"><h2>▸ 管理员密码</h2></header>
+      <div class="ws-e__form ws-e__form--col">
+        <div class="ws-e__field">
+          <label htmlFor="sec-current">当前密码</label>
+          <input
+            id="sec-current"
+            type="password"
+            value={currentPassword}
+            autoComplete="current-password"
+            onInput={(e) => setCurrentPassword((e.target as HTMLInputElement).value)}
+          />
+        </div>
+        <div class="ws-e__form-grid2">
+          <div class="ws-e__field">
+            <label htmlFor="sec-new">新密码</label>
+            <input
+              id="sec-new"
+              type="password"
+              value={newPassword}
+              autoComplete="new-password"
+              aria-describedby="sec-new-hint"
+              onInput={(e) => setNewPassword((e.target as HTMLInputElement).value)}
+            />
+            <p id="sec-new-hint" class="hf-tiny hf-muted" style={{ margin: '4px 0 0' }}>至少 8 位。修改后其他后台会话会失效。</p>
+          </div>
+          <div class="ws-e__field">
+            <label htmlFor="sec-confirm">确认新密码</label>
+            <input
+              id="sec-confirm"
+              type="password"
+              value={confirmPassword}
+              autoComplete="new-password"
+              onInput={(e) => setConfirmPassword((e.target as HTMLInputElement).value)}
+            />
+          </div>
+        </div>
+        {error && <p role="alert" class="error ws-e__form-err">{error}</p>}
+        <div class="ws-e__form-actions">
+          <button type="button" class="primary" disabled={!canSubmit} onClick={submit}>
+            {busy ? '更新中…' : '更新密码'}
+          </button>
+        </div>
+      </div>
+    </section>
+  );
 }
 
 /**

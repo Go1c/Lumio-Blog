@@ -22,4 +22,13 @@ describe('default admin menu', () => {
     const item = findMenuItem('#/settings/fns');
     expect(item).toBeUndefined();
   });
+
+  it('uses media library instead of a fake advertising entry', () => {
+    const items = DEFAULT_ADMIN_MENU.flatMap((group) => group.items);
+
+    expect(items.find((entry) => entry.label === '广告位')).toBeUndefined();
+    expect(items.find((entry) => entry.label === '媒体库')).toMatchObject({
+      href: '#/media',
+    });
+  });
 });

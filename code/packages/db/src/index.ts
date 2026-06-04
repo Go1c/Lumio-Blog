@@ -11,3 +11,4 @@ export { migration006Analytics } from './migrations/006_analytics.js';
 export { migration007MediaBackup } from './migrations/007_media_backup.js';
 export { migration008CommentsSubscribers } from './migrations/008_comments_subscribers.js';
 export { migration009SearchableShortlinkExtras } from './migrations/009_searchable_shortlink_extras.js';
+export { migration012AdminCredentials } from './migrations/012_admin_credentials.js';

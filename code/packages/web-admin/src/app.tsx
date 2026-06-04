@@ -1,9 +1,10 @@
-import { useEffect, useState } from 'preact/hooks';
-import { AdminShell, type AdminBreadcrumb } from '@opennote/ui';
-import { api } from './api.js';
+import { useEffect, useMemo, useState } from 'preact/hooks';
+import { AdminShell, type AdminBreadcrumb, type AdminMenuGroup } from '@opennote/ui';
+import { api, type NoteSummary } from './api.js';
 import { Login } from './pages/login.js';
 import { Dashboard } from './pages/dashboard.js';
 import { NoteList } from './pages/note-list.js';
+import { ColumnsPage, groupNotesByColumn } from './pages/columns.js';
 import { NoteDetailPage } from './pages/note-detail.js';
 import { NoteAnalyticsPage } from './pages/note-analytics.js';
 import { TokensPage } from './pages/tokens.js';
@@ -22,6 +23,7 @@ import { AnalyticsOverviewPage } from './pages/analytics-overview.js';
 type Route =
   | { name: 'dashboard' }
   | { name: 'list'; shortLinkIdle?: boolean }
+  | { name: 'columns' }
   | { name: 'detail'; slug: string }
   | { name: 'analytics'; slug: string }
   | { name: 'tokens' }
@@ -54,6 +56,7 @@ export function parseRouteHash(rawHash: string): ParsedRoute {
 function routeFromHashPath(hash: string, query: URLSearchParams): Route {
   if (hash === '' || hash === 'dashboard') return { name: 'dashboard' };
   if (hash === 'notes') return { name: 'list', shortLinkIdle: query.get('short_link_idle') === '1' };
+  if (hash === 'columns') return { name: 'columns' };
   if (hash.startsWith('notes/')) {
     const rest = hash.slice(6);
     // notes/<slug>/analytics
@@ -94,6 +97,7 @@ function currentPath(route: Route): string {
   switch (route.name) {
     case 'dashboard': return '#/';
     case 'list': return '#/notes';
+    case 'columns': return '#/columns';
     case 'detail': return `#/notes/${route.slug}`;
     case 'analytics': return `#/notes/${route.slug}/analytics`;
     case 'tokens': return '#/tokens';
@@ -117,6 +121,8 @@ function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
       return [{ label: 'Lumio Blog', href: '#/' }, { label: '概览' }];
     case 'list':
       return [{ label: 'Lumio Blog', href: '#/' }, { label: '笔记' }];
+    case 'columns':
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '内容' }, { label: '专栏' }];
     case 'detail':
       return [
         { label: 'Lumio Blog', href: '#/' },
@@ -164,10 +170,74 @@ function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
   }
 }
 
+interface AdminMenuCounts {
+  notes?: number;
+  columns?: number;
+  tags?: number;
+  pendingComments?: number;
+}
+
+function countColumns(notes: NoteSummary[]): number {
+  return groupNotesByColumn(notes).length;
+}
+
+function assignCount(target: AdminMenuCounts, key: keyof AdminMenuCounts, value: number | undefined): void {
+  if (value !== undefined) target[key] = value;
+}
+
+function badge(value: number | undefined): { badge: number } | Record<string, never> {
+  return value === undefined ? {} : { badge: value };
+}
+
+export function buildAdminMenu(counts: AdminMenuCounts = {}): AdminMenuGroup[] {
+  return [
+    {
+      label: '概览',
+      items: [
+        { label: '仪表盘', href: '#/', icon: 'home' },
+      ],
+    },
+    {
+      label: '内容',
+      items: [
+        {
+          label: '文章管理',
+          href: '#/notes',
+          icon: 'note',
+          ...badge(counts.notes),
+          match: (p) => p.startsWith('#/notes'),
+        },
+        { label: '专栏管理', href: '#/columns', icon: 'book', ...badge(counts.columns) },
+        { label: '标签管理', href: '#/tags', icon: 'tag', ...badge(counts.tags) },
+        {
+          label: '评论审核',
+          href: '#/comments',
+          icon: 'comment',
+          ...badge(counts.pendingComments),
+        },
+      ],
+    },
+    {
+      label: '运营',
+      items: [
+        { label: '媒体库', href: '#/media', icon: 'image' },
+        { label: '数据统计', href: '#/analytics', icon: 'chart' },
+        {
+          label: '系统设置',
+          href: '#/settings',
+          icon: 'settings',
+          match: (p) => p === '#/settings' || p.startsWith('#/settings/'),
+        },
+      ],
+    },
+  ];
+}
+
 export function App() {
   const [authed, setAuthed] = useState<boolean | null>(null);
   const [parsedRoute, setParsedRoute] = useState<ParsedRoute>(readRoute());
   const [syncStatus, setSyncStatus] = useState<{ msg: string; err?: boolean } | null>(null);
+  const [menuCounts, setMenuCounts] = useState<AdminMenuCounts>({});
   const route = parsedRoute.route;
 
   useEffect(() => {
@@ -176,6 +246,33 @@ export function App() {
     window.addEventListener('hashchange', onHash);
     return () => window.removeEventListener('hashchange', onHash);
   }, []);
+
+  useEffect(() => {
+    if (!authed) {
+      setMenuCounts({});
+      return;
+    }
+    let cancelled = false;
+    void Promise.allSettled([
+      api.health(),
+      api.listNotes(),
+      api.tags.list(),
+      api.comments.list({ status: 'pending', limit: 1 }),
+    ]).then(([health, notes, tags, comments]) => {
+      if (cancelled) return;
+      const next: AdminMenuCounts = {};
+      assignCount(next, 'notes', health.status === 'fulfilled' ? health.value.note_count : undefined);
+      assignCount(next, 'columns', notes.status === 'fulfilled' ? countColumns(notes.value.notes) : undefined);
+      assignCount(next, 'tags', tags.status === 'fulfilled' ? tags.value.tags.length : undefined);
+      assignCount(next, 'pendingComments', comments.status === 'fulfilled' ? comments.value.counts.pending : undefined);
+      setMenuCounts(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [authed]);
+
+  const menu = useMemo(() => buildAdminMenu(menuCounts), [menuCounts]);
 
   if (authed === null) return <main aria-busy="true"><p>loading…</p></main>;
   if (!authed) return <Login onSuccess={() => setAuthed(true)} />;
@@ -194,6 +291,7 @@ export function App() {
     <AdminShell
       currentPath={currentPath(route)}
       breadcrumbs={breadcrumbsFor(route)}
+      menu={menu}
       onSync={onSync}
       onLogout={onLogout}
       siteName="Lumio Blog"
@@ -218,6 +316,7 @@ export function App() {
       )}
       {route.name === 'dashboard' && <Dashboard />}
       {route.name === 'list' && <NoteList shortLinkIdle={route.shortLinkIdle ?? false} />}
+      {route.name === 'columns' && <ColumnsPage />}
       {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
       {route.name === 'analytics' && <NoteAnalyticsPage slug={route.slug} />}
       {route.name === 'tokens' && <TokensPage />}

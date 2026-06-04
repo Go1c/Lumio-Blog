@@ -218,6 +218,42 @@ export function buildApp(deps: RouteDeps): Hono {
   const admin = new Hono();
   admin.use('*', actorMw('admin'));
 
+  admin.post('/auth/password', async (c) => {
+    const body = await c.req
+      .json<{ current_password?: string; new_password?: string }>()
+      .catch((): { current_password?: string; new_password?: string } => ({}));
+    const currentPassword = body.current_password ?? '';
+    const newPassword = body.new_password ?? '';
+
+    if (!auth.verifyPassword(currentPassword)) {
+      audit.write({
+        actor: c.get('actor') ?? 'owner',
+        action: 'auth.password.change.failed',
+        ip: requestIp((name) => c.req.header(name)),
+      });
+      return c.json(
+        { error: { code: 'unauthorized', field: 'current_password', message: '当前密码不正确' } },
+        401,
+      );
+    }
+    if (newPassword.length < 8 || newPassword.length > 256) {
+      return c.json(
+        { error: { code: 'validation_failed', field: 'new_password', message: '新密码长度需在 8-256' } },
+        400,
+      );
+    }
+
+    auth.setPassword(newPassword);
+    const token = getSessionToken(c);
+    if (token) auth.revokeOtherSessions(token);
+    audit.write({
+      actor: c.get('actor') ?? 'owner',
+      action: 'auth.password.change',
+      ip: requestIp((name) => c.req.header(name)),
+    });
+    return c.json({ ok: true, has_stored_password: auth.hasStoredPassword() });
+  });
+
   admin.get('/notes', (c) => {
     const rows = noteRepo.listAll();
     return c.json({

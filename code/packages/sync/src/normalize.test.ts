@@ -13,6 +13,9 @@ describe('normalize', () => {
     // 默认 private — 隐私优先;用户必须 frontmatter 显式 visibility: public 才公开
     expect(note.visibility).toBe('private');
     expect(note.searchable).toBe(false);
+    expect(note.seo_indexable).toBe(false);
+    expect(note.rss_includable).toBe(false);
+    expect(note.featured_on_home).toBe(false);
     expect(note.tags).toEqual([]);
   });
 

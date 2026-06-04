@@ -7,6 +7,7 @@ import { migration008CommentsSubscribers } from './migrations/008_comments_subsc
 import { migration009SearchableShortlinkExtras } from './migrations/009_searchable_shortlink_extras.js';
 import { migration010CommentsThreading } from './migrations/010_comments_threading.js';
 import { migration011NoteKind } from './migrations/011_note_kind.js';
+import { migration012AdminCredentials } from './migrations/012_admin_credentials.js';
 
 interface Migration {
   version: number;
@@ -140,6 +141,7 @@ const MIGRATIONS: Migration[] = [
   migration009SearchableShortlinkExtras,
   migration010CommentsThreading,
   migration011NoteKind,
+  migration012AdminCredentials,
 ];
 
 export function runMigrations(db: Database): void {

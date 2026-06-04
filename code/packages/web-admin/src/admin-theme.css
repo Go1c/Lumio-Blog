@@ -1,0 +1,123 @@
+:root,
+html[data-theme="dark"],
+html[data-admin-theme="light"] {
+  --primary: #7C8CFF;
+  --primary-d: #6171F0;
+  --secondary: #5DE2C6;
+  --accent: #FFB86B;
+  --bg: #EEF1F8;
+  --bg-soft: #F3F6FD;
+  --bg-sunk: #E9EEF8;
+  --line: #E7ECF6;
+  --line-strong: #D4DCF5;
+  --ink: #1E2A3A;
+  --ink-2: #3A4A6E;
+  --ink-3: #6B7894;
+  --ink-4: #9AA6BE;
+  --accent-soft: #ECEFFF;
+  --accent-2: #6171F0;
+  --ok: #28A86A;
+  --ok-soft: #E3F7ED;
+  --ok-text: #1F8A5B;
+  --warn: #E0A93B;
+  --warn-soft: #FBF1DA;
+  --warn-text: #8A6A1F;
+  --danger: #C2415B;
+  --danger-soft: #FCE7EC;
+  --danger-text: #C2415B;
+  --code-bg: #F3F6FD;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --radius-lg: 18px;
+  --shadow-1: 0 1px 2px rgba(30, 42, 58, .04);
+  --shadow-2: 0 1px 3px rgba(30, 42, 58, .08), 0 10px 30px -18px rgba(53, 68, 120, .26);
+  --shadow-3: 0 18px 50px -16px rgba(53, 68, 120, .40);
+  --shadow-card: 0 1px 2px rgba(30, 42, 58, .04), 0 10px 30px -12px rgba(53, 68, 120, .18);
+  --shadow-pop: 0 18px 50px -16px rgba(53, 68, 120, .40);
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  html[data-admin-theme="light"]:not([data-theme="light"]):not([data-theme="dark"]),
+  html[data-admin-theme="light"] {
+    --primary: #7C8CFF;
+    --primary-d: #6171F0;
+    --secondary: #5DE2C6;
+    --accent: #FFB86B;
+    --bg: #EEF1F8;
+    --bg-soft: #F3F6FD;
+    --bg-sunk: #E9EEF8;
+    --line: #E7ECF6;
+    --line-strong: #D4DCF5;
+    --ink: #1E2A3A;
+    --ink-2: #3A4A6E;
+    --ink-3: #6B7894;
+    --ink-4: #9AA6BE;
+    --accent-soft: #ECEFFF;
+    --accent-2: #6171F0;
+    --ok: #28A86A;
+    --ok-soft: #E3F7ED;
+    --ok-text: #1F8A5B;
+    --warn: #E0A93B;
+    --warn-soft: #FBF1DA;
+    --warn-text: #8A6A1F;
+    --danger: #C2415B;
+    --danger-soft: #FCE7EC;
+    --danger-text: #C2415B;
+    --code-bg: #F3F6FD;
+    color-scheme: light;
+  }
+}
+
+html[data-admin-theme="light"],
+html[data-admin-theme="light"] body {
+  background: #EEF1F8;
+  color: var(--ink);
+}
+
+html[data-admin-theme="light"] body,
+html[data-admin-theme="light"] .ui-admin,
+html[data-admin-theme="light"] .ui-admin__content {
+  background: #EEF1F8;
+  color: var(--ink);
+}
+
+html[data-admin-theme="light"] .ui-admin__topbar,
+html[data-admin-theme="light"] .ui-card,
+html[data-admin-theme="light"] .panel,
+html[data-admin-theme="light"] .stat,
+html[data-admin-theme="light"] .ws-e__panel,
+html[data-admin-theme="light"] .ws-e__save-bar,
+html[data-admin-theme="light"] .ws-e__toast,
+html[data-admin-theme="light"] .ws-e__modal,
+html[data-admin-theme="light"] .ui-dropdown__menu,
+html[data-admin-theme="light"] .ui-modal,
+html[data-admin-theme="light"] .ui-toast {
+  background: #fff;
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+html[data-admin-theme="light"] input,
+html[data-admin-theme="light"] textarea,
+html[data-admin-theme="light"] select,
+html[data-admin-theme="light"] .ui-input,
+html[data-admin-theme="light"] .ui-admin__topbar-search {
+  background: var(--bg-soft);
+  color: var(--ink);
+  border-color: var(--line);
+}
+
+html[data-admin-theme="light"] input::placeholder,
+html[data-admin-theme="light"] textarea::placeholder {
+  color: var(--ink-4);
+}
+
+html[data-admin-theme="light"] th,
+html[data-admin-theme="light"] .ws-e__table thead th,
+html[data-admin-theme="light"] .panel__head,
+html[data-admin-theme="light"] .ws-e__panel-head,
+html[data-admin-theme="light"] .ws-e__settings-nav {
+  background: var(--bg-soft);
+  color: var(--ink-3);
+}

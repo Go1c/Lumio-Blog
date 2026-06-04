@@ -280,6 +280,18 @@ export const api = {
   async logout(): Promise<void> {
     await req('/api/auth/logout', { method: 'POST' });
   },
+  async changePassword(currentPassword: string, newPassword: string): Promise<{ ok: true; has_stored_password: boolean }> {
+    return jsonOrThrow(
+      await req('/api/admin/auth/password', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          current_password: currentPassword,
+          new_password: newPassword,
+        }),
+      }),
+    );
+  },
   async health(): Promise<HealthInfo> {
     return jsonOrThrow(await req('/api/health'));
   },

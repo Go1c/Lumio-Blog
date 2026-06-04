@@ -59,16 +59,16 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '内容',
     items: [
-      { label: '文章管理', href: '#/notes', icon: 'note', badge: 28, match: (p) => p.startsWith('#/notes') },
-      { label: '专栏管理', href: '#/columns', icon: 'book', badge: 4 },
-      { label: '标签管理', href: '#/tags', icon: 'tag', badge: 15 },
-      { label: '评论审核', href: '#/comments', icon: 'comment', badge: 6 },
+      { label: '文章管理', href: '#/notes', icon: 'note', match: (p) => p.startsWith('#/notes') },
+      { label: '专栏管理', href: '#/columns', icon: 'book' },
+      { label: '标签管理', href: '#/tags', icon: 'tag' },
+      { label: '评论审核', href: '#/comments', icon: 'comment' },
     ],
   },
   {
     label: '运营',
     items: [
-      { label: '广告位', href: '#/media', icon: 'image', badge: 3 },
+      { label: '媒体库', href: '#/media', icon: 'image' },
       { label: '数据统计', href: '#/analytics', icon: 'chart' },
       {
         label: '系统设置',
@@ -165,8 +165,8 @@ export function AdminShell({
         <div class="ui-admin__foot">
           <Avatar initials={userInitials} aria-label="当前用户" size={34} />
           <div>
-            <div class="ui-admin__foot-name">林辰</div>
-            <div class="ui-admin__foot-role">超级管理员</div>
+            <div class="ui-admin__foot-name">管理员</div>
+            <div class="ui-admin__foot-role">内容管理</div>
           </div>
         </div>
       </aside>
@@ -187,14 +187,14 @@ export function AdminShell({
             aria-label="搜索"
           >
             <HfIcon name="search" size={13} />
-            <span class="hf-grow">搜索文章、用户...</span>
+            <span class="hf-grow">搜索文章、标签...</span>
           </button>
 
           {topbarActions}
 
-          <a class="btn-new" href="#/notes" aria-label="写文章">
-            <HfIcon name="plus" size={13} /> 写文章
-          </a>
+          <button type="button" class="btn-new" onClick={onSync} aria-label="同步内容">
+            <HfIcon name="sync" size={13} /> 同步内容
+          </button>
         </header>
 
         <main id="main-content" class="ui-admin__content" role="main">

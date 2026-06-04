@@ -1,10 +1,14 @@
-import { createHash, randomBytes, timingSafeEqual } from 'node:crypto';
+import { createHash, randomBytes, scryptSync, timingSafeEqual } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import type { Context, MiddlewareHandler } from 'hono';
 import { getCookie, setCookie, deleteCookie } from 'hono/cookie';
 
 const SESSION_COOKIE = 'opennote_session';
 const SESSION_TTL_DAYS = 30;
+const ADMIN_SUBJECT = 'owner';
+const PASSWORD_HASH_TAG = 'scrypt';
+const PASSWORD_KEY_LEN = 32;
+const PASSWORD_SALT_LEN = 16;
 
 /**
  * v0.1 简化版 auth：
@@ -20,12 +24,32 @@ export class AuthService {
 
   /** 校验明文密码 */
   verifyPassword(input: string): boolean {
+    const stored = this.passwordHash();
+    if (stored) return verifyPasswordHash(input, stored);
+
     const expected = process.env.OPENNOTE_PASSWORD;
     if (!expected) return false;
     const a = Buffer.from(input);
     const b = Buffer.from(expected);
     if (a.length !== b.length) return false;
     return timingSafeEqual(a, b);
+  }
+
+  setPassword(password: string): void {
+    const hash = hashPassword(password);
+    this.db
+      .prepare(
+        `INSERT INTO admin_credentials (subject, password_hash, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(subject) DO UPDATE SET
+           password_hash = excluded.password_hash,
+           updated_at = excluded.updated_at`,
+      )
+      .run(ADMIN_SUBJECT, hash, new Date().toISOString());
+  }
+
+  hasStoredPassword(): boolean {
+    return !!this.passwordHash();
   }
 
   createSession(): string {
@@ -37,7 +61,7 @@ export class AuthService {
       .prepare(
         `INSERT INTO sessions (jti, subject, created_at, expires_at) VALUES (?, ?, ?, ?)`,
       )
-      .run(jti, 'owner', now.toISOString(), exp.toISOString());
+      .run(jti, ADMIN_SUBJECT, now.toISOString(), exp.toISOString());
     return token;
   }
 
@@ -60,6 +84,57 @@ export class AuthService {
       .prepare('UPDATE sessions SET revoked_at = ? WHERE jti = ?')
       .run(new Date().toISOString(), jti);
   }
+
+  revokeOtherSessions(token: string): void {
+    const keepJti = createHash('sha256').update(token).digest('hex');
+    this.db
+      .prepare(
+        `UPDATE sessions
+         SET revoked_at = ?
+         WHERE subject = ? AND revoked_at IS NULL AND jti <> ?`,
+      )
+      .run(new Date().toISOString(), ADMIN_SUBJECT, keepJti);
+  }
+
+  private passwordHash(): string | null {
+    try {
+      const row = this.db
+        .prepare<[string], { password_hash: string }>(
+          'SELECT password_hash FROM admin_credentials WHERE subject = ?',
+        )
+        .get(ADMIN_SUBJECT);
+      return row?.password_hash ?? null;
+    } catch {
+      return null;
+    }
+  }
+}
+
+export function hashPassword(password: string): string {
+  const salt = randomBytes(PASSWORD_SALT_LEN);
+  const key = scryptSync(password, salt, PASSWORD_KEY_LEN);
+  return `${PASSWORD_HASH_TAG}$${salt.toString('base64')}$${key.toString('base64')}`;
+}
+
+export function verifyPasswordHash(password: string, stored: string): boolean {
+  const parts = stored.split('$');
+  if (parts.length !== 3 || parts[0] !== PASSWORD_HASH_TAG) return false;
+  const saltStr = parts[1];
+  const expectedStr = parts[2];
+  if (!saltStr || !expectedStr) return false;
+
+  let salt: Buffer;
+  let expected: Buffer;
+  try {
+    salt = Buffer.from(saltStr, 'base64');
+    expected = Buffer.from(expectedStr, 'base64');
+  } catch {
+    return false;
+  }
+  if (expected.length !== PASSWORD_KEY_LEN) return false;
+  const got = scryptSync(password, salt, PASSWORD_KEY_LEN);
+  if (got.length !== expected.length) return false;
+  return timingSafeEqual(got, expected);
 }
 
 export function setSessionCookie(c: Context, token: string): void {
