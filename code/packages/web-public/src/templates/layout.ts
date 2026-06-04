@@ -15,7 +15,31 @@ export interface LayoutOpts {
   path?: string;
   /** 分享图路径或绝对 URL */
   image?: string;
+  /** 额外的 head HTML */
+  extraHead?: string;
 }
+
+const STYLES_HREF = '/styles.css?v=20260604-lumio-contrast';
+
+const LUMIO_CONTRAST_HEAD = `<style>
+body.ui-public.lumio-public {
+  --primary: #7C8CFF;
+  --primary-d: #6171F0;
+  --secondary: #5DE2C6;
+  --accent: #FFB86B;
+  --bg: #F7FAFF;
+  --ink: #1E2A3A;
+  --muted: #6B7894;
+  --faint: #9AA6BE;
+  --line: #E7ECF6;
+  --card: #FFFFFF;
+  --accent-soft: #ECEFFF;
+  --accent-2: #6171F0;
+  --line-strong: #D4DCF5;
+  color: #1E2A3A;
+  color-scheme: light;
+}
+</style>`;
 
 /**
  * 兼容旧调用点的薄壳。把 LayoutOpts 转成 publicLayout 需要的形状,
@@ -51,6 +75,8 @@ export function layout(o: LayoutOpts): string {
     description: o.description,
     config: o.config,
     body: o.body,
+    stylesHref: STYLES_HREF,
+    extraHead: `${LUMIO_CONTRAST_HEAD}${o.extraHead ?? ''}`,
     extraScripts,
   };
   if (o.noindex) opts.noindex = true;

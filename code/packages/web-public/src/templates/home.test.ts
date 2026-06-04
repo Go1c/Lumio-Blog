@@ -86,6 +86,24 @@ describe('renderHome article data', () => {
 });
 
 describe('renderHome brand polish', () => {
+  it('ships cache-busted Lumio contrast CSS from the document head', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      config,
+    );
+
+    expect(html).toContain('href="/styles.css?v=20260604-lumio-contrast"');
+    expect(html).toContain('body.ui-public.lumio-public {');
+    expect(html).toContain('--ink: #1E2A3A;');
+  });
+
   it('uses a purposeful Lumio eyebrow instead of a generated title-length version badge', () => {
     const html = renderHome(
       {
