@@ -433,6 +433,27 @@ html[data-theme="dark"] {
 }
 
 body.ui-public.lumio-public {
+  --primary: #7C8CFF;
+  --primary-d: #6171F0;
+  --secondary: #5DE2C6;
+  --accent: #FFB86B;
+  --bg: #F7FAFF;
+  --ink: #1E2A3A;
+  --muted: #6B7894;
+  --faint: #9AA6BE;
+  --line: #E7ECF6;
+  --card: #FFFFFF;
+  --radius: 18px;
+  --radius-sm: 12px;
+  --shadow-card: 0 1px 2px rgba(30,42,58,.04), 0 10px 30px -12px rgba(53,68,120,.18);
+  --shadow-pop: 0 18px 50px -16px rgba(53,68,120,.40);
+  --font-zh: 'Noto Sans SC', 'Inter', sans-serif;
+  --font: 'Inter', 'Noto Sans SC', sans-serif;
+  --sans: var(--font);
+  --accent-soft: #ECEFFF;
+  --accent-2: var(--primary-d);
+  --line-strong: #D4DCF5;
+  color-scheme: light;
   font-family: var(--font);
   color: var(--ink);
   background:

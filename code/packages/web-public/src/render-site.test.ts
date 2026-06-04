@@ -42,6 +42,17 @@ describe('static assets', () => {
 });
 
 describe('composeStyles', () => {
+  it('keeps Lumio text tokens scoped after global dark-mode fallback', () => {
+    const styles = composeStyles('');
+    const darkFallbackIndex = styles.indexOf('@media (prefers-color-scheme: dark)');
+    const lumioBodyIndex = styles.indexOf('body.ui-public.lumio-public {\n  --primary: #7C8CFF;');
+
+    expect(darkFallbackIndex).toBeGreaterThan(-1);
+    expect(lumioBodyIndex).toBeGreaterThan(darkFallbackIndex);
+    expect(styles.slice(lumioBodyIndex)).toContain('--ink: #1E2A3A;');
+    expect(styles.slice(lumioBodyIndex)).toContain('color-scheme: light;');
+  });
+
   it('appends Lumio article contrast overrides after Obsidian prose defaults', () => {
     const obsidianCss = '.hf-prose { color: var(--ob-text-normal); }';
     const styles = composeStyles(obsidianCss);
