@@ -31,6 +31,7 @@ export interface FnsSupervisorOpts {
 }
 
 const RESTART_BACKOFFS_MS = [1_000, 5_000, 15_000, 30_000, 60_000];
+const DISCONNECTED_RESTART_MS = 60_000;
 const STATUS_CONNECTED = /Authenticated\.|Connected\./;
 const STATUS_DISCONNECTED = /ConnectionClosed|Connection lost/;
 
@@ -40,8 +41,10 @@ export class FnsSupervisor {
   private current: FnsSettings | null = null;
   private restartCount = 0;
   private restartTimer: NodeJS.Timeout | null = null;
+  private disconnectedRestartTimer: NodeJS.Timeout | null = null;
   private stopping = false;
   private childGeneration = 0;
+  private lastStatus: NonNullable<FnsSettings['last_status']> = 'unknown';
 
   constructor(opts: FnsSupervisorOpts) {
     this.opts = opts;
@@ -58,10 +61,12 @@ export class FnsSupervisor {
     this.current = await loadFnsYaml();
     if (!this.current.enabled) {
       this.opts.log('info', 'fns.supervisor.disabled', { reason: 'enabled=false' });
+      await this.updateStatus('disconnected', 'enabled=false');
       return;
     }
     if (!this.current.api_url || !this.current.token) {
       this.opts.log('warn', 'fns.supervisor.skip', { reason: 'api_url or token empty' });
+      await this.updateStatus('error', 'api_url or token empty');
       return;
     }
     await this.spawnChild();
@@ -77,6 +82,7 @@ export class FnsSupervisor {
       clearTimeout(this.restartTimer);
       this.restartTimer = null;
     }
+    this.clearDisconnectedRestart();
     await this.start();
   }
 
@@ -85,6 +91,7 @@ export class FnsSupervisor {
     this.stopping = true;
     this.childGeneration += 1;
     if (this.restartTimer) clearTimeout(this.restartTimer);
+    this.clearDisconnectedRestart();
     this.killChild();
   }
 
@@ -135,6 +142,7 @@ export class FnsSupervisor {
     if (!this.current) return;
     if (!existsSync(this.opts.cliDir)) {
       this.opts.log('error', 'fns.supervisor.cli_dir_missing', { dir: this.opts.cliDir });
+      await this.updateStatus('error', `cli dir missing: ${this.opts.cliDir}`);
       return;
     }
     await this.writeChildConfig(this.current);
@@ -153,6 +161,7 @@ export class FnsSupervisor {
     });
     const childGeneration = ++this.childGeneration;
     this.child = child;
+    await this.updateStatus('unknown');
 
     const onLine = (data: Buffer) => {
       const text = data.toString('utf-8');
@@ -162,9 +171,12 @@ export class FnsSupervisor {
         process.stdout.write(`[fns] ${trimmed}\n`);
         // 简单解析状态
         if (STATUS_CONNECTED.test(trimmed)) {
+          this.clearDisconnectedRestart();
+          this.restartCount = 0;
           void this.updateStatus('connected');
         } else if (STATUS_DISCONNECTED.test(trimmed)) {
           void this.updateStatus('disconnected', trimmed);
+          this.scheduleDisconnectedRestart(childGeneration, trimmed);
         }
       }
     };
@@ -173,10 +185,12 @@ export class FnsSupervisor {
 
     child.on('exit', (code, signal) => {
       this.opts.log('warn', 'fns.supervisor.exit', { code, signal });
+      this.clearDisconnectedRestart();
       if (this.child === child) this.child = null;
       if (this.stopping) return;
       if (childGeneration !== this.childGeneration) return;
       if (!this.current?.enabled) return;
+      void this.updateStatus('disconnected', `fns_cli exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
       // 调度重启
       const delay = RESTART_BACKOFFS_MS[Math.min(this.restartCount, RESTART_BACKOFFS_MS.length - 1)] ?? 60_000;
       this.restartCount += 1;
@@ -188,8 +202,31 @@ export class FnsSupervisor {
     });
   }
 
+  private clearDisconnectedRestart(): void {
+    if (!this.disconnectedRestartTimer) return;
+    clearTimeout(this.disconnectedRestartTimer);
+    this.disconnectedRestartTimer = null;
+  }
+
+  private scheduleDisconnectedRestart(childGeneration: number, reason: string): void {
+    if (this.disconnectedRestartTimer) return;
+    this.disconnectedRestartTimer = setTimeout(() => {
+      this.disconnectedRestartTimer = null;
+      if (this.stopping) return;
+      if (childGeneration !== this.childGeneration) return;
+      if (!this.child) return;
+      if (this.lastStatus !== 'disconnected') return;
+      this.opts.log('warn', 'fns.supervisor.restart_after_disconnect', {
+        delay_ms: DISCONNECTED_RESTART_MS,
+        reason,
+      });
+      this.killChild();
+    }, DISCONNECTED_RESTART_MS);
+  }
+
   private async updateStatus(status: NonNullable<FnsSettings['last_status']>, error?: string): Promise<void> {
     if (!this.current) return;
+    this.lastStatus = status;
     const next: FnsSettings = {
       ...this.current,
       last_status: status,
