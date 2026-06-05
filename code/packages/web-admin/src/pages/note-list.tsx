@@ -22,6 +22,11 @@ type ViewMode = 'tree' | 'flat';
 const VIEW_STORAGE_KEY = 'opennote.note-list.view';
 const PATH_STORAGE_KEY = 'opennote.note-list.path';
 
+export const NOTE_TABLE_CARD_STYLE: JSX.CSSProperties = {
+  padding: 0,
+  overflow: 'visible',
+};
+
 function readView(): ViewMode {
   try {
     const v = localStorage.getItem(VIEW_STORAGE_KEY);
@@ -577,7 +582,7 @@ function FlatTable({
     );
   }
   return (
-    <div class="ui-card" style={{ padding: 0, overflow: 'hidden' }}>
+    <div class="ui-card" style={NOTE_TABLE_CARD_STYLE}>
       <table
         style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}
         aria-label="所有笔记"

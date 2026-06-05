@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { formatNoteListHeader } from './note-list.js';
+import { formatNoteListHeader, NOTE_TABLE_CARD_STYLE } from './note-list.js';
 
 describe('note list header', () => {
   it('summarizes the current tree path without hiding descendant notes', () => {
@@ -27,5 +27,9 @@ describe('note list header', () => {
 
   it('keeps the flat view summary focused on note count', () => {
     expect(formatNoteListHeader('flat', null, [{ slug: 'a' }, { slug: 'b' }] as any)).toBe('2 篇');
+  });
+
+  it('does not clip visibility dropdown menus inside the table card', () => {
+    expect(NOTE_TABLE_CARD_STYLE.overflow).toBe('visible');
   });
 });
