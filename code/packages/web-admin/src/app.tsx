@@ -19,6 +19,7 @@ import { TagsPage } from './pages/tags.js';
 import { CommentsPage } from './pages/comments.js';
 import { SubscriptionsPage } from './pages/subscriptions.js';
 import { AnalyticsOverviewPage } from './pages/analytics-overview.js';
+import { AdsPage } from './pages/ads.js';
 
 type Route =
   | { name: 'dashboard' }
@@ -26,6 +27,7 @@ type Route =
   | { name: 'columns' }
   | { name: 'detail'; slug: string }
   | { name: 'analytics'; slug: string }
+  | { name: 'ads' }
   | { name: 'tokens' }
   | { name: 'webhooks' }
   | { name: 'settings'; section: SettingsSectionId }
@@ -55,15 +57,16 @@ export function parseRouteHash(rawHash: string): ParsedRoute {
 
 function routeFromHashPath(hash: string, query: URLSearchParams): Route {
   if (hash === '' || hash === 'dashboard') return { name: 'dashboard' };
-  if (hash === 'notes') return { name: 'list', shortLinkIdle: query.get('short_link_idle') === '1' };
+  if (hash === 'vault' || hash === 'notes') return { name: 'list', shortLinkIdle: query.get('short_link_idle') === '1' };
   if (hash === 'columns') return { name: 'columns' };
-  if (hash.startsWith('notes/')) {
-    const rest = hash.slice(6);
-    // notes/<slug>/analytics
+  if (hash.startsWith('note/') || hash.startsWith('notes/')) {
+    const rest = hash.startsWith('note/') ? hash.slice(5) : hash.slice(6);
+    // note/<slug>/analytics or legacy notes/<slug>/analytics
     const m = /^([^/]+)\/analytics$/.exec(rest);
     if (m && m[1]) return { name: 'analytics', slug: decodeURIComponent(m[1]) };
     return { name: 'detail', slug: decodeURIComponent(rest) };
   }
+  if (hash === 'ads') return { name: 'ads' };
   if (hash === 'tokens') return { name: 'tokens' };
   if (hash === 'webhooks') return { name: 'webhooks' };
   if (hash === 'audit') {
@@ -96,10 +99,11 @@ function readRoute(): ParsedRoute {
 function currentPath(route: Route): string {
   switch (route.name) {
     case 'dashboard': return '#/';
-    case 'list': return '#/notes';
+    case 'list': return '#/vault';
     case 'columns': return '#/columns';
-    case 'detail': return `#/notes/${route.slug}`;
-    case 'analytics': return `#/notes/${route.slug}/analytics`;
+    case 'detail': return `#/note/${route.slug}`;
+    case 'analytics': return `#/note/${route.slug}/analytics`;
+    case 'ads': return '#/ads';
     case 'tokens': return '#/tokens';
     case 'webhooks': return '#/webhooks';
     case 'settings': return `#/settings/${route.section}`;
@@ -120,22 +124,24 @@ function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
     case 'dashboard':
       return [{ label: 'Lumio Blog', href: '#/' }, { label: '概览' }];
     case 'list':
-      return [{ label: 'Lumio Blog', href: '#/' }, { label: '笔记' }];
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '笔记库' }];
     case 'columns':
       return [{ label: 'Lumio Blog', href: '#/' }, { label: '内容' }, { label: '专栏' }];
     case 'detail':
       return [
         { label: 'Lumio Blog', href: '#/' },
-        { label: '笔记', href: '#/notes' },
+        { label: '笔记库', href: '#/vault' },
         { label: route.slug },
       ];
     case 'analytics':
       return [
         { label: 'Lumio Blog', href: '#/' },
-        { label: '笔记', href: '#/notes' },
-        { label: route.slug, href: `#/notes/${route.slug}` },
+        { label: '笔记库', href: '#/vault' },
+        { label: route.slug, href: `#/note/${route.slug}` },
         { label: '数据' },
       ];
+    case 'ads':
+      return [{ label: 'Lumio Blog', href: '#/' }, { label: '运营' }, { label: '广告位' }];
     case 'tokens':
       return [{ label: 'Lumio Blog', href: '#/' }, { label: '设置' }, { label: 'Tokens' }];
     case 'webhooks':
@@ -175,6 +181,7 @@ interface AdminMenuCounts {
   columns?: number;
   tags?: number;
   pendingComments?: number;
+  ads?: number;
 }
 
 function countColumns(notes: NoteSummary[]): number {
@@ -201,11 +208,11 @@ export function buildAdminMenu(counts: AdminMenuCounts = {}): AdminMenuGroup[] {
       label: '内容',
       items: [
         {
-          label: '文章管理',
-          href: '#/notes',
-          icon: 'note',
+          label: '笔记库',
+          href: '#/vault',
+          icon: 'folder',
           ...badge(counts.notes),
-          match: (p) => p.startsWith('#/notes'),
+          match: (p) => p.startsWith('#/vault') || p.startsWith('#/note/'),
         },
         { label: '专栏管理', href: '#/columns', icon: 'book', ...badge(counts.columns) },
         { label: '标签管理', href: '#/tags', icon: 'tag', ...badge(counts.tags) },
@@ -220,8 +227,9 @@ export function buildAdminMenu(counts: AdminMenuCounts = {}): AdminMenuGroup[] {
     {
       label: '运营',
       items: [
-        { label: '媒体库', href: '#/media', icon: 'image' },
+        { label: '广告位', href: '#/ads', icon: 'pin', ...badge(counts.ads) },
         { label: '数据统计', href: '#/analytics', icon: 'chart' },
+        { label: '媒体库', href: '#/media', icon: 'image' },
         {
           label: '系统设置',
           href: '#/settings',
@@ -258,13 +266,17 @@ export function App() {
       api.listNotes(),
       api.tags.list(),
       api.comments.list({ status: 'pending', limit: 1 }),
-    ]).then(([health, notes, tags, comments]) => {
+      api.settings.get(),
+    ]).then(([health, notes, tags, comments, settings]) => {
       if (cancelled) return;
       const next: AdminMenuCounts = {};
       assignCount(next, 'notes', health.status === 'fulfilled' ? health.value.note_count : undefined);
       assignCount(next, 'columns', notes.status === 'fulfilled' ? countColumns(notes.value.notes) : undefined);
       assignCount(next, 'tags', tags.status === 'fulfilled' ? tags.value.tags.length : undefined);
       assignCount(next, 'pendingComments', comments.status === 'fulfilled' ? comments.value.counts.pending : undefined);
+      assignCount(next, 'ads', settings.status === 'fulfilled'
+        ? (settings.value.home?.ads ?? []).filter((ad) => ad.enabled !== false).length
+        : undefined);
       setMenuCounts(next);
     });
     return () => {
@@ -319,6 +331,7 @@ export function App() {
       {route.name === 'columns' && <ColumnsPage />}
       {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
       {route.name === 'analytics' && <NoteAnalyticsPage slug={route.slug} />}
+      {route.name === 'ads' && <AdsPage />}
       {route.name === 'tokens' && <TokensPage />}
       {route.name === 'webhooks' && <WebhooksPage />}
       {route.name === 'settings' && <SettingsPage section={route.section} />}

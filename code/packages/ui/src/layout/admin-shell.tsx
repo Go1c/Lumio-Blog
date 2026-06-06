@@ -59,7 +59,12 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '内容',
     items: [
-      { label: '文章管理', href: '#/notes', icon: 'note', match: (p) => p.startsWith('#/notes') },
+      {
+        label: '笔记库',
+        href: '#/vault',
+        icon: 'folder',
+        match: (p) => p.startsWith('#/vault') || p.startsWith('#/note/'),
+      },
       { label: '专栏管理', href: '#/columns', icon: 'book' },
       { label: '标签管理', href: '#/tags', icon: 'tag' },
       { label: '评论审核', href: '#/comments', icon: 'comment' },
@@ -68,8 +73,9 @@ export const DEFAULT_ADMIN_MENU: AdminMenuGroup[] = [
   {
     label: '运营',
     items: [
-      { label: '媒体库', href: '#/media', icon: 'image' },
+      { label: '广告位', href: '#/ads', icon: 'pin' },
       { label: '数据统计', href: '#/analytics', icon: 'chart' },
+      { label: '媒体库', href: '#/media', icon: 'image' },
       {
         label: '系统设置',
         href: '#/settings',

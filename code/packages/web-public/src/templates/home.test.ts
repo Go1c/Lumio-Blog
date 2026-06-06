@@ -137,4 +137,73 @@ describe('renderHome brand polish', () => {
     expect(html).not.toContain('(0)');
     expect(html).toContain('href="/articles/index.html"');
   });
+
+  it('renders the latest sponsored ad carousel on the home feed', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      config,
+    );
+
+    expect(html).toContain('class="adcar"');
+    expect(html).toContain('data-adcar-track');
+    expect(html.match(/class="adcar__slide/g)).toHaveLength(3);
+    expect(html).toContain('data-adcar-dots');
+    expect(html).toContain('setInterval(next, 4500)');
+  });
+
+  it('uses enabled home ads from config as carousel slides', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      {
+        ...config,
+        home: {
+          ads: [
+            {
+              enabled: true,
+              variant: 'native',
+              slot: 'home',
+              tone: 'rose',
+              title: 'Home Ad',
+              body: '首页广告',
+              cta_label: '打开',
+              cta_href: 'https://example.com/home',
+            },
+            {
+              enabled: true,
+              variant: 'native',
+              slot: 'article',
+              tone: 'mint',
+              title: 'Article Ad',
+            },
+            {
+              enabled: false,
+              variant: 'native',
+              slot: 'home',
+              tone: 'blue',
+              title: 'Paused Home Ad',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(html.match(/class="adcar__slide/g)).toHaveLength(1);
+    expect(html).toContain('Home Ad');
+    expect(html).not.toContain('Article Ad');
+    expect(html).not.toContain('Paused Home Ad');
+  });
 });

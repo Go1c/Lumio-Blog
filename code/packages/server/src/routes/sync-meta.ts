@@ -34,6 +34,7 @@ export interface FolderEntry {
   path: string;
   note_count: number;
   updated_at: string | null;
+  visibility_counts: VisibilityCounts;
 }
 
 export interface FolderTreeNoteSummary {
@@ -56,13 +57,26 @@ export interface FolderTreeResponse {
    * 当前路径(含子目录)下所有笔记的 visibility 计数。前台筛选 chip 显示这个,
    * 跟 `notes`(只有当前层)区分开——否则 root 下永远是 0/0/0/0。
    */
-  visibility_counts: {
-    all: number;
-    public: number;
-    unlisted: number;
-    'link-only': number;
-    private: number;
-  };
+  visibility_counts: VisibilityCounts;
+}
+
+export interface VisibilityCounts {
+  all: number;
+  public: number;
+  unlisted: number;
+  'link-only': number;
+  private: number;
+}
+
+function emptyVisibilityCounts(): VisibilityCounts {
+  return { all: 0, public: 0, unlisted: 0, 'link-only': 0, private: 0 };
+}
+
+function incrementVisibilityCounts(counts: VisibilityCounts, visibility: string): void {
+  counts.all += 1;
+  if (visibility in counts && visibility !== 'all') {
+    counts[visibility as keyof Omit<VisibilityCounts, 'all'>] += 1;
+  }
 }
 
 /**
@@ -78,16 +92,12 @@ export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeRespons
     ? all
     : all.filter((n) => n.source_path === cleanPath || n.source_path.startsWith(prefix));
 
-  const folders = new Map<string, { count: number; updated_at: string | null }>();
+  const folders = new Map<string, { count: number; updated_at: string | null; visibility_counts: VisibilityCounts }>();
   const directNotes: FolderTreeNoteSummary[] = [];
-  const visibility_counts = {
-    all: 0, public: 0, unlisted: 0, 'link-only': 0, private: 0,
-  };
+  const visibility_counts = emptyVisibilityCounts();
 
   for (const n of inScope) {
-    visibility_counts.all += 1;
-    const v = n.visibility as keyof typeof visibility_counts;
-    if (v in visibility_counts) visibility_counts[v] += 1;
+    incrementVisibilityCounts(visibility_counts, n.visibility);
     const rel = cleanPath === '' ? n.source_path : n.source_path.slice(prefix.length);
     const segs = rel.split('/');
     if (segs.length === 1) {
@@ -103,8 +113,9 @@ export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeRespons
       });
     } else {
       const childName = segs[0]!;
-      const cur = folders.get(childName) ?? { count: 0, updated_at: null };
+      const cur = folders.get(childName) ?? { count: 0, updated_at: null, visibility_counts: emptyVisibilityCounts() };
       cur.count += 1;
+      incrementVisibilityCounts(cur.visibility_counts, n.visibility);
       if (!cur.updated_at || n.updated_at > cur.updated_at) cur.updated_at = n.updated_at;
       folders.set(childName, cur);
     }
@@ -116,6 +127,7 @@ export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeRespons
       path: cleanPath === '' ? name : `${cleanPath}/${name}`,
       note_count: v.count,
       updated_at: v.updated_at,
+      visibility_counts: v.visibility_counts,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 

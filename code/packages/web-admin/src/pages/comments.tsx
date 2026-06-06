@@ -168,7 +168,7 @@ export function CommentsPage() {
                       </a>
                     )}
                     <span class="hf-mono hf-tiny hf-faint" aria-hidden="true">·</span>
-                    <a class="hf-tiny" href={`#/notes/${encodeURIComponent(c.slug)}`}>{c.slug}</a>
+                    <a class="hf-tiny" href={`#/note/${encodeURIComponent(c.slug)}`}>{c.slug}</a>
                     <span class="hf-mono hf-tiny hf-faint" aria-hidden="true">·</span>
                     <time class="hf-mono hf-tiny hf-muted" dateTime={c.created_at}>{fmtTs(c.created_at)}</time>
                     <div class="hf-grow" />

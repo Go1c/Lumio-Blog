@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { Dropdown, DropdownItem, HfIcon, Tag } from '@opennote/ui';
 import {
   api,
+  type FolderEntry,
   type FolderTreeResponse,
   type NoteSummary,
   type Visibility,
@@ -55,6 +56,22 @@ export function formatNoteListHeader(
   const noteCount = tree?.visibility_counts?.all ?? tree?.notes.length ?? 0;
   if (folderCount > 0) return `${folderCount} 目录 · ${noteCount} 篇`;
   return `${noteCount} 篇`;
+}
+
+export function folderCountForFilter(
+  folder: FolderEntry,
+  filter: Visibility | 'all',
+): number {
+  if (filter === 'all') return folder.note_count;
+  return folder.visibility_counts?.[filter] ?? 0;
+}
+
+export function filterFoldersByVisibility(
+  folders: FolderEntry[],
+  filter: Visibility | 'all',
+): FolderEntry[] {
+  if (filter === 'all') return folders;
+  return folders.filter((folder) => folderCountForFilter(folder, filter) > 0);
 }
 
 export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean }): JSX.Element {
@@ -146,6 +163,11 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
     }
     return sortNotes(arr, sort);
   }, [tree, query, filter, sort]);
+
+  const filteredTreeFolders = useMemo(() => {
+    if (!tree) return [];
+    return filterFoldersByVisibility(tree.folders, filter);
+  }, [tree, filter]);
 
   const counts = useMemo(() => {
     const out: Record<Visibility | 'all', number> = {
@@ -319,8 +341,9 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
 
       {view === 'tree' ? (
         <TreeView
-          tree={tree!}
+          folders={filteredTreeFolders}
           notes={filteredTreeNotes}
+          filter={filter}
           busySlug={busySlug}
           onEnterFolder={(p) => setPath(p)}
           onSetVisibility={setVisibility}
@@ -447,19 +470,21 @@ function BreadcrumbLink({
 }
 
 function TreeView({
-  tree,
+  folders,
   notes,
+  filter,
   busySlug,
   onEnterFolder,
   onSetVisibility,
 }: {
-  tree: FolderTreeResponse;
+  folders: FolderEntry[];
   notes: NoteSummary[];
+  filter: Visibility | 'all';
   busySlug: string | null;
   onEnterFolder: (path: string) => void;
   onSetVisibility: (n: NoteSummary, v: Visibility) => void;
 }): JSX.Element {
-  const showFolders = tree.folders.length > 0;
+  const showFolders = folders.length > 0;
   const showNotes = notes.length > 0;
 
   return (
@@ -473,8 +498,8 @@ function TreeView({
             marginBottom: showNotes ? 16 : 0,
           }}
         >
-          {tree.folders.map((f) => (
-            <FolderCard key={f.path} entry={f} onEnter={() => onEnterFolder(f.path)} />
+          {folders.map((f) => (
+            <FolderCard key={f.path} entry={f} filter={filter} onEnter={() => onEnterFolder(f.path)} />
           ))}
         </div>
       )}
@@ -497,11 +522,14 @@ function TreeView({
 
 function FolderCard({
   entry,
+  filter,
   onEnter,
 }: {
-  entry: { name: string; path: string; note_count: number; updated_at: string | null };
+  entry: FolderEntry;
+  filter: Visibility | 'all';
   onEnter: () => void;
 }): JSX.Element {
+  const noteCount = folderCountForFilter(entry, filter);
   return (
     <button
       type="button"
@@ -550,7 +578,7 @@ function FolderCard({
           {entry.name}
         </div>
         <div class="hf-tiny hf-muted" style={{ marginTop: 2 }}>
-          {entry.note_count} 篇
+          {noteCount} 篇
           {entry.updated_at && (
             <>
               {' · '}
@@ -649,7 +677,7 @@ function NoteRow({
     >
       <td data-label="标题" style={td()}>
         <a
-          href={`#/notes/${encodeURIComponent(note.slug)}`}
+          href={`#/note/${encodeURIComponent(note.slug)}`}
           style={{ color: 'var(--ink)', textDecoration: 'none', fontWeight: 500 }}
         >
           {note.title}
@@ -729,7 +757,7 @@ function NoteRow({
           </Dropdown>
           <a
             class="ui-btn ui-btn--sm ui-btn--ghost"
-            href={`#/notes/${encodeURIComponent(note.slug)}/analytics`}
+            href={`#/note/${encodeURIComponent(note.slug)}/analytics`}
             aria-label="单篇 analytics"
           >
             <HfIcon name="chart" size={11} />

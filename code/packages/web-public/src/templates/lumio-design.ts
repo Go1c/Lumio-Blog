@@ -1,4 +1,4 @@
-import type { NoteRow, SiteConfig } from '@opennote/core';
+import type { HfAdSettings, NoteRow, SiteConfig } from '@opennote/core';
 import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { esc } from './layout.js';
 
@@ -309,26 +309,160 @@ export function renderHeroScene(): string {
     </div>`;
 }
 
+const FALLBACK_HOME_ADS: HfAdSettings[] = [
+  {
+    id: 'demo-unity6',
+    enabled: true,
+    variant: 'native',
+    slot: 'home',
+    tone: 'blue',
+    title: 'Unity 6 性能套件',
+    body: '一键剖析 Draw Call 与 Overdraw,渲染优化提速 40%',
+    cta_label: '立即试用',
+    cta_href: 'https://example.com/unity6',
+  },
+  {
+    id: 'demo-renderx',
+    enabled: true,
+    variant: 'native',
+    slot: 'home',
+    tone: 'violet',
+    title: '云渲染农场 RenderX',
+    body: '按帧计费的分布式渲染,出图速度快 10 倍',
+    cta_label: '领取额度',
+    cta_href: 'https://renderx.dev',
+  },
+  {
+    id: 'demo-gameconf',
+    enabled: true,
+    variant: 'native',
+    slot: 'home',
+    tone: 'mint',
+    title: 'GameConf 2026',
+    body: '年度游戏技术大会,早鸟票 6 折,限时开售',
+    cta_label: '购票',
+    cta_href: 'https://gameconf.io',
+  },
+];
+
 export function renderAdSlot(config: SiteConfig): string {
-  const href = config.home?.ad?.cta_href && /^https?:\/\//i.test(config.home.ad.cta_href)
-    ? config.home.ad.cta_href
-    : 'https://example.com/your-ad-target';
-  const img = config.home?.ad?.enabled && config.home.ad.body && /^https?:\/\//i.test(config.home.ad.body)
-    ? `<img class="ad__img" src="${esc(config.home.ad.body)}" alt="${esc(config.home.ad.title || 'Sponsored')}">`
-    : `<div class="ad__ph">
-        <span class="ad__ph-mark" aria-hidden="true">
-          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>
-        </span>
-        <span class="ad__ph-txt">
-          <span class="ad__ph-title">广告位 · 728 × 90 横幅</span>
-          <span class="ad__ph-sub">替换为 <code>&lt;img class="ad__img" src="…"&gt;</code>,并把链接 <code>href</code> 改成跳转地址</span>
-        </span>
-      </div>`;
+  const ads = homeAdsFromConfig(config);
+  const slides = ads.map(renderHomeAdSlide).join('');
+  const nav = ads.length > 1
+    ? `
+      <button class="adcar__nav adcar__nav--prev" type="button" data-adcar-prev aria-label="上一条">${chevronLeftIcon()}</button>
+      <button class="adcar__nav adcar__nav--next" type="button" data-adcar-next aria-label="下一条">${chevronRightIcon()}</button>
+      <div class="adcar__dots" data-adcar-dots></div>`
+    : '';
   return `
-    <a class="ad ad__link" href="${esc(href)}" target="_blank" rel="noopener sponsored">
+    <div class="adcar" data-adcar aria-label="赞助广告">
       <span class="ad__label">赞助 · Sponsored</span>
-      ${img}
+      <div class="adcar__track" data-adcar-track>${slides}</div>
+      ${nav}
+    </div>
+    ${ads.length > 1 ? renderAdCarouselScript() : ''}`;
+}
+
+export function homeAdsFromConfig(config: SiteConfig): HfAdSettings[] {
+  const configured = config.home?.ads
+    ?.filter((ad) => ad.enabled !== false && (ad.slot ?? 'home') === 'home');
+  if (configured && configured.length > 0) return configured;
+
+  const legacy = config.home?.ad;
+  if (legacy?.enabled) {
+    return [{ ...legacy, slot: 'home', tone: legacy.tone ?? 'blue' }];
+  }
+  return FALLBACK_HOME_ADS;
+}
+
+function renderHomeAdSlide(ad: HfAdSettings): string {
+  const tone = ad.tone ?? toneFromAccent(ad.accent);
+  const href = ad.cta_href && /^https?:\/\//i.test(ad.cta_href)
+    ? ad.cta_href
+    : 'https://example.com/your-ad-target';
+  const title = ad.title || ad.name || '广告位 · 首页横幅';
+  const desc = ad.body && !/^https?:\/\/\S+\.(?:png|jpe?g|webp|gif|avif)(?:[?#].*)?$/i.test(ad.body)
+    ? ad.body
+    : '投放到「首页」位置的广告会在这里自动轮播。';
+  return `
+    <a class="adcar__slide t-${esc(tone)}" href="${esc(href)}" target="_blank" rel="noopener sponsored">
+      <span class="adcar__mark" aria-hidden="true">${adIcon(tone)}</span>
+      <span class="adcar__txt">
+        <span class="adcar__t">${esc(title)}</span>
+        <span class="adcar__d">${esc(desc)}</span>
+      </span>
+      <span class="adcar__cta">${esc(ad.cta_label || '了解更多')}</span>
     </a>`;
+}
+
+function toneFromAccent(accent: string | undefined): 'blue' | 'mint' | 'amber' | 'violet' | 'sky' | 'rose' {
+  if (!accent) return 'blue';
+  const s = accent.toLowerCase();
+  if (/mint|green|#5de2c6|#46c9a6|#1f9e80/.test(s)) return 'mint';
+  if (/amber|orange|#ffb86b|#f39a47/.test(s)) return 'amber';
+  if (/violet|purple|#9b7ff0|#7b5be0/.test(s)) return 'violet';
+  if (/sky|cyan|#4fa0e8|#86c8ff/.test(s)) return 'sky';
+  if (/rose|pink|#e0658e|#c2415b/.test(s)) return 'rose';
+  return 'blue';
+}
+
+function adIcon(tone: string): string {
+  if (tone === 'violet') {
+    return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"></path><path d="M2 20h20M8 16v4M16 16v4"></path></svg>';
+  }
+  if (tone === 'mint' || tone === 'sky') {
+    return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"></path><path d="M8 3v4M16 3v4M4 10h16"></path></svg>';
+  }
+  return '<svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>';
+}
+
+function chevronLeftIcon(): string {
+  return '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"></path></svg>';
+}
+
+function chevronRightIcon(): string {
+  return '<svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"></path></svg>';
+}
+
+function renderAdCarouselScript(): string {
+  return `<script>
+  (function () {
+    var car = document.querySelector('[data-adcar]');
+    if (!car) return;
+    var track = car.querySelector('[data-adcar-track]');
+    var dotsBox = car.querySelector('[data-adcar-dots]');
+    if (!track || !dotsBox) return;
+    var slides = Array.prototype.slice.call(track.children);
+    if (slides.length < 2) return;
+    var index = 0;
+    var timer = 0;
+    slides.forEach(function (_, n) {
+      var dot = document.createElement('button');
+      dot.type = 'button';
+      dot.className = 'adcar__dot' + (n === 0 ? ' is-active' : '');
+      dot.setAttribute('aria-label', '第 ' + (n + 1) + ' 条');
+      dot.addEventListener('click', function () { go(n); reset(); });
+      dotsBox.appendChild(dot);
+    });
+    var dots = Array.prototype.slice.call(dotsBox.children);
+    function go(n) {
+      index = (n + slides.length) % slides.length;
+      track.style.transform = 'translateX(' + (-index * 100) + '%)';
+      dots.forEach(function (dot, k) { dot.classList.toggle('is-active', k === index); });
+    }
+    function next() { go(index + 1); }
+    function start() { timer = window.setInterval(next, 4500); }
+    function stop() { window.clearInterval(timer); }
+    function reset() { stop(); start(); }
+    var nextBtn = car.querySelector('[data-adcar-next]');
+    var prevBtn = car.querySelector('[data-adcar-prev]');
+    if (nextBtn) nextBtn.addEventListener('click', function () { next(); reset(); });
+    if (prevBtn) prevBtn.addEventListener('click', function () { go(index - 1); reset(); });
+    car.addEventListener('mouseenter', stop);
+    car.addEventListener('mouseleave', start);
+    start();
+  })();
+  </script>`;
 }
 
 function renderMeta(article: LumioArticle, includeViews = false): string {
@@ -622,7 +756,7 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
 }
 
-.body { display: grid; grid-template-columns: 380px 1fr; }
+.body { display: grid; grid-template-columns: 380px minmax(0, 1fr); }
 .hero {
   position: relative;
   overflow: hidden;
@@ -767,6 +901,8 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   background: radial-gradient(circle, #fff, transparent 70%);
 }
 
+.hero,
+.content { min-width: 0; }
 .content { padding: 30px 34px 34px; display: flex; flex-direction: column; }
 .sec-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px; }
 .sec-title,
@@ -889,14 +1025,17 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 }
 .card__meta span { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
 
-.ad {
-  margin-top: 18px;
+.ad,
+.adcar {
+  margin: 18px 0;
   position: relative;
   border: 1px solid var(--line);
   border-radius: var(--radius);
-  background: repeating-linear-gradient(45deg, #F3F6FD 0 12px, #EEF2FB 12px 24px);
   overflow: hidden;
   display: block;
+}
+.ad {
+  background: repeating-linear-gradient(45deg, #F3F6FD 0 12px, #EEF2FB 12px 24px);
 }
 .ad__label {
   position: absolute;
@@ -933,6 +1072,122 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 .ad__ph-txt { line-height: 1.5; }
 .ad__ph-title { display: block; font-family: var(--font-zh); font-size: 15px; font-weight: 700; color: var(--ink); }
 .ad__ph-sub { display: block; font-family: var(--font-zh); font-size: 12.5px; color: var(--muted); margin-top: 3px; }
+.adcar { background: #fff; }
+.adcar__track {
+  display: flex;
+  transition: transform .5s cubic-bezier(.4,.1,.2,1);
+}
+.adcar__slide {
+  flex: 0 0 100%;
+  display: flex;
+  align-items: center;
+  gap: 18px;
+  min-height: 104px;
+  padding: 22px 26px;
+  color: inherit;
+  text-decoration: none;
+}
+.adcar__slide:hover { text-decoration: none; }
+.adcar__slide.t-blue { background: linear-gradient(100deg, #EEF2FF, #E0E7FF); }
+.adcar__slide.t-violet { background: linear-gradient(100deg, #F1EDFF, #E6DCFF); }
+.adcar__slide.t-mint { background: linear-gradient(100deg, #E6F8F2, #D6F2E8); }
+.adcar__slide.t-amber { background: linear-gradient(100deg, #FFF4E6, #FFE8CC); }
+.adcar__slide.t-sky { background: linear-gradient(100deg, #E5F4FF, #D6ECFF); }
+.adcar__slide.t-rose { background: linear-gradient(100deg, #FFF0F5, #FFE1EB); }
+.adcar__mark {
+  width: 54px;
+  height: 54px;
+  border-radius: 14px;
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background: linear-gradient(150deg, var(--primary), #9AA6FF);
+  box-shadow: 0 8px 18px -8px rgba(124,140,255,.8);
+}
+.adcar__slide.t-violet .adcar__mark { background: linear-gradient(150deg, #9B7FF0, #7B5BE0); box-shadow: 0 8px 18px -8px rgba(123,91,224,.8); }
+.adcar__slide.t-mint .adcar__mark { background: linear-gradient(150deg, #46C9A6, #1F9E80); box-shadow: 0 8px 18px -8px rgba(31,158,128,.7); }
+.adcar__slide.t-amber .adcar__mark { background: linear-gradient(150deg, #FFB86B, #F39A47); box-shadow: 0 8px 18px -8px rgba(243,154,71,.75); }
+.adcar__slide.t-sky .adcar__mark { background: linear-gradient(150deg, #86C8FF, #4FA0E8); box-shadow: 0 8px 18px -8px rgba(79,160,232,.72); }
+.adcar__slide.t-rose .adcar__mark { background: linear-gradient(150deg, #F48BB0, #C2415B); box-shadow: 0 8px 18px -8px rgba(194,65,91,.65); }
+.adcar__txt {
+  flex: 1;
+  min-width: 0;
+  line-height: 1.5;
+}
+.adcar__t {
+  display: block;
+  font-family: var(--font-zh);
+  font-size: 17px;
+  font-weight: 800;
+  color: #243056;
+}
+.adcar__d {
+  display: block;
+  margin-top: 3px;
+  font-family: var(--font-zh);
+  font-size: 13px;
+  color: #4D5B7E;
+}
+.adcar__cta {
+  flex-shrink: 0;
+  padding: 11px 20px;
+  border-radius: 12px;
+  font-family: var(--font-zh);
+  font-size: 14px;
+  font-weight: 700;
+  color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-d));
+  box-shadow: 0 10px 20px -10px rgba(97,113,240,.9);
+  transition: transform .15s;
+}
+.adcar__slide:hover .adcar__cta { transform: translateY(-2px); }
+.adcar__nav {
+  position: absolute;
+  top: 50%;
+  z-index: 4;
+  width: 34px;
+  height: 34px;
+  border: 1px solid var(--line);
+  border-radius: 50%;
+  background: rgba(255,255,255,.9);
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  opacity: 0;
+  transform: translateY(-50%);
+  transition: opacity .18s, background .15s, color .15s;
+  backdrop-filter: blur(4px);
+}
+.adcar:hover .adcar__nav { opacity: 1; }
+.adcar__nav:hover { color: var(--primary-d); background: #fff; }
+.adcar__nav--prev { left: 12px; }
+.adcar__nav--next { right: 12px; }
+.adcar__dots {
+  position: absolute;
+  left: 50%;
+  bottom: 12px;
+  z-index: 4;
+  display: flex;
+  gap: 7px;
+  transform: translateX(-50%);
+}
+.adcar__dot {
+  width: 7px;
+  height: 7px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(40,54,110,.25);
+  cursor: pointer;
+  transition: .2s;
+}
+.adcar__dot.is-active {
+  width: 20px;
+  border-radius: 4px;
+  background: var(--primary-d);
+}
 
 .subscribe {
   margin-top: 22px;
@@ -1853,7 +2108,7 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   body.ui-public.lumio-public { padding: 28px 18px; }
   .nav { flex-wrap: wrap; gap: 12px; }
   .search { width: 100%; order: 5; }
-  .body { grid-template-columns: 1fr; }
+  .body { grid-template-columns: minmax(0, 1fr); }
   .hero { padding: 36px 30px; }
   .hero__title { font-size: 42px; }
   .grid,
@@ -1907,6 +2162,12 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   .subscribe__form { width: 100%; flex-direction: column; }
   .subscribe__form input,
   .subscribe__form button { width: 100%; }
+  .ad__ph { flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px 20px; }
+  .ad__ph-sub { display: none; }
+  .adcar__slide { gap: 13px; padding: 16px 18px; }
+  .adcar__d { display: none; }
+  .adcar__t { font-size: 15px; }
+  .adcar__cta { padding: 9px 15px; font-size: 13px; }
   .col-card { grid-template-columns: 1fr; }
   .team { grid-template-columns: 1fr; }
 }

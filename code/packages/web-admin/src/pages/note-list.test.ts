@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { formatNoteListHeader, NOTE_TABLE_CARD_STYLE } from './note-list.js';
+import {
+  filterFoldersByVisibility,
+  folderCountForFilter,
+  formatNoteListHeader,
+  NOTE_TABLE_CARD_STYLE,
+} from './note-list.js';
 
 describe('note list header', () => {
   it('summarizes the current tree path without hiding descendant notes', () => {
@@ -31,5 +36,29 @@ describe('note list header', () => {
 
   it('does not clip visibility dropdown menus inside the table card', () => {
     expect(NOTE_TABLE_CARD_STYLE.overflow).toBe('visible');
+  });
+
+  it('filters folder cards by descendant visibility counts', () => {
+    const folders = [
+      {
+        name: 'Public',
+        path: 'Public',
+        note_count: 3,
+        updated_at: null,
+        visibility_counts: { all: 3, public: 2, unlisted: 1, 'link-only': 0, private: 0 },
+      },
+      {
+        name: 'Private',
+        path: 'Private',
+        note_count: 2,
+        updated_at: null,
+        visibility_counts: { all: 2, public: 0, unlisted: 0, 'link-only': 0, private: 2 },
+      },
+    ];
+
+    expect(filterFoldersByVisibility(folders, 'public').map((folder) => folder.name)).toEqual(['Public']);
+    expect(filterFoldersByVisibility(folders, 'private').map((folder) => folder.name)).toEqual(['Private']);
+    expect(filterFoldersByVisibility(folders, 'all')).toHaveLength(2);
+    expect(folderCountForFilter(folders[0]!, 'public')).toBe(2);
   });
 });

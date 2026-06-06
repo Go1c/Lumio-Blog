@@ -8,7 +8,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Noto+Sans+SC:wght@400;500;700;900&display=swap">
 <link rel="stylesheet" href="gametech.css">
-<link rel="stylesheet" href="admin.css">
+<link rel="stylesheet" href="admin.css?v=10">
 </head>
 <body class="admin">
 <div class="adm">
@@ -22,22 +22,22 @@
 
     <div class="adm-navlabel">概览</div>
     <nav class="adm-nav">
-      <a class="is-active" href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>仪表盘</a>
+      <a data-route="dashboard" href="#/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="7" height="7" rx="1.5"></rect><rect x="14" y="3" width="7" height="7" rx="1.5"></rect><rect x="3" y="14" width="7" height="7" rx="1.5"></rect><rect x="14" y="14" width="7" height="7" rx="1.5"></rect></svg>仪表盘</a>
     </nav>
 
     <div class="adm-navlabel">内容</div>
     <nav class="adm-nav">
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg>文章管理<span class="badge-n">28</span></a>
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg>专栏管理<span class="badge-n">4</span></a>
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10.5 13.5 4H6a2 2 0 0 0-2 2v7.5L10.5 20a2 2 0 0 0 2.8 0l6.7-6.7a2 2 0 0 0 0-2.8z"></path><circle cx="8.5" cy="8.5" r="1.2"></circle></svg>标签管理<span class="badge-n">15</span></a>
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-4.2A8.38 8.38 0 0 1 4 12a8.5 8.5 0 0 1 17-.5z"></path></svg>评论审核<span class="badge-n">6</span></a>
+      <a data-route="vault" href="#/vault"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>笔记库<span class="badge-n">309</span></a>
+      <a data-route="columns" href="#/columns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg>专栏管理<span class="badge-n">4</span></a>
+      <a data-route="tags" href="#/tags"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M20 10.5 13.5 4H6a2 2 0 0 0-2 2v7.5L10.5 20a2 2 0 0 0 2.8 0l6.7-6.7a2 2 0 0 0 0-2.8z"></path><circle cx="8.5" cy="8.5" r="1.2"></circle></svg>标签管理<span class="badge-n">15</span></a>
+      <a data-route="comments" href="#/comments"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 11.5a8.38 8.38 0 0 1-9 8.5 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-4.2A8.38 8.38 0 0 1 4 12a8.5 8.5 0 0 1 17-.5z"></path></svg>评论审核<span class="badge-n">6</span></a>
     </nav>
 
     <div class="adm-navlabel">运营</div>
     <nav class="adm-nav">
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>广告位<span class="badge-n">3</span></a>
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-8"></path><path d="M3 21h18"></path></svg>数据统计</a>
-      <a href="#"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"></path></svg>系统设置</a>
+      <a data-route="ads" href="#/ads"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>广告位<span class="badge-n">3</span></a>
+      <a href="#/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 17l5-5 4 4 7-8"></path><path d="M3 21h18"></path></svg>数据统计</a>
+      <a href="#/dashboard"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 2v3M12 19v3M2 12h3M19 12h3M5 5l2 2M17 17l2 2M19 5l-2 2M7 17l-2 2"></path></svg>系统设置</a>
     </nav>
 
     <div class="adm-side__foot">
@@ -50,156 +50,336 @@
   <div class="adm-main">
     <header class="adm-top">
       <div>
-        <div class="adm-top__title">仪表盘</div>
-        <div class="adm-top__sub">欢迎回来,这是今天的数据概览</div>
+        <div class="adm-top__title" id="top-title">仪表盘</div>
+        <div class="adm-top__sub" id="top-sub">欢迎回来，这是今天的数据概览</div>
       </div>
       <div class="adm-top__spacer"></div>
       <label class="adm-search">
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
-        <input type="text" placeholder="搜索文章、用户…">
+        <input type="text" placeholder="搜索笔记、专栏…">
       </label>
-      <a class="btn-new" href="#"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"></path></svg>写文章</a>
+      <button class="btn-new" id="btn-new" data-act="note"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 3v10M3 8h10"></path></svg><span id="btn-new-label">新建笔记</span></button>
     </header>
 
     <div class="adm-body">
 
-      <!-- stat cards -->
-      <div class="stat-row">
-        <div class="stat">
-          <div class="stat__top">
-            <span class="stat__icon i-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg></span>
-            <span class="stat__delta up">▲ 12.4%</span>
+      <!-- ════════ VIEW: 仪表盘 ════════ -->
+      <section class="view" data-view="dashboard">
+        <div class="stat-row">
+          <div class="stat">
+            <div class="stat__top"><span class="stat__icon i-blue"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg></span><span class="stat__delta up">▲ 12 篇</span></div>
+            <div class="stat__num">309</div><div class="stat__label">笔记总数</div>
           </div>
-          <div class="stat__num">48,210</div>
-          <div class="stat__label">本月访问量</div>
-        </div>
-        <div class="stat">
-          <div class="stat__top">
-            <span class="stat__icon i-mint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M5 3h11l3 3v15H5z"></path><path d="M8 8h8M8 12h8M8 16h5"></path></svg></span>
-            <span class="stat__delta up">▲ 3 篇</span>
+          <div class="stat">
+            <div class="stat__top"><span class="stat__icon i-mint"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg></span><span class="stat__delta up">▲ 3 篇</span></div>
+            <div class="stat__num">12</div><div class="stat__label">已公开笔记</div>
           </div>
-          <div class="stat__num">28</div>
-          <div class="stat__label">已发布文章</div>
-        </div>
-        <div class="stat">
-          <div class="stat__top">
-            <span class="stat__icon i-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg></span>
-            <span class="stat__delta up">▲ 8.1%</span>
+          <div class="stat">
+            <div class="stat__top"><span class="stat__icon i-amber"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="18" height="16" rx="2"></rect><path d="M3 9h18M9 9v11"></path></svg></span><span class="stat__delta up">▲ 1 个</span></div>
+            <div class="stat__num">4</div><div class="stat__label">活跃专栏</div>
           </div>
-          <div class="stat__num">3,642</div>
-          <div class="stat__label">邮件订阅数</div>
-        </div>
-        <div class="stat">
-          <div class="stat__top">
-            <span class="stat__icon i-rose"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg></span>
-            <span class="stat__delta down">▼ 2.3%</span>
+          <div class="stat">
+            <div class="stat__top"><span class="stat__icon i-rose"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg></span><span class="stat__delta up">▲ 8.1%</span></div>
+            <div class="stat__num">3,642</div><div class="stat__label">邮件订阅数</div>
           </div>
-          <div class="stat__num">1,058</div>
-          <div class="stat__label">广告点击量</div>
         </div>
-      </div>
 
-      <!-- chart + ad manager -->
-      <div class="two-col">
-        <div class="panel">
-          <div class="panel__head">
-            <span class="panel__title">近 7 日访问趋势</span>
-            <span class="panel__spacer"></span>
-            <a class="panel__link" href="#">查看详情</a>
-          </div>
-          <div class="chart">
-            <div class="chart__bars">
-              <div class="chart__bar" style="height:52%"></div>
-              <div class="chart__bar" style="height:68%"></div>
-              <div class="chart__bar" style="height:45%"></div>
-              <div class="chart__bar" style="height:80%"></div>
-              <div class="chart__bar" style="height:62%"></div>
-              <div class="chart__bar" style="height:91%"></div>
-              <div class="chart__bar" style="height:74%"></div>
+        <div class="two-col">
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">近 7 日访问趋势</span><span class="panel__spacer"></span><a class="panel__link" href="#/dashboard">查看详情</a></div>
+            <div class="chart">
+              <div class="chart__bars"><div class="chart__bar" style="height:52%"></div><div class="chart__bar" style="height:68%"></div><div class="chart__bar" style="height:45%"></div><div class="chart__bar" style="height:80%"></div><div class="chart__bar" style="height:62%"></div><div class="chart__bar" style="height:91%"></div><div class="chart__bar" style="height:74%"></div></div>
+              <div class="chart__x"><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span></div>
             </div>
-            <div class="chart__x"><span>周一</span><span>周二</span><span>周三</span><span>周四</span><span>周五</span><span>周六</span><span>周日</span></div>
+          </div>
+          <div class="panel">
+            <div class="panel__head"><span class="panel__title">广告位管理</span><span class="panel__spacer"></span><a class="panel__link" href="#/dashboard">+ 新建</a></div>
+            <div class="adlist">
+              <div class="adrow"><div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div><div class="adrow__info"><div class="adrow__name">首页信息流横幅</div><div class="adrow__url">example.com/promo</div></div><div class="adrow__stat"><b>728</b><small>点击 / 周</small></div><div class="switch"></div></div>
+              <div class="adrow"><div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div><div class="adrow__info"><div class="adrow__name">侧边栏方图</div><div class="adrow__url">partner.io/x</div></div><div class="adrow__stat"><b>214</b><small>点击 / 周</small></div><div class="switch"></div></div>
+              <div class="adrow"><div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div><div class="adrow__info"><div class="adrow__name">文末推广</div><div class="adrow__url">—</div></div><div class="adrow__stat"><b>116</b><small>点击 / 周</small></div><div class="switch off"></div></div>
+            </div>
           </div>
         </div>
 
         <div class="panel">
-          <div class="panel__head">
-            <span class="panel__title">广告位管理</span>
-            <span class="panel__spacer"></span>
-            <a class="panel__link" href="#">+ 新建</a>
-          </div>
-          <div class="adlist">
-            <div class="adrow">
-              <div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div>
-              <div class="adrow__info"><div class="adrow__name">首页信息流横幅</div><div class="adrow__url">example.com/promo</div></div>
-              <div class="adrow__stat"><b>728</b><small>点击 / 周</small></div>
-              <div class="switch"></div>
-            </div>
-            <div class="adrow">
-              <div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div>
-              <div class="adrow__info"><div class="adrow__name">侧边栏方图</div><div class="adrow__url">partner.io/x</div></div>
-              <div class="adrow__stat"><b>214</b><small>点击 / 周</small></div>
-              <div class="switch"></div>
-            </div>
-            <div class="adrow">
-              <div class="adrow__thumb"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6"><rect x="3" y="5" width="18" height="14" rx="2"></rect><circle cx="8.5" cy="10" r="1.6"></circle><path d="m4 17 5-4 4 3 3-2 4 3"></path></svg></div>
-              <div class="adrow__info"><div class="adrow__name">文末推广</div><div class="adrow__url">—</div></div>
-              <div class="adrow__stat"><b>116</b><small>点击 / 周</small></div>
-              <div class="switch off"></div>
-            </div>
-          </div>
+          <div class="panel__head"><span class="panel__title">最近更新</span><span class="panel__spacer"></span><a class="panel__link" href="#/vault">进入笔记库</a></div>
+          <table class="tbl">
+            <thead><tr><th>笔记</th><th>可见性</th><th>字数</th><th>更新</th></tr></thead>
+            <tbody id="dash-tbody"></tbody>
+          </table>
         </div>
-      </div>
+      </section>
 
-      <!-- article table -->
-      <div class="panel">
-        <div class="panel__head">
-          <span class="panel__title">文章管理</span>
-          <span class="panel__spacer"></span>
-          <a class="panel__link" href="Articles.html">前台查看</a>
+      <!-- ════════ VIEW: 笔记库 ════════ -->
+      <section class="view" data-view="vault">
+        <div class="vault-head">
+          <h2>笔记库</h2>
+          <span class="stat" id="vault-stat">9 目录 · 309 篇</span>
+          <span class="vault-head__spacer"></span>
+          <div class="vmode">
+            <button id="mode-folders" class="is-active"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path></svg>目录</button>
+            <button id="mode-flat"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18M3 12h18M3 18h18"></path></svg>平铺</button>
+          </div>
         </div>
-        <table class="tbl">
-          <thead>
-            <tr><th>标题</th><th>分类</th><th>状态</th><th>浏览</th><th>发布日期</th><th>操作</th></tr>
-          </thead>
-          <tbody id="tbody"></tbody>
-        </table>
-      </div>
+        <div class="vault-crumb" id="vault-crumb"><b>vault</b></div>
+
+        <div class="vault-bar">
+          <label class="vault-bar__search">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+            <input type="text" id="vault-search" placeholder="搜索本目录笔记…">
+          </label>
+          <div class="vchips" id="vault-filter">
+            <button id="vf-all" class="is-active" data-val="all">全部 (309)</button>
+            <button id="vf-public" data-val="public">公开 (12)</button>
+            <button id="vf-unlisted" data-val="unlisted">不列出 (0)</button>
+            <button id="vf-linkonly" data-val="linkonly">仅链接 (0)</button>
+            <button id="vf-private" data-val="private">私有 (297)</button>
+          </div>
+          <div class="vault-sort-wrap">
+            排序
+            <select id="vault-sort">
+              <option value="updated">最近更新</option>
+              <option value="words">字数最多</option>
+              <option value="title">标题排序</option>
+            </select>
+          </div>
+        </div>
+
+        <!-- 目录视图 -->
+        <div class="folder-grid" id="vault-grid"></div>
+
+        <!-- 平铺视图 -->
+        <div class="panel" id="vault-flat" style="display:none;">
+          <div class="panel__head"><span class="panel__title">笔记列表</span><span class="panel__link" style="cursor:default;color:var(--faint);">共 <b id="flat-count" style="color:var(--primary-d)">0</b> 篇</span><span class="panel__spacer"></span></div>
+          <table class="tbl">
+            <thead><tr><th>标题</th><th>可见性</th><th>搜索</th><th>短链</th><th>字数</th><th>更新</th><th>操作</th></tr></thead>
+            <tbody id="flat-tbody"></tbody>
+          </table>
+          <div class="flat-more" id="flat-more" style="display:none;">仅显示前 40 篇，还有 <b id="flat-more-n">0</b> 篇可通过搜索或目录筛选查看</div>
+        </div>
+      </section>
+
+      <!-- ════════ VIEW: 笔记详情 ════════ -->
+      <section class="view" data-view="note">
+        <span class="nd-back" onclick="history.back()"><svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"></path></svg>笔记列表</span>
+        <div class="nd-head">
+          <div>
+            <h2 id="nd-title">笔记标题</h2>
+            <div class="sub" id="nd-sub"></div>
+          </div>
+          <span class="nd-head__spacer"></span>
+          <div class="nd-head__acts">
+            <button class="btn-mini" onclick="window.open('Post.html','_blank')"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>前台预览</button>
+            <button class="btn-mini"><svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"></path></svg>数据</button>
+          </div>
+        </div>
+
+        <div class="nd-grid">
+          <!-- 可见性 -->
+          <div class="ndcard">
+            <div class="ndcard__title"><svg class="ic-eye" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>可见性</div>
+            <div id="nd-vis"></div>
+            <div class="nd-sched">
+              <div class="nd-sched__top"><b>定时发布</b><span class="switch off"></span></div>
+              <input type="datetime-local">
+            </div>
+          </div>
+          <!-- 可发现性 -->
+          <div class="ndcard">
+            <div class="ndcard__title"><svg class="ic-find" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>可发现性</div>
+            <div id="nd-disc"></div>
+            <div class="disc-note" id="nd-disc-note" style="display:none;">私有笔记会自动关闭以上 4 个维度</div>
+          </div>
+          <!-- 分享链接 -->
+          <div class="ndcard">
+            <div class="ndcard__title"><svg class="ic-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14a4 4 0 0 0 6 .5l2-2a4 4 0 0 0-6-6l-1 1"></path><path d="M15 10a4 4 0 0 0-6-.5l-2 2a4 4 0 0 0 6 6l1-1"></path></svg>分享链接</div>
+            <div id="nd-short"></div>
+            <button class="shortbtn" id="nd-shortbtn" onclick="genShort()">生成短链</button>
+            <p class="share-hint">生成后会得到一个 5 字符短链 <code>/n/xxxxx</code>，可重新生成更换。</p>
+            <div class="ndcard__title" style="margin:18px 0 10px;font-size:13.5px;">投递专栏</div>
+            <select class="nd-colsel" id="nd-col" onchange="setNoteCol(this.value)"></select>
+            <div class="ndcard__title" style="margin:18px 0 10px;font-size:13.5px;">标签</div>
+            <div class="nd-tags" id="nd-tags"></div>
+            <div class="tag-pop" id="tag-pop"></div>
+          </div>
+        </div>
+
+        <div class="nd-grid nd-grid--meta">
+          <div class="ndcard">
+            <div class="ndcard__title">元数据</div>
+            <div id="nd-meta"></div>
+          </div>
+          <div class="ndcard">
+            <div class="ndcard__title"><svg class="ic-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14a4 4 0 0 0 6 .5l2-2a4 4 0 0 0-6-6l-1 1"></path><path d="M15 10a4 4 0 0 0-6-.5l-2 2a4 4 0 0 0 6 6l1-1"></path></svg>反向链接 (<span id="nd-back-n">0</span>)</div>
+            <div id="nd-back"></div>
+          </div>
+          <div class="ndcard">
+            <div class="ndcard__title"><svg class="ic-link" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M9 14a4 4 0 0 0 6 .5l2-2a4 4 0 0 0-6-6l-1 1"></path><path d="M15 10a4 4 0 0 0-6-.5l-2 2a4 4 0 0 0 6 6l1-1"></path></svg>出链 (<span id="nd-out-n">0</span>)</div>
+            <div id="nd-out"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ════════ VIEW: 标签管理 ════════ -->
+      <section class="view" data-view="tags">
+        <div class="panel" style="padding:20px 22px;">
+          <div class="panel__title" style="margin-bottom:14px;">标签云 · 共 <b id="tag-count" style="color:var(--primary-d)">15</b> 个</div>
+          <div class="tagcloud-wrap" id="tag-cloud"></div>
+        </div>
+        <div class="toolbar">
+          <label class="vault-bar__search" style="max-width:300px;flex:0 1 300px;">
+            <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
+            <input type="text" id="tag-search" placeholder="搜索标签…">
+          </label>
+        </div>
+        <div class="panel">
+          <div class="panel__head"><span class="panel__title">标签列表</span></div>
+          <table class="tbl">
+            <thead><tr><th>标签</th><th>笔记数</th><th style="width:30%;">占比</th><th>趋势</th><th>操作</th></tr></thead>
+            <tbody id="tag-tbody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ════════ VIEW: 评论审核 ════════ -->
+      <section class="view" data-view="comments">
+        <div class="tabs" id="cmt-tabs">
+          <a class="tab is-active" data-val="pending">待审核<span class="tab__n">6</span></a>
+          <a class="tab" data-val="approved">已通过<span class="tab__n">2</span></a>
+          <a class="tab" data-val="spam">垃圾<span class="tab__n">0</span></a>
+          <a class="tab" data-val="all">全部<span class="tab__n">8</span></a>
+        </div>
+        <div class="cmt-list" id="cmt-list"></div>
+      </section>
+
+      <!-- ════════ VIEW: 广告位 ════════ -->
+      <section class="view" data-view="ads">
+        <div class="toolbar">
+          <span class="panel__title" style="font-size:15px;">投放中 · <b id="ad-count" style="color:var(--primary-d)">3</b> 个广告</span>
+        </div>
+        <div id="ad-views"></div>
+      </section>
+
+      <!-- ════════ VIEW: 专栏管理 ════════ -->
+      <section class="view" data-view="columns">
+        <div class="toolbar">
+          <span class="panel__title" style="font-size:15px;">全部专栏 · <b id="col-count" style="color:var(--primary-d)">4</b></span>
+        </div>
+        <div class="colgrid" id="col-grid"></div>
+      </section>
 
     </div>
   </div>
 </div>
 
-<script>
-  const ROWS = [
-    { t:'深入 GPU 渲染管线:从顶点到像素', a:'林辰', cat:'渲染', cc:'c-blue', st:'pub', stt:'已发布', v:'3.2k', d:'2026-05-30' },
-    { t:'渲染优化实战', a:'林辰', cat:'渲染', cc:'c-blue', st:'pub', stt:'已发布', v:'2.1k', d:'2026-05-28' },
-    { t:'Unity 性能调优', a:'叶舟', cat:'性能', cc:'c-mint', st:'pub', stt:'已发布', v:'1.8k', d:'2026-05-25' },
-    { t:'Shader 入门指南', a:'明月', cat:'图形学', cc:'c-amber', st:'review', stt:'待审核', v:'—', d:'2026-05-22' },
-    { t:'架构设计笔记', a:'周岩', cat:'架构', cc:'c-violet', st:'pub', stt:'已发布', v:'1.5k', d:'2026-05-20' },
-    { t:'网络同步方案', a:'周岩', cat:'网络', cc:'c-sky', st:'draft', stt:'草稿', v:'—', d:'2026-05-18' },
-    { t:'工具链提效', a:'明月', cat:'工具', cc:'c-rose', st:'pub', stt:'已发布', v:'980', d:'2026-05-15' },
-  ];
-  const ic = {
-    edit:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 20h4l10-10-4-4L4 16z"></path><path d="M13.5 6.5l4 4"></path></svg>',
-    eye:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7z"></path><circle cx="12" cy="12" r="2.6"></circle></svg>',
-    del:'<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"></path></svg>'
-  };
-  document.getElementById('tbody').innerHTML = ROWS.map(r => `
-    <tr>
-      <td><div class="tbl__title">${r.t}<small>作者 · ${r.a}</small></div></td>
-      <td><span class="tag-cat ${r.cc}">${r.cat}</span></td>
-      <td><span class="st ${r.st}">${r.stt}</span></td>
-      <td>${r.v}</td>
-      <td style="color:var(--muted);">${r.d}</td>
-      <td><div class="row-act">
-        <button title="编辑">${ic.edit}</button>
-        <button title="预览">${ic.eye}</button>
-        <button class="danger" title="删除">${ic.del}</button>
-      </div></td>
-    </tr>`).join('');
+<!-- ───────── SCRIM + 专栏抽屉 ───────── -->
+<div class="scrim" id="scrim"></div>
+<aside class="drawer" id="col-drawer">
+  <div class="drawer__head">
+    <div><h3 id="col-drawer-title">专栏设置</h3><div class="sub" id="col-drawer-sub"></div></div>
+    <button class="drawer__close" onclick="closeDrawers()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button>
+  </div>
+  <div class="drawer__body">
+    <div class="field">
+      <span class="field__label">封面</span>
+      <div class="cover-pick">
+        <div class="cover-pick__preview thumb t-blue" id="cf-cover"></div>
+        <div><div class="field__hint" style="margin-bottom:8px;">选择一个封面主题色</div><div class="cover-pick__opts" id="cf-tones"></div></div>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field__label">专栏名称 <span class="req">*</span></span>
+      <input class="inp" id="cf-name" maxlength="30" placeholder="例如：AI Agent 实战">
+    </div>
+    <div class="field">
+      <span class="field__label">专栏简介</span>
+      <textarea class="txtarea" id="cf-intro" maxlength="120" placeholder="一句话介绍这个专栏会写什么、写给谁看"></textarea>
+      <span class="char-count" id="cf-intro-count">0 / 120</span>
+    </div>
+    <div class="field">
+      <span class="field__label">分类</span>
+      <div class="seg" id="cf-cat" style="flex-wrap:wrap;"></div>
+      <div class="cat-add" id="cf-cat-add" style="display:none;">
+        <input class="inp" id="cf-cat-input" maxlength="8" placeholder="输入自定义分类名">
+        <button class="btn-mini is-primary" type="button" onclick="confirmCatAdd()">添加</button>
+        <button class="btn-mini" type="button" onclick="document.getElementById('cf-cat-add').style.display='none'">取消</button>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field__label">可见性</span>
+      <div class="seg" id="cf-vis"><button data-val="public">公开</button><button data-val="private">私密（仅团队）</button></div>
+      <span class="field__hint">公开专栏会展示在前台「专栏」页，读者可关注；私密专栏仅团队成员可见。</span>
+    </div>
+    <div class="field">
+      <span class="field__label">收录笔记</span>
+      <div id="cf-included"></div>
+    </div>
+  </div>
+  <div class="drawer__foot">
+    <button class="btn-mini" onclick="closeDrawers()">取消</button>
+    <span class="spacer"></span>
+    <button class="btn-mini is-primary" onclick="saveColumn()">保存专栏</button>
+  </div>
+</aside>
 
-  // toggle ad switches
-  document.querySelectorAll('.switch').forEach(s => s.addEventListener('click', () => s.classList.toggle('off')));
-</script>
+<!-- ───────── 广告编辑抽屉 ───────── -->
+<aside class="drawer" id="ad-drawer">
+  <div class="drawer__head">
+    <div><h3 id="ad-drawer-title">编辑广告</h3><div class="sub" id="ad-drawer-sub"></div></div>
+    <button class="drawer__close" onclick="closeDrawers()"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 4l8 8M12 4l-8 8"></path></svg></button>
+  </div>
+  <div class="drawer__body">
+    <div class="field">
+      <span class="field__label">预览</span>
+      <div class="adprev thumb t-blue" id="ad-preview"></div>
+    </div>
+    <div class="field">
+      <span class="field__label">投放位置</span>
+      <div class="seg" id="af-slot" style="flex-wrap:wrap;"></div>
+      <span class="field__hint">投放到「首页」的多个广告会在首页自动轮播展示。</span>
+    </div>
+    <div class="field">
+      <span class="field__label">广告标题 <span class="req">*</span></span>
+      <input class="inp" id="af-title" maxlength="20" placeholder="例如：Unity 6 性能套件" oninput="renderAdPreview()">
+    </div>
+    <div class="field">
+      <span class="field__label">广告文案</span>
+      <input class="inp" id="af-desc" maxlength="40" placeholder="一句话描述卖点" oninput="renderAdPreview()">
+    </div>
+    <div class="field">
+      <span class="field__label">按钮文字</span>
+      <input class="inp" id="af-cta" maxlength="8" placeholder="了解更多" oninput="renderAdPreview()">
+    </div>
+    <div class="field">
+      <span class="field__label">跳转链接</span>
+      <input class="inp" id="af-url" placeholder="example.com/promo">
+    </div>
+    <div class="field">
+      <span class="field__label">配图 / 主题色</span>
+      <div class="cover-pick">
+        <div class="cover-pick__preview thumb t-blue" id="af-cover"></div>
+        <div><div class="field__hint" style="margin-bottom:8px;">上线时替换为真实广告图，这里先选占位主题色</div><div class="cover-pick__opts" id="af-tones"></div></div>
+      </div>
+    </div>
+    <div class="field">
+      <span class="field__label">名称（后台用）</span>
+      <input class="inp" id="af-name" maxlength="20" placeholder="便于后台识别，可留空">
+    </div>
+    <div class="field">
+      <span class="field__label">状态</span>
+      <div class="seg" id="af-on"><button data-val="on">投放中</button><button data-val="off">暂停</button></div>
+    </div>
+  </div>
+  <div class="drawer__foot">
+    <button class="btn-mini" onclick="closeDrawers()">取消</button>
+    <span class="spacer"></span>
+    <button class="btn-mini is-primary" onclick="saveAd()">保存广告</button>
+  </div>
+</aside>
+
+<div class="toast" id="toast"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 8.5l3.5 3.5L13 5"></path></svg><span id="toast-msg"></span></div>
+
+<script src="admin.js?v=10"></script>
 </body>
 </html>

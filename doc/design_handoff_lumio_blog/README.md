@@ -1,154 +1,141 @@
-# Handoff: Lumio Game Tech Blog
+# Lumio Blog — 开发交接包
 
-## Overview
-A game-development technical blog for **Lumio.games**. The design covers the full public reader experience — home, article list, article detail, tag pages, columns, about, search results — plus an admin console. The aesthetic is a soft, "voxel / pixel-game" tech style: rounded card shell, indigo→mint→amber palette, CSS 3D voxel cubes as article artwork, and a pixel-grid motif.
+Lumio.games 游戏技术博客的完整设计稿，供 Claude Code（或工程团队）在仓库 `Go1c/Lumio-Blog` 中按既有技术栈复刻 / 对接。
 
-## About the Design Files
-The files in this bundle are **design references created in static HTML/CSS/JS** — prototypes that show the intended look, layout, and interactions. They are **not** production code to ship as-is.
-
-The task is to **recreate these designs inside the target codebase** (the repo at `github.com/Go1c/Lumio-Blog`) using its established stack, templating, and component patterns. Where the project already has a backend, the article/tag/search data shown here as inline JS arrays should be wired to the real API/templates. If a particular layer doesn't exist yet, choose the framework idiomatic to the repo.
-
-Treat the inline `<script>` data (e.g. `ARTICLES`, `RESULTS`, `ITEMS`) as **placeholder fixtures** illustrating the shape of the data and the rendered markup — replace with server-rendered templates or client fetches.
-
-## Fidelity
-**High-fidelity.** Final colors, typography, spacing, radii, shadows, and interactions are all defined. Recreate the UI pixel-faithfully using the codebase's own CSS/component conventions. All tokens are centralized in `gametech.css` `:root` (see Design Tokens).
+> ⚠️ 说明：本包内为 **设计参考稿（静态 HTML/CSS/JS）**。所有数据均为**演示用假数据**，目标是还原视觉、布局与交互，再由你接入真实后端 / Obsidian 笔记库。参考图仅作风格与布局参考，具体实现以本稿为准，并**保持与主页一致的导航、外壳、配色与字体**。
 
 ---
 
-## Architecture of the design
+## 1. 文件结构
 
-- **`gametech.css`** — the foundation: design tokens (`:root`), global resets, the page background, the rounded `.shell` container, the top `.nav`, the home hero, the **voxel cube system** (`.cube` + faces), card grid, subscribe band, and the sponsored ad slot. Loaded by **every** page.
-- **`pages.css`** — the **sub-page system** layered on top of `gametech.css`: the `.page-head` banner, filter `.chips`, the two-column `.layout` (content + sidebar), list rows (`.arow`), sidebar cards (`.side-card` with ranked tags / recent / suggestions / tag-cloud), article-detail prose + code block + table-of-contents, breadcrumb, About author/stats, and search states. Loaded by all sub-pages (not the home page).
-- **`admin.css`** — standalone styling for the admin console only.
+```
+design_handoff_lumio_blog/
+├─ Game Tech Blog.html   首页（含广告轮播、文章网格、订阅）
+├─ Articles.html         文章列表（列表 + 侧栏）
+├─ Columns.html          专栏列表（前台）
+├─ Tags.html             标签详情 / 标签页（前台）
+├─ About.html            关于页
+├─ Post.html             文章详情（目录 TOC + 代码块 + 相关文章）
+├─ Search.html           搜索结果
+├─ Admin.html            管理后台（单页，hash 路由）
+│
+├─ gametech.css          基础设计系统：token、导航、外壳、卡片、广告轮播、体素美术
+├─ pages.css             前台子页面系统：两栏布局、列表行、侧栏、prose、TOC、标签云
+├─ admin.css             后台样式：侧栏、视图、表格、抽屉、表单、各模块卡片
+└─ admin.js              后台逻辑：数据、hash 路由、各视图渲染、抽屉与交互
+```
 
-Every public page shares the **same `.nav`** markup and the same `.shell` wrapper. Keep that consistent when porting — it is the structural anchor of the whole site.
-
-> Implementation note: `.shell` uses `overflow: clip` (not `hidden`) specifically so the article-detail's `position: sticky` table-of-contents sticks to the viewport. Preserve this if you keep the single-shell structure.
-
----
-
-## Screens / Views
-
-### 1. Home — `Game Tech Blog.html`
-- **Purpose:** Landing page; orient the reader and surface the latest articles.
-- **Layout:** Inside `.shell`: full-width `.nav`, then `.body` is a 2-col CSS grid `380px 1fr` — left `.hero`, right `.content`.
-  - **Hero** (`.hero`): gradient `linear-gradient(160deg,#DCE4FF,#E4ECFF 38%,#DFF7F0)`, faint pixel grid overlay, eyebrow "Lumio Dev Notes", title "Game / Tech Blog" (52px/800), subtitle chips (技术文章 · 游戏开发 · 实践分享), primary CTA "阅读最新文章" → `Post.html`, and a decorative **voxel scene** at the bottom (stacked CSS 3D cubes, floating cubes, a pixel heart, a coin).
-  - **Content**: section head "最新文章" + "查看全部" (→ `Articles.html`); two rows of a 3-col card grid (`.grid`); a sponsored **ad slot** (`.ad`, replace placeholder with `<img class="ad__img">`); and a **subscribe** band.
-- **Cards** (`.card`): 132px voxel thumbnail with category `.badge` top-left, body with title (16px/700), 2-line dek, and meta (date + read time). Hover: lift 4px + `--shadow-pop` + title turns indigo. Each card navigates to `Post.html`.
-
-### 2. Article list — `Articles.html`
-- **Purpose:** Browse/filter all articles.
-- **Layout:** `.page-head` banner ("文章") then `.layout` = `1fr 300px` (list + sidebar).
-  - **List bar:** filter `.chips` (全部/渲染/性能/图形学/架构/网络/工具, each with a count) on the left; a `.sortbox` toggle (最新发布 ⇄ 最多阅读) on the right.
-  - **List** (`.alist`): vertical stack of **`.arow`** rows — `116px 1fr` grid: small voxel thumb + body (title + inline category tag, 1-line dek, meta: author · date · read time · views). Hover lifts.
-  - **Sidebar:** `.side-card` "热门标签" (ranked list `.rank`, top-3 indices get gradient chips) + `.side-card` "最近更新" (`.recent`).
-- **Behavior:** chips filter the list by category; sort toggle re-sorts by date or read count. Rows → `Post.html`.
-
-### 3. Article detail — `Post.html`  *(headline page)*
-- **Purpose:** Read a full article.
-- **Layout:** `.page` → breadcrumb (`.crumb`: 首页 / 文章 / 渲染 / 渲染优化实战) → `.layout--post` = `1fr 268px`.
-  - **Main column:** `.post-title` (34px/900) → `.post-tags` (category `.tag-inline` pills + a `.diff` difficulty badge "中级") → `.post-meta` (author avatar+name · date · read time · views, with bottom divider) → `.post-hero` (260px gradient banner with floating voxels) → `.prose`.
-  - **Prose** (`.prose`): `h2` section headings with a 4px indigo accent bar, paragraphs (15px/1.85), `strong` emphasis, inline `code`, a **`.callout`** (amber tip box), and a **`.code`** block — dark (#20283F) with a window bar (traffic-light dots + a working **复制 / copy** button) and token syntax highlighting (`.k .s .c .f .n`).
-  - **Sidebar:** sticky **`.toc`** "文章目录" (anchors to each `h2`, with scroll-spy highlighting the current section) + `.side-card` "相关文章" (`.related` mini rows: 44px thumb + title + date).
-- **Behavior:** copy button copies the code & shows "已复制" for 1.6s; TOC links smooth-scroll and the active item highlights on scroll.
-
-### 4. Search results — `Search.html`
-- **Purpose:** Show matches for a query (demo query: "渲染优化").
-- **Layout:** nav search field is in its **active** state (`.search--active`, indigo border, with a `.search__clear` ✕ button). `.page-head` shows "搜索结果：渲染优化" + result count. `.layout` = `1fr 300px`.
-  - **Results** (`.alist` of `.arow`): same row component as Articles, but matched terms are wrapped in `<mark class="hl">` (amber highlight).
-  - **Sidebar:** "搜索建议" (`.suggest` list) + "热门标签" (`.rank`).
-- **Behavior:** clear button empties the field; Enter re-runs (demo reloads).
-
-### 5. Tag detail — `Tags.html`
-- **Purpose:** All content under one tag (demo: Unity).
-- **Layout:** breadcrumb → `.tag-detail-head` ("标签：Unity" with the tag name in indigo + description + count) → underline `.tabs` (全部 / 文章 / 专栏) → `.layout` `1fr 300px`.
-  - **Main:** `.alist` of `.arow` rows; columns get a 0-min-time variant (no read-time pill).
-  - **Sidebar:** `.side-card` "标签云" — `.tagcloud` of `.tag-pill`s sized `is-big`/`is-mid`/default with colored count chips (`.s-mint .s-amber .s-violet .s-sky .s-rose`).
-- **Behavior:** tabs filter by content kind (article vs column).
-
-### 6. Columns — `Columns.html`
-- **Purpose:** Browse multi-part series.
-- **Layout:** `.page-head` ("技术专栏") → `.cols` 2-col grid of `.col-card` (132px cover + body: series name, dek, footer with article count + "订阅专栏" ghost button). Cards → `Post.html`.
-
-### 7. About — `About.html`
-- **Purpose:** Explain the blog and its author.
-- **Layout:** `.page-head` ("关于 Lumio Games") → `.about-lead` intro → `.feat-row` of **4** `.feat` cards (技术分享 / 实战导向 / 社区交流 / 持续更新, each with a gradient icon tile) → `.about-grid` `1.15fr 1fr`:
-  - **`.author-card`**: avatar tile "L" + name "Lumio" + role (独立开发者 · 技术博主) + bio + `.social` row (GitHub / blog / RSS / email icon buttons).
-  - **`.stats`**: 2×2 grid — 128+ 文章 / 24+ 专栏 / 15k+ 读者 / 3年+ 持续创作, numbers in an indigo→mint gradient text.
-  - Closes with a contact **subscribe** band.
-
-### 8. Admin console — `Admin.html` (uses `admin.css`)
-- **Purpose:** Internal CMS dashboard (separate visual system from the public site — dark-ish sidebar nav).
-- **Layout:** fixed left `.adm-side` (brand, grouped nav: 概览/内容/运营, footer profile) + `.adm-main` (top bar with title + search + actions, then dashboard content: stat cards, recent tables, etc.). Not part of the public reference grid; include only if building the CMS.
+加载顺序：`gametech.css` → `pages.css`（前台）/ `admin.css`（后台）。后台脚本 `admin.js` 末尾导出 `window.*` 供内联 `onclick` 调用。
 
 ---
 
-## Interactions & Behavior
-- **Navigation:** nav links route between pages; article cards/rows → `Post.html`; "查看全部" → `Articles.html`; nav search → `Search.html` on Enter; tag chips/pills → `Tags.html`.
-- **Filtering (Articles):** clicking a `.chip` sets `is-active` and re-renders the list filtered by `data-cat`; the `.sortbox` toggles date vs read-count sort.
-- **Tabs (Tags):** `.tab` toggles `is-active` and filters by content kind.
-- **Article detail:** copy-code button (clipboard + transient "已复制"); TOC scroll-spy + smooth-scroll to `h2[id]`.
-- **Hover states:** cards/rows lift `translateY(-3px/-4px)` with `--shadow-pop` and border `#D4DCF5`; titles shift to `--primary-d`; buttons lift `-2px`.
-- **Transitions:** ~.15–.18s on color/transform/box-shadow/border.
-- **Animations:** voxel cubes gently bob (`@keyframes bobcube`, 4s ease-in-out infinite) — decorative; safe to disable for reduced-motion.
-- **Responsive:** `.body` and `.layout` collapse to 1 column ≤980px (TOC becomes static, grids reflow to 2-up then 1-up); full small-screen rules at ≤680px.
+## 2. 设计 Token（定义于 `gametech.css :root`）
 
-## State Management
-Minimal, all client-side in the prototypes:
-- **Articles:** `curCat` (active category) + `curSort` ('new' | 'hot') → re-render list.
-- **Tags:** `curKind` ('全部' | '文章' | '专栏') → filter list.
-- **Post:** active TOC section derived from scroll position; copy-button transient "done" flag.
-- **Search:** the query string drives results + highlight regex.
-In production these map to route params / query strings and server-side or API-fed data.
+| 类别 | 值 |
+|---|---|
+| 主色 primary | `#7C8CFF`（深 `--primary-d`） |
+| 辅色 secondary | `#5DE2C6`（薄荷） |
+| 强调 accent | `#FFB86B`（琥珀） |
+| 背景 bg | `#F7FAFF` |
+| 文字 ink/muted/faint | `#1E2A3A` / 中灰 / 浅灰 |
+| 描边 line | 浅蓝灰 |
+| 圆角 radius | 卡片 `--radius`、小元素 `--radius-sm` |
+| 阴影 | `--shadow-card`（静置）/ `--shadow-pop`（悬浮） |
+| 字体 | 英文/数字 `Inter`；中文 `Noto Sans SC` |
 
-## Design Tokens
-From `gametech.css :root`:
+**配色规则**：尽量使用上述 token；需要新色时用 `oklch` 在既有色相上调和，不要凭空造色。6 套封面/标签主题色（tone）：blue / mint / amber / violet / sky / rose，均有渐变 `sw` 与浅底 class（`.t-blue` 等）。
 
-| Token | Value | Use |
+**体素美术**：首页与缩略图中的 3D 方块（`.cube` / `.float`）与网格（`.thumb__grid`）是品牌视觉，纯 CSS 实现，可直接复用，勿用 SVG 重画。
+
+---
+
+## 3. 前台页面
+
+### 首页 `Game Tech Blog.html`
+- 顶部导航（品牌体素 logo + 链接 + 搜索 + 主题切换 + 头像入口到后台）
+- Hero、文章网格（`.grid` / `.card`，点击进 `Post.html`）
+- **广告轮播 `.adcar`**：投放到「首页」的多条广告自动轮播
+  - 结构：`#adcar > #adcar-track > .adcar__slide*N` + 左右箭头 + `#adcar-dots`
+  - 行为（页面底部 `<script>`）：4.5s 自动切换、箭头/圆点控制、悬停暂停
+  - 上线时把 `.adcar__slide` 内容替换为真实广告，或由后端按「首页」位渲染
+- 订阅区 `.subscribe`
+
+### 文章详情 `Post.html`
+- 面包屑 → 标题 → 标签/难度 → 作者/日期/阅读时长 → Hero
+- `.prose` 正文：标题、段落、`callout` 提示框、**代码块**（`.code`，带一键复制）
+- 右侧 sticky：**文章目录 TOC**（滚动高亮 scroll-spy）+ 相关文章
+
+### 列表/标签/搜索/关于
+- 统一两栏：主内容 `.alist`（列表行 `.arow`）+ 侧栏 `.side-card`（热门标签排行、最近更新、搜索建议、标签云）
+- `Articles` 排序下拉、`Tags` 筛选标签页、`Search` 结果计数 + 建议、`About` 作者卡 + 统计计数
+
+---
+
+## 4. 管理后台 `Admin.html`（单页 · hash 路由）
+
+后台是**单文件 SPA**，所有视图在一个页面内通过 `location.hash` 切换。路由表见 `admin.js` 的 `NAVMETA` / `route()`。
+
+| Hash | 视图 | 说明 |
 |---|---|---|
-| `--primary` | `#7C8CFF` | brand indigo |
-| `--primary-d` | `#6171F0` | active/hover indigo, links |
-| `--secondary` | `#5DE2C6` | mint accent |
-| `--accent` | `#FFB86B` | amber accent |
-| `--bg` | `#F7FAFF` | page background base |
-| `--ink` | `#1E2A3A` | primary text |
-| `--muted` | `#6B7894` | secondary text |
-| `--faint` | `#9AA6BE` | tertiary text / meta |
-| `--line` | `#E7ECF6` | borders / dividers |
-| `--card` | `#FFFFFF` | surfaces |
-| `--radius` | `18px` | cards |
-| `--radius-sm` | `12px` | small elements |
-| `--shadow-card` | `0 1px 2px rgba(30,42,58,.04), 0 10px 30px -12px rgba(53,68,120,.18)` | resting card |
-| `--shadow-pop` | `0 18px 50px -16px rgba(53,68,120,.40)` | hover/lifted |
+| `#/dashboard` | 仪表盘 | 统计卡、访问趋势、广告位、最近更新 |
+| `#/vault` | 笔记库 | **目录 / 平铺** 两种视图 |
+| `#/vault/:folder` | 笔记库 - 目录 | 进入某目录看其笔记 |
+| `#/note/:id` | 笔记详情 | 单篇发布控制 |
+| `#/columns` | 专栏管理 | 专栏（合集）CRUD |
+| `#/tags` | 标签管理 | 标签云 + 列表 |
+| `#/comments` | 评论审核 | 待审 / 通过 / 垃圾 |
+| `#/ads` | 广告位 | 按投放位置分组 + 编辑抽屉 |
 
-**Voxel category tones** (thumbnail backgrounds): `.t-blue .t-mint .t-amber .t-violet .t-sky .t-rose` (each a soft 150° gradient). Cube color variants: default indigo, `.c-mint`, `.c-amber`, `.c-pink` (each sets `--t/--l/--r` top/left/right face colors). The architecture/network cubes set custom face colors inline.
+### 4.1 笔记库（对接 Obsidian Vault）
+博客内容源自 Obsidian 笔记库。后台按 vault 的**目录结构**组织：
+- 目录视图：文件夹卡片（名称、篇数、更新日、公开数）
+- 平铺视图：笔记列表，显示真实 `.md` / `.html` / `.canvas` 路径、可见性、搜索/短链状态、字数、更新日
+- 顶部：目录/平铺切换、可见性筛选 chips（带计数）、排序、搜索
+- 数据示例为 9 个目录共 309 篇（`FOLDERS` + `generateNotes()`）。对接时把生成逻辑替换为读取真实 vault 索引。
 
-**Typography:**
-- Latin/UI: **Inter** (`--font`), weights 400/500/600/700/800.
-- Chinese: **Noto Sans SC** (`--font-zh`), weights 400/500/700/900.
-- Both via Google Fonts (see each file's `<link>`). Scale: hero 52px/800 · page-head title 40px/800 · post title 34px/900 · section/`h2` 19–22px/700–800 · card title 16px/700 · body 13–15px · meta 12px.
+### 4.2 笔记详情（发布控制）—— 单篇可独立配置
+点任意笔记进入，核心是把一篇笔记**发布到博客**的全部开关：
+- **可见性**（四态）：公开 / 不列出 / 仅链接 / 私有
+- **定时发布**
+- **可发现性** 开关：站内搜索、SEO robots、RSS 收录、首页推荐（设为「私有」时自动全部关闭并锁定）
+- **分享短链**：生成 `/n/xxxxx` 短链（仅链接态用）
+- **投递专栏**：下拉选择归入哪个专栏（与专栏管理互通）
+- **标签**：chip 编辑器，可移除 / 选已有 / 新建标签（与标签管理互通）
+- **元数据** + **反向链接 / 出链**（wiki 关系）
 
-**Spacing:** card/section gaps 18px; page padding `28–40px 34px`; nav padding `18px 28px`. Border radii per tokens (nav/icon buttons 11px, chips/sortbox 10px, code 12px).
+> 即：每篇文章在编辑处都能自定义**归属哪个专栏**、**有哪些标签**。
 
-## Assets
-- **No raster images** are required by the design — all artwork is **pure CSS**: voxel cubes (`.cube` 3D transforms), the glowing shader **orb** (`.orb` radial gradient), the **pixel heart** and **coin** (CSS grids/gradients), and the brand mark (`.brand__mark` pixel grid). These can be reproduced as components or, if preferred, exported as SVG/PNG.
-- **Icons** are inline SVG (search, clock, calendar, eye, mail, arrows, social, etc.) — swap for the codebase's icon set, matching stroke-width ~1.5–1.8 and `currentColor`.
-- **Sponsored ad slot** (`.ad` on home) is the one intentional image placeholder — replace `.ad__ph` with `<img class="ad__img" src="…">` and set the link `href`.
-- **Fonts:** Inter + Noto Sans SC (Google Fonts). Self-host in production if desired.
+### 4.3 专栏管理（仿知乎专栏）
+把同主题笔记聚合成「专栏 / 合集」。
+- 专栏卡片：封面（体素 + tone）、可见性、名称、简介、篇数 / 关注 / 阅读
+- 设置抽屉：封面主题色、名称、简介（字数）、**分类（可自定义新增）**、可见性、已收录笔记列表（可移出）
+- 新建只保留右上角入口
 
-## Files
-Public site (load `gametech.css`, sub-pages also load `pages.css`):
-- `Game Tech Blog.html` — home (gametech.css only)
-- `Articles.html` — article list
-- `Post.html` — article detail
-- `Search.html` — search results
-- `Tags.html` — tag detail
-- `Columns.html` — columns
-- `About.html` — about
-- `gametech.css` — tokens + shell/nav/hero/cards/voxels (foundation)
-- `pages.css` — sub-page layout system
+### 4.4 标签管理
+- 标签云（按使用量字号分级）+ 可搜索表格（篇数、占比条、上升/平稳/下降趋势、重命名/合并/删除）
 
-Admin (separate):
-- `Admin.html` + `admin.css` — CMS dashboard
+### 4.5 评论审核
+- 过滤 tab：待审核 / 已通过 / 垃圾 / 全部（带计数）
+- 评论卡：头像、所属笔记 + 路径、通过 / 垃圾 / 删除（操作后侧栏徽标同步）
 
-> The theme-toggle (sun icon) and avatar→Admin link are present in the nav but the light/dark theme switch is **not yet wired** — implement if dark mode is in scope.
+### 4.6 广告位（按位置分组 + 编辑抽屉）
+- **投放位置**（`SLOTS`）：首页·信息流横幅 / 文章页·侧栏方图 / 专栏页·顶部 Banner
+- 同一位置可放多条广告；**投放到「首页」的多条会在首页自动轮播**（对应首页 `.adcar`）
+- 每条广告卡：占位封面、标题—文案、链接、曝光/点击/CTR、开关、编辑/删除
+- **编辑抽屉**：实时预览 + 投放位置 + 标题 / 文案 / 按钮文字 / 跳转链接 / 主题色 / 后台名称 / 状态
+
+---
+
+## 5. 对接建议
+
+1. **数据**：`admin.js` 顶部的 `FOLDERS / NOTES / COLUMNS / TAGS / COMMENTS / ADS` 均为假数据，替换为后端接口 / Obsidian 索引即可，渲染函数（`renderVault / renderNote / renderColumns / renderTags / renderComments / renderAds`）无需改动结构。
+2. **路由**：现用 hash 路由，便于纯静态预览；接入框架时可平移到框架路由，保持同样的视图划分。
+3. **广告**：首页轮播读「首页」位的全部 `on` 广告；后台编辑写回同一数据源，保证一处配置、首页生效。
+4. **可见性 / 可发现性**：四态可见性 + 4 个可发现性维度建议在后端落库，前台据此决定是否渲染、是否进 sitemap/feed。
+5. **保持一致**：所有新页面沿用首页的导航、外壳、`gametech.css` token 与体素美术，不要引入新风格。
+
+---
+
+## 6. 浏览顺序建议
+
+先看 `Game Tech Blog.html`（建立设计语言）→ `Post.html`（内容呈现）→ `Admin.html`（进入后逐个 hash 视图查看）。后台用浏览器直接打开后，地址栏加 `#/vault`、`#/note/n1`、`#/columns`、`#/tags`、`#/comments`、`#/ads` 逐一查看。

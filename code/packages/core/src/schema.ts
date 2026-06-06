@@ -145,8 +145,12 @@ export const seoSectionSchema = z.object({
 
 /** 自家广告(HfAd) — 嵌在 home.ad 下,可选。enabled !== true 时不渲染。 */
 export const hfAdSchema = z.object({
+  id: z.string().optional(),
+  name: z.string().optional(),
   enabled: z.boolean().default(false),
   variant: z.enum(['hero', 'native']).default('hero'),
+  slot: z.enum(['home', 'article', 'column']).default('home').optional(),
+  tone: z.enum(['blue', 'mint', 'amber', 'violet', 'sky', 'rose']).optional(),
   emoji: z.string().optional(),
   title: z.string().min(1),
   body: z.string().optional(),
@@ -154,6 +158,8 @@ export const hfAdSchema = z.object({
   cta_href: z.string().url().optional(),
   /** CSS 颜色(#hex / rgb()/var(--token)/named),默认 var(--accent) */
   accent: z.string().optional(),
+  impressions: z.number().int().nonnegative().optional(),
+  clicks: z.number().int().nonnegative().optional(),
 });
 
 export const homeSectionSchema = z.object({
@@ -164,6 +170,7 @@ export const homeSectionSchema = z.object({
   hero_cta_secondary: z.string().optional(),
   show_recent_posts: z.number().int().nonnegative().optional(),
   show_categories: z.boolean().optional(),
+  ads: z.array(hfAdSchema).optional(),
   ad: hfAdSchema.optional(),
 });
 

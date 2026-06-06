@@ -219,14 +219,14 @@ export function Dashboard(): JSX.Element {
               name="私有文章"
               detail="默认不公开,需要手动发布"
               stat={privateCount}
-              href="#/notes"
+              href="#/vault"
             />
             <TaskRow
               icon="tag"
               name="全部文章"
               detail="来自后端同步数据库"
               stat={state.health?.note_count ?? state.notes.length}
-              href="#/notes"
+              href="#/vault"
             />
           </div>
         </div>
@@ -236,7 +236,7 @@ export function Dashboard(): JSX.Element {
         <div class="panel__head">
           <div class="panel__title">最近文章</div>
           <div class="panel__spacer" />
-          <a class="panel__link" href="#/notes">管理全部</a>
+          <a class="panel__link" href="#/vault">管理全部</a>
         </div>
         {recentNotes.length === 0 ? (
           <p class="hf-sm hf-muted" style={{ padding: 22 }}>还没有同步文章。</p>
@@ -267,7 +267,7 @@ export function Dashboard(): JSX.Element {
                   <td>{note.updated_at.slice(0, 10)}</td>
                   <td>
                     <div class="row-act">
-                      <a href={`#/notes/${encodeURIComponent(note.slug)}`} aria-label={`编辑 ${note.title}`}>
+                      <a href={`#/note/${encodeURIComponent(note.slug)}`} aria-label={`编辑 ${note.title}`}>
                         <HfIcon name="edit" size={13} />
                       </a>
                       {note.visibility === 'public' && (

@@ -27,7 +27,11 @@ export interface FolderEntry {
   path: string;
   note_count: number;
   updated_at: string | null;
+  /** 当前目录卡(含其子目录)下所有笔记按可见性聚合的计数 */
+  visibility_counts?: VisibilityCounts;
 }
+
+export type VisibilityCounts = Record<Visibility | 'all', number>;
 
 export interface FolderTreeResponse {
   path: string;
@@ -35,13 +39,7 @@ export interface FolderTreeResponse {
   folders: FolderEntry[];
   notes: NoteSummary[];
   /** 当前路径(含子目录)下所有笔记按可见性聚合的计数,用于 chip 筛选 */
-  visibility_counts?: {
-    all: number;
-    public: number;
-    unlisted: number;
-    'link-only': number;
-    private: number;
-  };
+  visibility_counts?: VisibilityCounts;
 }
 
 export interface SyncDiagnostics {

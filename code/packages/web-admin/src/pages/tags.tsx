@@ -163,7 +163,7 @@ function TagDetail({ tag }: { tag: string }) {
                 {notes.map((n) => (
                   <tr key={n.slug}>
                     <td>
-                      <a href={`#/notes/${encodeURIComponent(n.slug)}`}>{n.title || n.slug}</a>
+                      <a href={`#/note/${encodeURIComponent(n.slug)}`}>{n.title || n.slug}</a>
                       <div class="hf-mono hf-tiny hf-faint">{n.slug}</div>
                     </td>
                     <td>

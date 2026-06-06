@@ -276,7 +276,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
     <div class="note-detail">
       <NoteDetailStyles />
       <nav aria-label="面包屑" class="hf-tiny" style={{ marginBottom: 8 }}>
-        <a href="#/notes" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+        <a href="#/vault" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
           <span aria-hidden="true">← </span>笔记列表
         </a>
       </nav>
@@ -289,7 +289,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
         </Button>
         <a
           class="ui-btn ui-btn--sm"
-          href={`#/notes/${encodeURIComponent(slug)}/analytics`}
+          href={`#/note/${encodeURIComponent(slug)}/analytics`}
           aria-label="单篇 analytics"
         >
           <HfIcon name="chart" size={11} /> 数据
@@ -584,7 +584,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {backlinks.map((b) => (
                   <li key={b.src_slug} style={{ padding: '4px 0', borderTop: '1px solid var(--line)' }}>
-                    <a class="hf-sm" href={`#/notes/${encodeURIComponent(b.src_slug)}`} style={{ color: 'var(--accent)' }}>
+                    <a class="hf-sm" href={`#/note/${encodeURIComponent(b.src_slug)}`} style={{ color: 'var(--accent)' }}>
                       {b.title || b.src_slug}
                     </a>
                   </li>
@@ -602,7 +602,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
               <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 {outlinks.map((o) => (
                   <li key={o.dst_slug} style={{ padding: '4px 0', borderTop: '1px solid var(--line)' }}>
-                    <a class="hf-sm" href={`#/notes/${encodeURIComponent(o.dst_slug)}`} style={{ color: 'var(--warn)' }}>
+                    <a class="hf-sm" href={`#/note/${encodeURIComponent(o.dst_slug)}`} style={{ color: 'var(--warn)' }}>
                       {o.title || o.dst_slug}
                     </a>
                   </li>

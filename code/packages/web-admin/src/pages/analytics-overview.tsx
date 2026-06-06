@@ -279,7 +279,7 @@ export function AnalyticsOverviewPage(): JSX.Element {
                   <tr key={p.slug}>
                     <td data-label="#" class="hf-mono hf-tiny hf-faint">{i + 1}</td>
                     <td data-label="标题">
-                      <a href={`#/notes/${encodeURIComponent(p.slug)}`}>{p.title || p.slug}</a>
+                      <a href={`#/note/${encodeURIComponent(p.slug)}`}>{p.title || p.slug}</a>
                       <div class="hf-mono hf-tiny hf-faint">{p.slug}</div>
                     </td>
                     <td data-label="PV" class="hf-mono analytics-overview__pv">{formatNum(p.views)}</td>
@@ -298,7 +298,7 @@ export function AnalyticsOverviewPage(): JSX.Element {
                       </div>
                     </td>
                     <td data-label="操作">
-                      <a class="hf-tiny" href={`#/notes/${encodeURIComponent(p.slug)}/analytics`}>详情</a>
+                      <a class="hf-tiny" href={`#/note/${encodeURIComponent(p.slug)}/analytics`}>详情</a>
                     </td>
                   </tr>
                 );

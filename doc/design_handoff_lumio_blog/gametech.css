@@ -329,7 +329,7 @@ body::after  { top: 14px; right: 14px; transform: scaleX(-1); }
 
 /* ───────── AD SLOT (sponsored) ───────── */
 .ad {
-  margin-top: 18px; position: relative;
+  margin: 18px 0; position: relative;
   border: 1px solid var(--line); border-radius: var(--radius);
   background:
     repeating-linear-gradient(45deg, #F3F6FD 0 12px, #EEF2FB 12px 24px);
@@ -362,6 +362,48 @@ body::after  { top: 14px; right: 14px; transform: scaleX(-1); }
   background: #fff; border: 1px solid var(--line); border-radius: 5px; padding: 1px 6px; color: var(--primary-d);
 }
 
+/* ───────── 首页广告轮播 ───────── */
+.adcar {
+  position: relative; margin: 18px 0; border: 1px solid var(--line); border-radius: var(--radius);
+  overflow: hidden; background: #fff;
+}
+.adcar__track { display: flex; transition: transform .5s cubic-bezier(.4,.1,.2,1); }
+.adcar__slide {
+  flex: 0 0 100%; display: flex; align-items: center; gap: 18px; padding: 22px 26px; min-height: 104px;
+  text-decoration: none; color: inherit; position: relative;
+}
+.adcar__slide.t-blue   { background: linear-gradient(100deg, #EEF2FF, #E0E7FF); }
+.adcar__slide.t-violet { background: linear-gradient(100deg, #F1EDFF, #E6DCFF); }
+.adcar__slide.t-mint   { background: linear-gradient(100deg, #E6F8F2, #D6F2E8); }
+.adcar__slide.t-amber  { background: linear-gradient(100deg, #FFF4E6, #FFE8CC); }
+.adcar__mark {
+  width: 54px; height: 54px; border-radius: 14px; flex-shrink: 0; display: grid; place-items: center; color: #fff;
+  background: linear-gradient(150deg, var(--primary), #9AA6FF); box-shadow: 0 8px 18px -8px rgba(124,140,255,.8);
+}
+.adcar__slide.t-violet .adcar__mark { background: linear-gradient(150deg, #9B7FF0, #7B5BE0); box-shadow: 0 8px 18px -8px rgba(123,91,224,.8); }
+.adcar__slide.t-mint .adcar__mark   { background: linear-gradient(150deg, #46C9A6, #1F9E80); box-shadow: 0 8px 18px -8px rgba(31,158,128,.7); }
+.adcar__txt { flex: 1; line-height: 1.5; min-width: 0; }
+.adcar__t { display: block; font-family: var(--font-zh); font-size: 17px; font-weight: 800; color: #243056; }
+.adcar__d { display: block; font-family: var(--font-zh); font-size: 13px; color: #4D5B7E; margin-top: 3px; }
+.adcar__cta {
+  flex-shrink: 0; font-family: var(--font-zh); font-size: 14px; font-weight: 700; color: #fff;
+  background: linear-gradient(135deg, var(--primary), var(--primary-d)); padding: 11px 20px; border-radius: 12px;
+  box-shadow: 0 10px 20px -10px rgba(97,113,240,.9); transition: transform .15s;
+}
+.adcar__slide:hover .adcar__cta { transform: translateY(-2px); }
+.adcar__nav {
+  position: absolute; top: 50%; transform: translateY(-50%); z-index: 4; width: 34px; height: 34px; border-radius: 50%;
+  border: 1px solid var(--line); background: rgba(255,255,255,.9); color: var(--muted); cursor: pointer;
+  display: grid; place-items: center; opacity: 0; transition: opacity .18s, background .15s, color .15s; backdrop-filter: blur(4px);
+}
+.adcar:hover .adcar__nav { opacity: 1; }
+.adcar__nav:hover { color: var(--primary-d); background: #fff; }
+.adcar__nav--prev { left: 12px; }
+.adcar__nav--next { right: 12px; }
+.adcar__dots { position: absolute; bottom: 12px; left: 50%; transform: translateX(-50%); z-index: 4; display: flex; gap: 7px; }
+.adcar__dot { width: 7px; height: 7px; border-radius: 50%; border: 0; padding: 0; background: rgba(40,54,110,.25); cursor: pointer; transition: .2s; }
+.adcar__dot.is-active { width: 20px; border-radius: 4px; background: var(--primary-d); }
+
 @media (max-width: 980px) {
   .body { grid-template-columns: 1fr; }
   .hero { padding: 36px 30px; }
@@ -374,4 +416,10 @@ body::after  { top: 14px; right: 14px; transform: scaleX(-1); }
   .search { width: 100%; order: 5; }
   .grid { grid-template-columns: 1fr; }
   .subscribe { flex-direction: column; align-items: flex-start; }
+  .ad__ph { flex-direction: column; align-items: flex-start; gap: 12px; padding: 18px 20px; }
+  .ad__ph-sub { display: none; }
+  .adcar__slide { gap: 13px; padding: 16px 18px; }
+  .adcar__d { display: none; }
+  .adcar__t { font-size: 15px; }
+  .adcar__cta { padding: 9px 15px; font-size: 13px; }
 }

@@ -831,7 +831,7 @@ function DetailSidebar({
           <ul style={{ margin: 0, padding: 0, listStyle: 'none', display: 'flex', flexDirection: 'column', gap: 4 }}>
             {refs.map((r) => (
               <li key={r.slug}>
-                <a href={`#/notes/${encodeURIComponent(r.slug)}`} style={{ fontSize: 12 }}>{r.title}</a>
+                <a href={`#/note/${encodeURIComponent(r.slug)}`} style={{ fontSize: 12 }}>{r.title}</a>
               </li>
             ))}
           </ul>

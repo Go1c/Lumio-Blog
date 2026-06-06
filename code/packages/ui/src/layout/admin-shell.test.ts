@@ -23,10 +23,15 @@ describe('default admin menu', () => {
     expect(item).toBeUndefined();
   });
 
-  it('uses media library instead of a fake advertising entry', () => {
+  it('exposes the latest vault and advertising entries', () => {
     const items = DEFAULT_ADMIN_MENU.flatMap((group) => group.items);
 
-    expect(items.find((entry) => entry.label === '广告位')).toBeUndefined();
+    expect(items.find((entry) => entry.label === '笔记库')).toMatchObject({
+      href: '#/vault',
+    });
+    expect(items.find((entry) => entry.label === '广告位')).toMatchObject({
+      href: '#/ads',
+    });
     expect(items.find((entry) => entry.label === '媒体库')).toMatchObject({
       href: '#/media',
     });

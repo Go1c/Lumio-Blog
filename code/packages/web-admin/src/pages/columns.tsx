@@ -85,7 +85,7 @@ export function ColumnsPage(): JSX.Element {
       <WsEStyles />
       <div class="ws-e__header">
         <h1 class="ws-e__h1"><span aria-hidden="true">▸ </span>专栏</h1>
-        <p class="ws-e__lead">按同步文件的一级目录聚合文章。新文章默认私有,需要在文章管理里手动公开。</p>
+        <p class="ws-e__lead">按同步文件的一级目录聚合文章。新文章默认私有,需要在笔记库里手动公开。</p>
       </div>
 
       <section class="ws-e__panel" aria-labelledby="columns-h">
@@ -178,7 +178,7 @@ function ColumnCard({ column }: { column: ColumnSummary }): JSX.Element {
         {latestNotes.map((note) => (
           <li key={note.slug} style={{ display: 'grid', gap: 2 }}>
             <a
-              href={`#/notes/${encodeURIComponent(note.slug)}`}
+              href={`#/note/${encodeURIComponent(note.slug)}`}
               style={{
                 color: 'var(--ink)',
                 fontWeight: 600,
@@ -202,7 +202,7 @@ function ColumnCard({ column }: { column: ColumnSummary }): JSX.Element {
           </span>
         )}
         <div class="hf-grow" />
-        <a class="ui-btn ui-btn--sm ui-btn--ghost" href="#/notes">
+        <a class="ui-btn ui-btn--sm ui-btn--ghost" href="#/vault">
           <HfIcon name="note" size={12} /> 管理文章
         </a>
       </footer>

@@ -212,14 +212,22 @@ export interface SiteConfig {
     hero_cta_secondary?: string;
     show_recent_posts?: number;
     show_categories?: boolean;
+    /** Lumio 最新设计:按投放位置管理多条广告;slot=home 的开启项在首页轮播。 */
+    ads?: HfAdSettings[];
+    /** 旧版单广告配置,保留兼容。 */
     ad?: HfAdSettings;
   };
 }
 
 /** 自家广告(HfAd)配置 — 见 schema.ts hfAdSchema。 */
 export interface HfAdSettings {
+  id?: string;
+  name?: string;
   enabled: boolean;
   variant: 'hero' | 'native';
+  /** home = 首页信息流轮播;article = 文章页侧栏;column = 专栏顶部 Banner */
+  slot?: 'home' | 'article' | 'column';
+  tone?: 'blue' | 'mint' | 'amber' | 'violet' | 'sky' | 'rose';
   emoji?: string;
   title: string;
   body?: string;
@@ -227,6 +235,8 @@ export interface HfAdSettings {
   cta_href?: string;
   /** CSS 颜色,默认 var(--accent) */
   accent?: string;
+  impressions?: number;
+  clicks?: number;
 }
 
 // =====================================================================

@@ -146,19 +146,30 @@
       </div>
 
       <!-- ───────── 广告位 · 信息流横幅(替换 href 与图片即可) ───────── -->
-      <a class="ad ad__link" href="https://example.com/your-ad-target" target="_blank" rel="noopener sponsored">
+      <!-- 广告位 · 首页信息流轮播（多条首页广告自动滚动） -->
+      <div class="adcar" id="adcar" aria-label="赞助广告">
         <span class="ad__label">赞助 · Sponsored</span>
-        <!-- 上线时:把下面 .ad__ph 这块整体替换为 <img class="ad__img" src="广告图.png" alt="广告"> -->
-        <div class="ad__ph">
-          <span class="ad__ph-mark">
-            <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg>
-          </span>
-          <span class="ad__ph-txt">
-            <span class="ad__ph-title">广告位 · 728 × 90 横幅</span>
-            <span class="ad__ph-sub">替换为 <code>&lt;img class="ad__img" src="…"&gt;</code>,并把链接 <code>href</code> 改成跳转地址</span>
-          </span>
+        <div class="adcar__track" id="adcar-track">
+          <a class="adcar__slide t-blue" href="https://example.com/unity6" target="_blank" rel="noopener sponsored">
+            <span class="adcar__mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11l16-7-4 16-4-6-8-3z"></path></svg></span>
+            <span class="adcar__txt"><span class="adcar__t">Unity 6 性能套件</span><span class="adcar__d">一键剖析 Draw Call 与 Overdraw，渲染优化提速 40%</span></span>
+            <span class="adcar__cta">立即试用</span>
+          </a>
+          <a class="adcar__slide t-violet" href="https://renderx.dev" target="_blank" rel="noopener sponsored">
+            <span class="adcar__mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h16v12H4z"></path><path d="M2 20h20M8 16v4M16 16v4"></path></svg></span>
+            <span class="adcar__txt"><span class="adcar__t">云渲染农场 RenderX</span><span class="adcar__d">按帧计费的分布式渲染，出图速度快 10 倍</span></span>
+            <span class="adcar__cta">领取额度</span>
+          </a>
+          <a class="adcar__slide t-mint" href="https://gameconf.io" target="_blank" rel="noopener sponsored">
+            <span class="adcar__mark"><svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5h16v14H4z"></path><path d="M8 3v4M16 3v4M4 10h16"></path></svg></span>
+            <span class="adcar__txt"><span class="adcar__t">GameConf 2026</span><span class="adcar__d">年度游戏技术大会，早鸟票 6 折，限时开售</span></span>
+            <span class="adcar__cta">购票</span>
+          </a>
         </div>
-      </a>
+        <button class="adcar__nav adcar__nav--prev" id="adcar-prev" aria-label="上一条"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10 3L5 8l5 5"></path></svg></button>
+        <button class="adcar__nav adcar__nav--next" id="adcar-next" aria-label="下一条"><svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3l5 5-5 5"></path></svg></button>
+        <div class="adcar__dots" id="adcar-dots"></div>
+      </div>
 
       <div class="grid">
         <!-- card 4 -->
@@ -242,6 +253,37 @@
 <script>
   // make article cards navigate to the detail page
   document.querySelectorAll('.grid .card').forEach(c => c.addEventListener('click', () => location.href = 'Post.html'));
+
+  // 首页广告轮播
+  (function () {
+    const car = document.getElementById('adcar');
+    if (!car) return;
+    const track = document.getElementById('adcar-track');
+    const slides = [...track.children];
+    const dotsBox = document.getElementById('adcar-dots');
+    let i = 0, timer;
+    slides.forEach((_, n) => {
+      const d = document.createElement('button');
+      d.className = 'adcar__dot' + (n === 0 ? ' is-active' : '');
+      d.setAttribute('aria-label', '第 ' + (n + 1) + ' 条');
+      d.addEventListener('click', () => { go(n); reset(); });
+      dotsBox.appendChild(d);
+    });
+    const dots = [...dotsBox.children];
+    function go(n) {
+      i = (n + slides.length) % slides.length;
+      track.style.transform = 'translateX(' + (-i * 100) + '%)';
+      dots.forEach((d, k) => d.classList.toggle('is-active', k === i));
+    }
+    function next() { go(i + 1); }
+    function start() { timer = setInterval(next, 4500); }
+    function reset() { clearInterval(timer); start(); }
+    document.getElementById('adcar-next').addEventListener('click', () => { next(); reset(); });
+    document.getElementById('adcar-prev').addEventListener('click', () => { go(i - 1); reset(); });
+    car.addEventListener('mouseenter', () => clearInterval(timer));
+    car.addEventListener('mouseleave', start);
+    start();
+  })();
 </script>
 </body>
 </html>

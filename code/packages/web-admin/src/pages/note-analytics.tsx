@@ -140,11 +140,11 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
       <NoteAnalyticsStyles />
       {/* breadcrumb */}
       <nav aria-label="面包屑" class="hf-tiny" style={{ marginBottom: 8 }}>
-        <a href="#/notes" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
+        <a href="#/vault" style={{ color: 'var(--accent)', textDecoration: 'none' }}>
           <span aria-hidden="true">← </span>笔记列表
         </a>
         <span aria-hidden="true"> / </span>
-        <a href={`#/notes/${encodeURIComponent(slug)}`} style={{ color: 'var(--ink-2)' }}>
+        <a href={`#/note/${encodeURIComponent(slug)}`} style={{ color: 'var(--ink-2)' }}>
           {slug}
         </a>
       </nav>
