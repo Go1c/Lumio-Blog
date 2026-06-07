@@ -3,10 +3,10 @@ import { layout, esc } from './layout.js';
 import { isoDate } from '../partials/shared.js';
 import {
   buildLumioArticles,
-  LUMIO_RENDER_TAG_ARTICLES,
   LUMIO_TAGS,
   renderArticleCard,
   renderArticleRow,
+  renderEmptyState,
   renderPageHead,
   renderTagCloudPills,
 } from './lumio-design.js';
@@ -16,15 +16,30 @@ import {
  */
 export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig): string {
   const tags = buildTagCloud(byTag);
+
+  if (tags.length === 0) {
+    const body = `
+    ${renderPageHead('Tags', '标签', '按主题快速找到你关心的内容,标签越大代表文章越多。')}
+    <main class="page">
+      ${renderEmptyState('暂无公开标签', '当前没有设为公开的笔记。把后台笔记可见性切回公开后,这里会重新显示标签。')}
+    </main>`;
+    return layout({
+      title: `标签 · ${config.site.title}`,
+      description: '所有标签',
+      config,
+      body,
+      active: 'tags',
+      path: '/tags/index.html',
+    });
+  }
+
   const tagItems = tags
     .map((tag) => renderTagPill(tag))
     .join('');
-  const topTag = tags[0];
-  const topTagNotes = topTag ? byTag.get(topTag.name) ?? [] : [];
-  const topTagTitle = topTag && topTagNotes.length ? topTag.name : '渲染';
-  const topArticles = topTagNotes.length
-    ? buildLumioArticles(sortTagNotes(topTagNotes), byTag).slice(0, 3)
-    : LUMIO_RENDER_TAG_ARTICLES;
+  const topTag = tags[0]!;
+  const topTagNotes = byTag.get(topTag.name) ?? [];
+  const topTagTitle = topTag.name;
+  const topArticles = buildLumioArticles(sortTagNotes(topTagNotes), byTag).slice(0, 3);
   const cards = topArticles.map((article) => renderArticleCard(article)).join('');
   const body = `
     ${renderPageHead('Tags', '标签', '按主题快速找到你关心的内容,标签越大代表文章越多。')}
@@ -53,7 +68,7 @@ function buildTagCloud(byTag: Map<string, NoteRow[]>): typeof LUMIO_TAGS {
       if (count !== 0) return count;
       return a[0].localeCompare(b[0], 'zh-Hans-CN');
     });
-  if (!entries.length) return LUMIO_TAGS;
+  if (!entries.length) return [];
 
   const tones = ['', 's-mint', 's-amber', 's-violet', 's-sky', 's-rose'];
   return entries.map(([name, notes], index) => {

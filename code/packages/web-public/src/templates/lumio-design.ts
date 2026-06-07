@@ -156,6 +156,17 @@ export function renderPageHead(eyebrow: string, title: string, sub: string): str
     </header>`;
 }
 
+export function renderEmptyState(
+  title = '暂无公开文章',
+  body = '当前没有设为公开的笔记。把后台笔记可见性切回公开后,这里会重新显示内容。',
+): string {
+  return `
+        <section class="home-empty" aria-label="空态">
+          <h2>${esc(title)}</h2>
+          <p>${esc(body)}</p>
+        </section>`;
+}
+
 export function renderArticleCard(article: LumioArticle, attrs = ''): string {
   const data = attrs ? ` ${attrs}` : '';
   return `

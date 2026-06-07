@@ -3,11 +3,8 @@ import { layout, esc } from './layout.js';
 import {
   buildLumioArticles,
   categoryCounts,
-  LUMIO_ARTICLE_TOTAL,
-  LUMIO_CATEGORY_COUNTS,
-  LUMIO_DESIGN_ARTICLES,
-  LUMIO_TAGS,
   renderArticleRow,
+  renderEmptyState,
   renderHotTags,
   renderPageHead,
   renderRecentArticles,
@@ -19,9 +16,25 @@ export function renderArticles(
   config: SiteConfig,
 ): string {
   const hasPosts = posts.length > 0;
-  const articles = hasPosts ? buildLumioArticles(posts, byTag) : LUMIO_DESIGN_ARTICLES;
-  const total = hasPosts ? articles.length : LUMIO_ARTICLE_TOTAL;
-  const counts = hasPosts ? categoryCounts(articles) : LUMIO_CATEGORY_COUNTS;
+
+  if (!hasPosts) {
+    const body = `
+    ${renderPageHead('All Articles', '文章', '从渲染、性能到架构与工具链,系统沉淀的游戏开发技术干货。')}
+    <main class="page">
+      ${renderEmptyState()}
+    </main>`;
+    return layout({
+      title: `全部文章 · ${config.site.title}`,
+      description: '全部文章',
+      config,
+      body,
+      active: 'articles',
+    });
+  }
+
+  const articles = buildLumioArticles(posts, byTag);
+  const total = articles.length;
+  const counts = categoryCounts(articles);
   const chips = [
     `<button class="chip is-active" type="button" data-filter="全部" data-cat="全部">全部<span class="chip__n">${total}</span></button>`,
     ...counts.map(
@@ -30,12 +43,10 @@ export function renderArticles(
     ),
   ].join('');
   const rows = articles.map((article) => renderArticleRow(article)).join('');
-  const hotTags = hasPosts
-    ? [...byTag.entries()]
-        .filter(([, list]) => list.length > 0)
-        .map(([name, list]) => ({ name, count: list.length }))
-        .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-Hans-CN'))
-    : LUMIO_TAGS.map((tag) => ({ name: tag.name, count: tag.count }));
+  const hotTags = [...byTag.entries()]
+    .filter(([, list]) => list.length > 0)
+    .map(([name, list]) => ({ name, count: list.length }))
+    .sort((a, b) => b.count - a.count || a.name.localeCompare(b.name, 'zh-Hans-CN'));
 
   const body = `
     ${renderPageHead('All Articles', '文章', '从渲染、性能到架构与工具链,系统沉淀的游戏开发技术干货。')}
@@ -55,7 +66,7 @@ export function renderArticles(
         <aside>
           <div class="side-card">
             <div class="side-card__title">热门标签</div>
-            <div class="rank">${renderHotTags(hotTags, 8, hasPosts ? 'empty' : 'design')}</div>
+            <div class="rank">${renderHotTags(hotTags, 8, 'empty')}</div>
           </div>
           <div class="side-card">
             <div class="side-card__title">最近更新</div>

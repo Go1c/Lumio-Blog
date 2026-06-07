@@ -59,10 +59,12 @@ describe('renderColumns article data', () => {
     expect(html).not.toContain('7 篇文章');
   });
 
-  it('keeps Lumio design counts for the empty-state fallback', () => {
+  it('shows an empty state instead of design demo counts when there are no public posts', () => {
     const html = renderColumns([], new Map(), config);
 
-    expect(html).toContain('9 篇文章');
-    expect(html).toContain('7 篇文章');
+    expect(html).toContain('暂无公开专栏');
+    expect(html).toContain('class="home-empty"');
+    expect(html).not.toContain('9 篇文章');
+    expect(html).not.toContain('7 篇文章');
   });
 });

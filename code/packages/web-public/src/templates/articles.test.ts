@@ -97,17 +97,15 @@ describe('renderArticles article data', () => {
     expect(html).not.toContain('Shader');
   });
 
-  it('uses Lumio design content only for the empty-state fallback', () => {
+  it('shows an empty state instead of design demo content when there are no public posts', () => {
     const html = renderArticles([], new Map(), config);
 
-    expect(html).toContain('全部<span class="chip__n">28</span>');
-    expect(html).toContain('class="layout"');
-    expect(html).toContain('class="alist" id="article-list"');
-    expect(html).toContain('class="sortbox"');
-    expect(html).toContain('class="side-card"');
-    expect(html).toContain('渲染优化实战');
-    expect(html).toContain('href="/articles/index.html?cat=');
+    expect(html).toContain('暂无公开文章');
+    expect(html).toContain('class="home-empty"');
+    // 不应再渲染设计稿占位数据
+    expect(html).not.toContain('全部<span class="chip__n">28</span>');
+    expect(html).not.toContain('渲染优化实战');
+    expect(html).not.toContain('class="alist" id="article-list"');
     expect(html).not.toContain('href="#"');
-    expect(html).not.toContain('深入 GPU 渲染管线:从顶点到像素的全流程优化');
   });
 });
