@@ -161,6 +161,7 @@ async function main(): Promise<void> {
 
   const api = buildApp({
     db, config, bus, triggerSync,
+    renderSite: () => renderSite({ db, out, config }),
     dataDir, vaultDir: vault, dbPath,
     backupRunner, mediaStore,
     syncDiagnostics,

@@ -119,7 +119,6 @@ function articleFallback(
 }
 
 export function buildLumioArticles(posts: NoteRow[], byTag: Map<string, NoteRow[]>): LumioArticle[] {
-  if (!posts.length) return LUMIO_DESIGN_ARTICLES;
   return posts.map((post, index) => {
     const tags = tagsForSlug(byTag, post.slug);
     const category = pickCategory(tags);
@@ -246,8 +245,8 @@ export function renderHotTags(
 }
 
 export function renderRecentArticles(articles: LumioArticle[], limit = 4): string {
-  const source = articles.length ? articles : LUMIO_DESIGN_ARTICLES;
-  return source.slice(0, limit).map((article) => `
+  if (!articles.length) return '<p class="rank__empty">暂无公开文章</p>';
+  return articles.slice(0, limit).map((article) => `
     <a class="recent__item" href="${esc(article.href)}">
       <span class="recent__t">${esc(article.title)}</span>
       <span class="recent__d">${esc(article.date)}</span>
@@ -1573,6 +1572,33 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   font-size: 13px;
   color: var(--muted);
   margin: 10px 0;
+}
+.home-empty {
+  min-height: 210px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: #fff;
+  display: grid;
+  align-content: center;
+  justify-items: start;
+  gap: 8px;
+  padding: 28px;
+  box-shadow: 0 12px 34px rgba(76, 91, 120, .08);
+}
+.home-empty h2 {
+  margin: 0;
+  font-family: var(--font-zh);
+  font-size: 20px;
+  line-height: 1.25;
+  color: var(--ink);
+}
+.home-empty p {
+  max-width: 520px;
+  margin: 0;
+  font-family: var(--font-zh);
+  font-size: 14px;
+  line-height: 1.7;
+  color: var(--muted);
 }
 .recent__item { padding: 11px 0; display: block; }
 .recent__t { display: block; font-family: var(--font-zh); font-size: 13.5px; font-weight: 600; color: var(--ink); line-height: 1.4; transition: color .15s; }

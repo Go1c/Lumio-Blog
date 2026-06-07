@@ -20,6 +20,14 @@ const VISIBILITY_FILTERS: Array<{ id: Visibility | 'all'; label: string }> = [
 type SortKey = 'updated' | 'words' | 'title' | 'path';
 type ViewMode = 'tree' | 'flat';
 
+export interface ListVisibilityPatch {
+  visibility: Visibility;
+  searchable?: boolean;
+  seo_indexable?: boolean;
+  rss_includable?: boolean;
+  featured_on_home?: boolean;
+}
+
 const VIEW_STORAGE_KEY = 'opennote.note-list.view';
 const PATH_STORAGE_KEY = 'opennote.note-list.path';
 
@@ -74,6 +82,88 @@ export function filterFoldersByVisibility(
   return folders.filter((folder) => folderCountForFilter(folder, filter) > 0);
 }
 
+export function buildListVisibilityPatch(next: Visibility): ListVisibilityPatch {
+  if (next !== 'link-only' && next !== 'private') return { visibility: next };
+  return {
+    visibility: next,
+    searchable: false,
+    seo_indexable: false,
+    rss_includable: false,
+    featured_on_home: false,
+  };
+}
+
+export function applyNoteVisibilityPatch(note: NoteSummary, next: Visibility): NoteSummary {
+  const patch = buildListVisibilityPatch(next);
+  return {
+    ...note,
+    visibility: next,
+    searchable: typeof patch.searchable === 'boolean' ? patch.searchable : note.searchable,
+    updated_at: new Date().toISOString(),
+  };
+}
+
+export function updateFlatNotesVisibility(
+  notes: NoteSummary[] | null,
+  slug: string,
+  next: Visibility,
+): NoteSummary[] | null {
+  if (!notes) return notes;
+  return notes.map((note) => (note.slug === slug ? applyNoteVisibilityPatch(note, next) : note));
+}
+
+export function restoreFlatNote(
+  notes: NoteSummary[] | null,
+  previous: NoteSummary,
+): NoteSummary[] | null {
+  if (!notes) return notes;
+  return notes.map((note) => (note.slug === previous.slug ? previous : note));
+}
+
+export function updateTreeVisibility(
+  tree: FolderTreeResponse | null,
+  slug: string,
+  next: Visibility,
+): FolderTreeResponse | null {
+  if (!tree) return tree;
+  const current = tree.notes.find((note) => note.slug === slug);
+  if (!current || current.visibility === next) return tree;
+  const visibilityCounts = adjustVisibilityCounts(tree.visibility_counts, current.visibility, next);
+  return {
+    ...tree,
+    notes: tree.notes.map((note) => (note.slug === slug ? applyNoteVisibilityPatch(note, next) : note)),
+    ...(visibilityCounts ? { visibility_counts: visibilityCounts } : {}),
+  };
+}
+
+export function restoreTreeNote(
+  tree: FolderTreeResponse | null,
+  previous: NoteSummary,
+): FolderTreeResponse | null {
+  if (!tree) return tree;
+  const current = tree.notes.find((note) => note.slug === previous.slug);
+  if (!current) return tree;
+  const visibilityCounts = adjustVisibilityCounts(tree.visibility_counts, current.visibility, previous.visibility);
+  return {
+    ...tree,
+    notes: tree.notes.map((note) => (note.slug === previous.slug ? previous : note)),
+    ...(visibilityCounts ? { visibility_counts: visibilityCounts } : {}),
+  };
+}
+
+export function adjustVisibilityCounts<T extends Partial<Record<Visibility | 'all', number>> | undefined>(
+  counts: T,
+  prev: Visibility,
+  next: Visibility,
+): T {
+  if (!counts || prev === next) return counts;
+  return {
+    ...counts,
+    [prev]: Math.max(0, (counts[prev] ?? 0) - 1),
+    [next]: (counts[next] ?? 0) + 1,
+  } as T;
+}
+
 export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean }): JSX.Element {
   const [view, setView] = useState<ViewMode>(readView);
   const [path, setPath] = useState<string>(readPath);
@@ -84,7 +174,7 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
   const [query, setQuery] = useState('');
   const [filter, setFilter] = useState<Visibility | 'all'>('all');
   const [sort, setSort] = useState<SortKey>('updated');
-  const [busySlug, setBusySlug] = useState<string | null>(null);
+  const [busySlugs, setBusySlugs] = useState<Set<string>>(() => new Set());
 
   // 持久化 view + path
   useEffect(() => {
@@ -128,9 +218,6 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [shortLinkIdle]);
-
-  const reload = (): Promise<void> =>
-    view === 'flat' ? loadFlat() : loadTree(path);
 
   // 平铺视图筛选
   const filteredFlat = useMemo(() => {
@@ -199,16 +286,22 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
 
   const setVisibility = async (n: NoteSummary, next: Visibility): Promise<void> => {
     if (next === n.visibility) return;
-    setBusySlug(n.slug);
+    setError(null);
+    setBusySlugs((prev) => new Set(prev).add(n.slug));
+    setNotes((current) => updateFlatNotesVisibility(current, n.slug, next));
+    setTree((current) => updateTreeVisibility(current, n.slug, next));
     try {
-      const patch: { visibility: Visibility; searchable?: boolean } = { visibility: next };
-      if ((next === 'link-only' || next === 'private') && n.searchable) patch.searchable = false;
-      await api.patchMeta(n.slug, patch);
-      await reload();
+      await api.patchMeta(n.slug, buildListVisibilityPatch(next));
     } catch (e) {
+      setNotes((current) => restoreFlatNote(current, n));
+      setTree((current) => restoreTreeNote(current, n));
       setError(e instanceof Error ? e.message : String(e));
     } finally {
-      setBusySlug(null);
+      setBusySlugs((prev) => {
+        const nextBusy = new Set(prev);
+        nextBusy.delete(n.slug);
+        return nextBusy;
+      });
     }
   };
 
@@ -344,14 +437,14 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
           folders={filteredTreeFolders}
           notes={filteredTreeNotes}
           filter={filter}
-          busySlug={busySlug}
+          busySlugs={busySlugs}
           onEnterFolder={(p) => setPath(p)}
           onSetVisibility={setVisibility}
         />
       ) : (
         <FlatTable
           notes={filteredFlat}
-          busySlug={busySlug}
+          busySlugs={busySlugs}
           onSetVisibility={setVisibility}
         />
       )}
@@ -473,14 +566,14 @@ function TreeView({
   folders,
   notes,
   filter,
-  busySlug,
+  busySlugs,
   onEnterFolder,
   onSetVisibility,
 }: {
   folders: FolderEntry[];
   notes: NoteSummary[];
   filter: Visibility | 'all';
-  busySlug: string | null;
+  busySlugs: Set<string>;
   onEnterFolder: (path: string) => void;
   onSetVisibility: (n: NoteSummary, v: Visibility) => void;
 }): JSX.Element {
@@ -505,7 +598,7 @@ function TreeView({
       )}
 
       {showNotes && (
-        <FlatTable notes={notes} busySlug={busySlug} onSetVisibility={onSetVisibility} />
+        <FlatTable notes={notes} busySlugs={busySlugs} onSetVisibility={onSetVisibility} />
       )}
 
       {!showFolders && !showNotes && (
@@ -595,11 +688,11 @@ function FolderCard({
 
 function FlatTable({
   notes,
-  busySlug,
+  busySlugs,
   onSetVisibility,
 }: {
   notes: NoteSummary[];
-  busySlug: string | null;
+  busySlugs: Set<string>;
   onSetVisibility: (n: NoteSummary, v: Visibility) => void;
 }): JSX.Element {
   if (notes.length === 0) {
@@ -632,7 +725,7 @@ function FlatTable({
             <NoteRow
               key={n.slug}
               note={n}
-              isBusy={busySlug === n.slug}
+              isBusy={busySlugs.has(n.slug)}
               onSetVisibility={(v) => onSetVisibility(n, v)}
               zebra={i % 2 === 1}
             />

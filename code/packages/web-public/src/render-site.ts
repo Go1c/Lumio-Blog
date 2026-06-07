@@ -42,7 +42,8 @@ export const HTML_ALIAS_FILES = [
 export async function renderSite(opts: RenderOptions): Promise<void> {
   const repo = new NoteRepo(opts.db);
   const all = repo.listAll();
-  const visible = all.filter((n) => n.visibility !== 'private');
+  const publicNotes = all.filter((n) => n.visibility === 'public');
+  const directPostNotes = all.filter((n) => n.visibility !== 'private');
 
   await mkdir(opts.out, { recursive: true });
   await mkdir(join(opts.out, 'posts'), { recursive: true });
@@ -51,10 +52,9 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   await mkdir(join(opts.out, 'tags'), { recursive: true });
   await mkdir(join(opts.out, 'feed'), { recursive: true });
 
-  const publicNotes = visible.filter((n) => n.visibility === 'public');
   await removeStaleHtmlFiles(
     join(opts.out, 'posts'),
-    new Set(visible.map((n) => `${n.slug}.html`)),
+    new Set(directPostNotes.map((n) => `${n.slug}.html`)),
   );
 
   // 标签 → notes(从 tags 表 join,只保留 public)
@@ -73,7 +73,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   // home — 取最近 N 条作为 feed,recentNotes 取最新 4 条
   const homeLimit = opts.config.home?.show_recent_posts ?? 12;
   const homePosts = publicNotes.slice(0, homeLimit);
-  const recentNotes = visible.slice(0, 4);
+  const recentNotes = publicNotes.slice(0, 4);
 
   // 从 source_path 提取顶层文件夹(只统计 public 文章)
   const folderCountMap = new Map<string, number>();
@@ -96,7 +96,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
         byTag,
         recentNotes,
         totalArticles: publicNotes.length,
-        totalNotes: visible.length,
+        totalNotes: publicNotes.length,
         folders,
       },
       opts.config,
@@ -117,8 +117,8 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   );
 
   // posts — 每篇文章渲染时,计算同主标签下的 series + 1-hop 邻居图
-  const visibleSlugSet = new Set(visible.map((n) => n.slug));
-  for (const n of visible) {
+  const visibleSlugSet = new Set(directPostNotes.map((n) => n.slug));
+  for (const n of directPostNotes) {
     const primaryTag = primaryTagOf(byTag, n.slug);
     const series = primaryTag
       ? (byTag.get(primaryTag) ?? []).filter((s) => s.slug !== n.slug)

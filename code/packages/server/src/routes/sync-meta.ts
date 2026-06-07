@@ -1,5 +1,5 @@
 import type { SyncDiagnostics } from '@opennote/sync';
-import type { NoteRepo } from '@opennote/db';
+import type { NoteRepo, NoteSummaryRow } from '@opennote/db';
 
 export interface SyncDiagnosticsSnapshot {
   at: string;
@@ -85,7 +85,7 @@ function incrementVisibilityCounts(counts: VisibilityCounts, visibility: string)
  */
 export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeResponse {
   const cleanPath = path.replace(/^\/+|\/+$/g, '').replace(/\\/g, '/');
-  const all = repo.listAll();
+  const all = readNoteSummaries(repo);
 
   const prefix = cleanPath === '' ? '' : `${cleanPath}/`;
   const inScope = cleanPath === ''
@@ -144,4 +144,9 @@ export function buildFolderTree(repo: NoteRepo, path: string): FolderTreeRespons
   }
 
   return { path: cleanPath, breadcrumbs, folders: folderEntries, notes: directNotes, visibility_counts };
+}
+
+function readNoteSummaries(repo: NoteRepo): NoteSummaryRow[] {
+  if (typeof repo.listSummaries === 'function') return repo.listSummaries();
+  return repo.listAll();
 }

@@ -5,6 +5,7 @@ import {
   categoryCounts,
   LUMIO_ARTICLE_TOTAL,
   LUMIO_CATEGORY_COUNTS,
+  LUMIO_DESIGN_ARTICLES,
   LUMIO_TAGS,
   renderArticleRow,
   renderHotTags,
@@ -17,8 +18,8 @@ export function renderArticles(
   byTag: Map<string, NoteRow[]>,
   config: SiteConfig,
 ): string {
-  const articles = buildLumioArticles(posts, byTag);
   const hasPosts = posts.length > 0;
+  const articles = hasPosts ? buildLumioArticles(posts, byTag) : LUMIO_DESIGN_ARTICLES;
   const total = hasPosts ? articles.length : LUMIO_ARTICLE_TOTAL;
   const counts = hasPosts ? categoryCounts(articles) : LUMIO_CATEGORY_COUNTS;
   const chips = [

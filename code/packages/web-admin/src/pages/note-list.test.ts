@@ -1,9 +1,16 @@
 import { describe, expect, it } from 'vitest';
 import {
+  adjustVisibilityCounts,
+  applyNoteVisibilityPatch,
+  buildListVisibilityPatch,
   filterFoldersByVisibility,
   folderCountForFilter,
   formatNoteListHeader,
   NOTE_TABLE_CARD_STYLE,
+  restoreFlatNote,
+  restoreTreeNote,
+  updateFlatNotesVisibility,
+  updateTreeVisibility,
 } from './note-list.js';
 
 describe('note list header', () => {
@@ -62,3 +69,126 @@ describe('note list header', () => {
     expect(folderCountForFilter(folders[0]!, 'public')).toBe(2);
   });
 });
+
+describe('note list visibility quick action', () => {
+  it('turns off every discoverability flag when switching to link-only or private', () => {
+    expect(buildListVisibilityPatch('link-only')).toEqual({
+      visibility: 'link-only',
+      searchable: false,
+      seo_indexable: false,
+      rss_includable: false,
+      featured_on_home: false,
+    });
+    expect(buildListVisibilityPatch('private')).toEqual({
+      visibility: 'private',
+      searchable: false,
+      seo_indexable: false,
+      rss_includable: false,
+      featured_on_home: false,
+    });
+  });
+
+  it('only changes visibility for public and unlisted quick actions', () => {
+    expect(buildListVisibilityPatch('public')).toEqual({ visibility: 'public' });
+    expect(buildListVisibilityPatch('unlisted')).toEqual({ visibility: 'unlisted' });
+  });
+
+  it('applies private changes locally without waiting for a full reload', () => {
+    const source = note({ slug: 'a', visibility: 'public', searchable: true });
+    const updated = applyNoteVisibilityPatch(source, 'private');
+
+    expect(updated.visibility).toBe('private');
+    expect(updated.searchable).toBe(false);
+    expect(updated.updated_at).not.toBe(source.updated_at);
+  });
+
+  it('updates flat notes for one slug only', () => {
+    const notes = [
+      note({ slug: 'a', visibility: 'public' }),
+      note({ slug: 'b', visibility: 'private', searchable: false }),
+    ];
+
+    const next = updateFlatNotesVisibility(notes, 'a', 'unlisted')!;
+
+    expect(next.map((item) => item.visibility)).toEqual(['unlisted', 'private']);
+    expect(next[1]).toBe(notes[1]);
+  });
+
+  it('updates current tree notes and visibility counts optimistically', () => {
+    const tree = {
+      path: '',
+      breadcrumbs: [],
+      folders: [],
+      notes: [
+        note({ slug: 'a', visibility: 'public' }),
+        note({ slug: 'b', visibility: 'private', searchable: false }),
+      ],
+      visibility_counts: { all: 2, public: 1, unlisted: 0, 'link-only': 0, private: 1 },
+    };
+
+    const next = updateTreeVisibility(tree, 'a', 'private')!;
+
+    expect(next.notes.map((item) => item.visibility)).toEqual(['private', 'private']);
+    expect(next.visibility_counts).toEqual({
+      all: 2,
+      public: 0,
+      unlisted: 0,
+      'link-only': 0,
+      private: 2,
+    });
+  });
+
+  it('restores a failed optimistic update for the affected note only', () => {
+    const previous = note({ slug: 'a', visibility: 'public', searchable: true });
+    const flat = [
+      applyNoteVisibilityPatch(previous, 'private'),
+      note({ slug: 'b', visibility: 'private', searchable: false }),
+    ];
+    const tree = {
+      path: '',
+      breadcrumbs: [],
+      folders: [],
+      notes: flat,
+      visibility_counts: { all: 2, public: 0, unlisted: 0, 'link-only': 0, private: 2 },
+    };
+
+    expect(restoreFlatNote(flat, previous)?.map((item) => item.visibility)).toEqual(['public', 'private']);
+    expect(restoreTreeNote(tree, previous)?.visibility_counts).toEqual({
+      all: 2,
+      public: 1,
+      unlisted: 0,
+      'link-only': 0,
+      private: 1,
+    });
+  });
+
+  it('adjusts visibility counts without changing total count', () => {
+    expect(adjustVisibilityCounts(
+      { all: 3, public: 2, unlisted: 0, 'link-only': 0, private: 1 },
+      'public',
+      'private',
+    )).toEqual({ all: 3, public: 1, unlisted: 0, 'link-only': 0, private: 2 });
+  });
+});
+
+function note(overrides: Partial<{
+  slug: string;
+  title: string;
+  visibility: 'public' | 'unlisted' | 'link-only' | 'private';
+  searchable: boolean;
+  short_id: string | null;
+  updated_at: string;
+  word_count: number;
+  source_path: string;
+}> = {}) {
+  return {
+    slug: overrides.slug ?? 'slug',
+    title: overrides.title ?? 'Title',
+    visibility: overrides.visibility ?? 'public',
+    searchable: overrides.searchable ?? true,
+    short_id: overrides.short_id ?? null,
+    updated_at: overrides.updated_at ?? '2026-01-01T00:00:00.000Z',
+    word_count: overrides.word_count ?? 10,
+    source_path: overrides.source_path ?? 'Work/a.md',
+  };
+}

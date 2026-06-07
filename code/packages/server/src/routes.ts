@@ -51,6 +51,8 @@ export interface RouteDeps {
   mediaStore?: MediaStore;
   /** main.ts 注入,用来回吐 syncAll 的诊断给 /api/admin/sync/diagnostics */
   syncDiagnostics?: SyncDiagnosticsBuffer;
+  /** DB-only metadata changes need static regeneration, not a vault rescan. */
+  renderSite?: () => Promise<void>;
 }
 
 export function buildApp(deps: RouteDeps): Hono {
@@ -62,6 +64,7 @@ export function buildApp(deps: RouteDeps): Hono {
   const hooks = new WebhookService(deps.db);
   const audit = new AuditLog(deps.db);
   const loginLimiter = new LoginRateLimiter();
+  const requestStaticRefresh = createStaticRefreshScheduler(deps);
 
   // 把每个事件投到 webhooks
   deps.bus.subscribe((e) => { void hooks.deliver(e); });
@@ -255,7 +258,7 @@ export function buildApp(deps: RouteDeps): Hono {
   });
 
   admin.get('/notes', (c) => {
-    const rows = noteRepo.listAll();
+    const rows = noteRepo.listSummaries();
     return c.json({
       notes: rows.map((r) => ({
         slug: r.slug, title: r.title,
@@ -362,8 +365,8 @@ export function buildApp(deps: RouteDeps): Hono {
       target: slug,
       diff: JSON.stringify({ from: existing?.short_id ?? null, to: newId }),
     });
-    // 触发后台 sync 让前台静态页跟上,但不阻塞返回
-    void deps.triggerSync().catch(() => undefined);
+    // DB 已经立即更新;后台合并重渲染静态页即可,不需要重扫 vault。
+    requestStaticRefresh('shortlink.create');
     return c.json({ ok: true, short_id: newId, rotated: rotate && !!existing });
   });
 
@@ -626,12 +629,9 @@ export function buildApp(deps: RouteDeps): Hono {
     });
     deps.bus.emit({ kind: 'note.updated', slug });
 
-    // 改完可见性 / 索引性等元字段后,静态前台必须重新生成,
-    // 否则 visibility 由 private→public 时 /posts/<slug>.html 不会真正出现。
-    // 不阻塞 API 返回:后台跑,失败仅 log。
-    void deps.triggerSync().catch((e) => {
-      console.warn('[patchMeta] post-update sync failed:', (e as Error).message);
-    });
+    // 改完可见性 / 索引性等元字段后,静态前台必须重新生成。
+    // 这些字段已经落在 DB,只需要合并重渲染,避免每次点击都重扫 vault。
+    requestStaticRefresh('note.meta.patch');
 
     return c.json({ slug, patched: Object.keys(allowed) });
   }
@@ -648,4 +648,39 @@ function privateInterceptHtml(title: string, subtitle: string): string {
 <title>${title}</title>
 <style>body{font:16px/1.6 system-ui;max-width:480px;margin:80px auto;padding:24px;color:#1a1a1a}h1{margin:0 0 8px}p{color:#666}a{color:#2563eb}</style>
 <h1>${title}</h1><p>${subtitle}</p><p><a href="/">← 回首页</a></p>`;
+}
+
+function createStaticRefreshScheduler(deps: RouteDeps): (reason: string) => void {
+  const delayMs = 250;
+  let timer: ReturnType<typeof setTimeout> | null = null;
+  let running = false;
+  let queued = false;
+
+  const refresh = deps.renderSite ?? (() => deps.triggerSync());
+
+  const run = async (reason: string): Promise<void> => {
+    if (running) return;
+    running = true;
+    try {
+      while (queued) {
+        queued = false;
+        try {
+          await refresh();
+        } catch (e) {
+          console.warn(`[${reason}] static refresh failed:`, (e as Error).message);
+        }
+      }
+    } finally {
+      running = false;
+    }
+  };
+
+  return (reason: string) => {
+    queued = true;
+    if (timer) clearTimeout(timer);
+    timer = setTimeout(() => {
+      timer = null;
+      void run(reason);
+    }, delayMs);
+  };
 }

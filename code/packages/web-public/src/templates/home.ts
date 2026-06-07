@@ -26,6 +26,9 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
   const articles = buildLumioArticles(sortHomePosts(data.posts), data.byTag);
   const firstRow = articles.slice(0, 3).map((article) => renderArticleCard(article)).join('');
   const secondRow = articles.slice(3, 6).map((article) => renderArticleCard(article)).join('');
+  const articleGrid = firstRow
+    ? `<div class="grid">${firstRow}</div>`
+    : renderHomeEmptyState();
   const secondGrid = secondRow ? `<div class="grid">${secondRow}</div>` : '';
 
   const body = `
@@ -49,7 +52,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9M8 4l4 4-4 4"></path></svg>
           </a>
         </div>
-        <div class="grid">${firstRow}</div>
+        ${articleGrid}
         ${renderAdSlot(config)}
         ${secondGrid}
         ${renderSubscribe()}
@@ -67,6 +70,14 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
 }
 
 export const HOME_MOBILE_CSS = '';
+
+function renderHomeEmptyState(): string {
+  return `
+        <section class="home-empty" aria-label="最新文章空态">
+          <h2>暂无公开文章</h2>
+          <p>当前没有设为公开的笔记。把后台笔记可见性切回公开后,首页会重新显示文章。</p>
+        </section>`;
+}
 
 function sortHomePosts(posts: NoteRow[]): NoteRow[] {
   return [...posts].sort((a, b) => {

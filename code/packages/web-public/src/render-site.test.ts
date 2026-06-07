@@ -1,8 +1,10 @@
 import { access, mkdir, mkdtemp, readFile, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
+import type { Database } from 'better-sqlite3';
+import type { NoteRow, SiteConfig } from '@opennote/core';
 import { describe, expect, it } from 'vitest';
-import { composeStyles, HTML_ALIAS_FILES, removeStaleHtmlFiles, STATIC_ASSETS } from './render-site.js';
+import { composeStyles, HTML_ALIAS_FILES, removeStaleHtmlFiles, renderSite, STATIC_ASSETS } from './render-site.js';
 
 async function exists(path: string): Promise<boolean> {
   try {
@@ -27,6 +29,35 @@ describe('removeStaleHtmlFiles', () => {
     expect(await exists(join(dir, 'stale.html'))).toBe(false);
     expect(await readFile(join(dir, 'asset.txt'), 'utf-8')).toBe('asset');
     expect(await exists(join(dir, 'nested'))).toBe(true);
+  });
+});
+
+describe('renderSite visibility', () => {
+  it('keeps private notes off the home page and static post output', async () => {
+    const out = await mkdtemp(join(tmpdir(), 'opennote-render-site-'));
+    await mkdir(join(out, 'posts'), { recursive: true });
+    await writeFile(join(out, 'posts', 'private.html'), 'stale private');
+
+    await renderSite({
+      db: fakeDb([
+        note({ slug: 'public', title: 'Public note', visibility: 'public' }),
+        note({ slug: 'unlisted', title: 'Unlisted note', visibility: 'unlisted' }),
+        note({ slug: 'link-only', title: 'Link-only note', visibility: 'link-only' }),
+        note({ slug: 'private', title: 'Private note', visibility: 'private' }),
+      ]),
+      out,
+      config,
+    });
+
+    const home = await readFile(join(out, 'index.html'), 'utf-8');
+    expect(home).toContain('Public note');
+    expect(home).not.toContain('Unlisted note');
+    expect(home).not.toContain('Link-only note');
+    expect(home).not.toContain('Private note');
+    expect(await exists(join(out, 'posts', 'public.html'))).toBe(true);
+    expect(await exists(join(out, 'posts', 'unlisted.html'))).toBe(true);
+    expect(await exists(join(out, 'posts', 'link-only.html'))).toBe(true);
+    expect(await exists(join(out, 'posts', 'private.html'))).toBe(false);
   });
 });
 
@@ -66,3 +97,53 @@ describe('composeStyles', () => {
     expect(styles).toContain('color: #1E2A3A');
   });
 });
+
+const config: SiteConfig = {
+  site: {
+    title: 'Lumio Blog',
+    url: 'https://blog.lumio.games',
+    description: 'Lumio notes',
+    language: 'zh-CN',
+  },
+  author: { name: 'Lumio' },
+  paths: { vault: '/vault', out: '/out', db: '/db.sqlite' },
+};
+
+function note(overrides: Partial<NoteRow> = {}): NoteRow {
+  const now = '2026-06-01T00:00:00.000Z';
+  return {
+    slug: overrides.slug ?? 'slug',
+    title: overrides.title ?? 'Title',
+    summary: overrides.summary ?? '',
+    body_html: overrides.body_html ?? '<p>Body</p>',
+    body_text: overrides.body_text ?? 'Body',
+    visibility: overrides.visibility ?? 'public',
+    searchable: overrides.searchable ?? 1,
+    seo_indexable: overrides.seo_indexable ?? 1,
+    rss_includable: overrides.rss_includable ?? 1,
+    featured_on_home: overrides.featured_on_home ?? 0,
+    short_id: overrides.short_id ?? null,
+    source_path: overrides.source_path ?? `Posts/${overrides.slug ?? 'slug'}.md`,
+    created_at: overrides.created_at ?? now,
+    updated_at: overrides.updated_at ?? now,
+    published_at: overrides.published_at ?? now,
+    scheduled_at: overrides.scheduled_at ?? null,
+    word_count: overrides.word_count ?? 100,
+    reading_minutes: overrides.reading_minutes ?? 1,
+    cover: overrides.cover ?? null,
+    hash: overrides.hash ?? 'hash',
+  };
+}
+
+function fakeDb(notes: NoteRow[]): Database {
+  return {
+    prepare(sql: string) {
+      return {
+        all() {
+          if (sql.includes('FROM notes') && sql.includes('ORDER BY updated_at')) return notes;
+          return [];
+        },
+      };
+    },
+  } as unknown as Database;
+}

@@ -66,7 +66,7 @@ describe('renderHome article data', () => {
     expect(html).not.toContain('Unity 性能调优');
   });
 
-  it('uses Lumio design cards only as the empty-state fallback', () => {
+  it('renders a real empty state when there are no public posts', () => {
     const html = renderHome(
       {
         posts: [],
@@ -79,8 +79,9 @@ describe('renderHome article data', () => {
       config,
     );
 
-    expect(html).toContain('渲染优化实战');
-    expect(html).toContain('Unity 性能调优');
+    expect(html).toContain('暂无公开文章');
+    expect(html).not.toContain('渲染优化实战');
+    expect(html).not.toContain('Unity 性能调优');
     expect(html).not.toContain('href="#"');
   });
 });

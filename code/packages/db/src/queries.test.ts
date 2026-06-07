@@ -201,6 +201,37 @@ describe('NoteRepo.searchFTS', () => {
   });
 });
 
+describe('NoteRepo.listSummaries', () => {
+  it('returns list fields without loading rendered body columns', () => {
+    const db = freshDb();
+    const repo = new NoteRepo(db);
+    repo.upsert(
+      makeNote({
+        slug: 'heavy',
+        title: 'Heavy body',
+        body_html: '<p>'.repeat(1000),
+        body_text: 'body '.repeat(1000),
+        visibility: 'public',
+      }),
+      [],
+      [],
+    );
+
+    const rows = repo.listSummaries();
+
+    expect(rows).toHaveLength(1);
+    expect(rows[0]).toMatchObject({
+      slug: 'heavy',
+      title: 'Heavy body',
+      visibility: 'public',
+      source_path: 'posts/heavy.md',
+    });
+    expect(rows[0]).not.toHaveProperty('body_html');
+    expect(rows[0]).not.toHaveProperty('body_text');
+    expect(rows[0]).not.toHaveProperty('hash');
+  });
+});
+
 describe('NoteRepo.searchSuggest', () => {
   let db: DB;
   let repo: NoteRepo;

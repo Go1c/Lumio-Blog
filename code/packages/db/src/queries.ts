@@ -10,6 +10,26 @@ import type {
   Visibility,
 } from '@opennote/core';
 
+export type NoteSummaryRow = Pick<
+  NoteRow,
+  | 'slug'
+  | 'title'
+  | 'visibility'
+  | 'searchable'
+  | 'seo_indexable'
+  | 'rss_includable'
+  | 'featured_on_home'
+  | 'short_id'
+  | 'source_path'
+  | 'created_at'
+  | 'updated_at'
+  | 'published_at'
+  | 'scheduled_at'
+  | 'word_count'
+  | 'reading_minutes'
+  | 'cover'
+>;
+
 export class NoteRepo {
   constructor(private db: Database) {}
 
@@ -96,6 +116,20 @@ export class NoteRepo {
   listAll(): NoteRow[] {
     return this.db
       .prepare<unknown[], NoteRow>('SELECT * FROM notes ORDER BY updated_at DESC')
+      .all();
+  }
+
+  listSummaries(): NoteSummaryRow[] {
+    return this.db
+      .prepare<unknown[], NoteSummaryRow>(
+        `SELECT
+           slug, title, visibility, searchable,
+           seo_indexable, rss_includable, featured_on_home,
+           short_id, source_path, created_at, updated_at,
+           published_at, scheduled_at, word_count, reading_minutes, cover
+         FROM notes
+         ORDER BY updated_at DESC`,
+      )
       .all();
   }
 
