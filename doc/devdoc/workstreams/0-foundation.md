@@ -1,6 +1,6 @@
 # WS-0 — Foundation
 
-> **Owner**: Lead (主 agent 自己跑,不分发)
+> **Owner**: Lead (主协调者自己跑,不分发)
 > **Duration**: 3-5 天
 > **Depends on**: 无
 > **Blocks**: 所有其他 WS
@@ -75,7 +75,7 @@ useToast()
   └── 备份
 ```
 
-未实现的菜单项先留 disabled stub,不要 404。
+当前菜单项均应接入真实页面;后续若新增菜单项,必须同步补路由与页面,避免出现 disabled stub 或 404。
 
 ### 4. PublicLayout
 

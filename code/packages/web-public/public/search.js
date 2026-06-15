@@ -17,6 +17,12 @@
   var suggestList = document.getElementById('wsb-search-suggest');
   var resultsPanel = document.getElementById('wsb-search-results');
   var queryTitle = document.getElementById('wsb-search-query');
+  var filterForm = root.querySelector('[data-search-filters]');
+  var typeInputs = filterForm ? filterForm.querySelectorAll('input[name="type"]') : [];
+  var fromInput = filterForm ? filterForm.querySelector('[data-filter-from]') : null;
+  var toInput = filterForm ? filterForm.querySelector('[data-filter-to]') : null;
+  var tagSelect = filterForm ? filterForm.querySelector('[data-filter-tags]') : null;
+  var clearFiltersBtn = filterForm ? filterForm.querySelector('[data-filter-clear]') : null;
 
   if (!navSearch || !input || !resultsList || !emptyEl || !statusEl || !suggestList || !resultsPanel) return;
 
@@ -36,6 +42,7 @@
   var qs = new URLSearchParams(location.search);
   var initialQ = qs.get('q') || '';
   if (initialQ) input.value = initialQ;
+  hydrateFiltersFromUrl();
   setQueryTitle(input.value.trim());
 
   function debounce(fn, ms) {
@@ -103,7 +110,7 @@
       emptyEl.hidden = false;
       setEmptyText('输入关键词开始搜索');
       statusEl.textContent = '输入关键词开始搜索';
-      try { history.replaceState({}, '', location.pathname); } catch (e) {}
+      writeUrlState('');
       return;
     }
 
@@ -113,7 +120,7 @@
 
     var seq = ++searchSeq;
     var started = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-    fetch('/api/search?q=' + encodeURIComponent(q), { headers: { accept: 'application/json' } })
+    fetch(buildSearchUrl(q), { headers: { accept: 'application/json' } })
       .then(function (r) { return r.ok ? r.json() : { hits: [], total: 0 }; })
       .then(function (data) {
         if (seq !== searchSeq) return;
@@ -131,11 +138,62 @@
         resultsPanel.setAttribute('aria-busy', 'false');
       });
 
+    writeUrlState(q);
+  }
+
+  function readFilters() {
+    var type = '';
+    for (var i = 0; i < typeInputs.length; i++) {
+      if (typeInputs[i].checked) {
+        type = typeInputs[i].value || '';
+        break;
+      }
+    }
+    return {
+      type: type,
+      from: fromInput ? String(fromInput.value || '').trim() : '',
+      to: toInput ? String(toInput.value || '').trim() : '',
+      tags: tagSelect ? String(tagSelect.value || '').trim() : '',
+    };
+  }
+
+  function buildSearchUrl(q) {
+    var params = new URLSearchParams();
+    var filters = readFilters();
+    params.set('q', q);
+    if (filters.type) params.set('type', filters.type);
+    if (filters.from) params.set('from', filters.from);
+    if (filters.to) params.set('to', filters.to);
+    if (filters.tags) params.set('tags', filters.tags);
+    return '/api/search?' + params.toString();
+  }
+
+  function writeUrlState(q) {
     try {
-      var nextQs = new URLSearchParams();
-      nextQs.set('q', q);
-      history.replaceState({}, '', location.pathname + '?' + nextQs.toString());
+      var params = new URLSearchParams();
+      var filters = readFilters();
+      if (q) params.set('q', q);
+      if (filters.type) params.set('type', filters.type);
+      if (filters.from) params.set('from', filters.from);
+      if (filters.to) params.set('to', filters.to);
+      if (filters.tags) params.set('tags', filters.tags);
+      var next = params.toString();
+      history.replaceState({}, '', location.pathname + (next ? '?' + next : ''));
     } catch (e) {}
+  }
+
+  function hydrateFiltersFromUrl() {
+    var type = qs.get('type') || '';
+    var matchedType = false;
+    for (var i = 0; i < typeInputs.length; i++) {
+      var isMatch = typeInputs[i].value === type;
+      typeInputs[i].checked = isMatch;
+      matchedType = matchedType || isMatch;
+    }
+    if (!matchedType && typeInputs.length) typeInputs[0].checked = true;
+    if (fromInput) fromInput.value = qs.get('from') || '';
+    if (toInput) toInput.value = qs.get('to') || '';
+    if (tagSelect) tagSelect.value = qs.get('tags') || '';
   }
 
   function renderResults(data, elapsed) {
@@ -173,7 +231,12 @@
     var category = (hit && hit.tags && hit.tags[0]) || typeLabel;
     var tone = toneByIndex(index);
     var mins = hit && hit.reading_minutes ? hit.reading_minutes + ' 分钟' : '';
-    var views = Math.max(1.1, ((hit && hit.score) || 1) * 1.2).toFixed(1) + 'k';
+    var views = hit && typeof hit.views === 'number'
+      ? Math.max(0, Math.trunc(hit.views))
+      : null;
+    var viewMeta = views === null
+      ? ''
+      : '<span>' + eyeIcon() + esc(formatViews(views)) + ' 阅读</span>';
 
     return ''
       + '<a class="arow" href="' + escAttr(href) + '">'
@@ -191,7 +254,7 @@
       +       '<span class="arow__author">' + userIcon() + 'Lumio</span>'
       +       (date ? '<span>' + calendarIcon() + esc(date) + '</span>' : '')
       +       (mins ? '<span>' + clockIcon() + esc(mins) + '</span>' : '')
-      +       '<span>' + eyeIcon() + esc(views) + ' 阅读</span>'
+      +       viewMeta
       +     '</span>'
       +   '</span>'
       + '</a>';
@@ -218,6 +281,13 @@
 
   function toneByIndex(index) {
     return ['t-blue', 't-mint', 't-amber', 't-violet', 't-sky', 't-rose'][index % 6];
+  }
+
+  function formatViews(views) {
+    if (views >= 1000) {
+      return (views / 1000).toFixed(1).replace(/\.0$/, '') + 'k';
+    }
+    return String(views);
   }
 
   function tagTone(tone) {
@@ -292,6 +362,19 @@
     input.focus();
     runSearch();
   });
+
+  if (filterForm) {
+    filterForm.addEventListener('change', runSearch);
+  }
+  if (clearFiltersBtn) {
+    clearFiltersBtn.addEventListener('click', function () {
+      for (var i = 0; i < typeInputs.length; i++) typeInputs[i].checked = i === 0;
+      if (fromInput) fromInput.value = '';
+      if (toInput) toInput.value = '';
+      if (tagSelect) tagSelect.value = '';
+      runSearch();
+    });
+  }
 
   document.addEventListener('click', function (ev) {
     if (suggestList.hidden) return;

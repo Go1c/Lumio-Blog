@@ -33,4 +33,11 @@ describe('admin polish regressions', () => {
     expect(app).not.toContain('api.sync().then(() => location.reload())');
     expect(dashboard).not.toContain("api.sync().catch(() => {/* ignore */})");
   });
+
+  it('documents the newsletter subscribe endpoint that the public form actually uses', () => {
+    const subscriptions = src('subscriptions.tsx');
+
+    expect(subscriptions).toContain('POST /api/newsletter/subscribe');
+    expect(subscriptions).not.toContain('公开提交端点是 <code>POST /api/subscribe</code>');
+  });
 });

@@ -19,7 +19,7 @@
 │ about       │       │ analytics   │   │ search      │       └──────────────┘
 └──────┬──────┘       └──────┬──────┘   └──────┬──────┘
        │                     │                 │
-       │     等 WS-G 输出契约后,下面 3 条并行启动
+       │     WS-G 契约稳定后,下面 3 条并行启动
        │                     │                 │
        ▼                     ▼                 ▼
 ┌─────────────┐       ┌─────────────┐   ┌──────────────┐
@@ -72,18 +72,19 @@
 
 ### M4 — Public 交互 + Admin 增强 ✅ 已完成
 
-- WS-B:search results(FTS5+facets) / graph(d3-force) / 文章侧边评论(Giscus+自定义UI) / newsletter
-- WS-F:media library / OG generator(4 模板) / backup(危险区 + 双确认)
+- WS-B:search results(FTS5+facets) / graph(d3-force) / 文章侧边评论(本地审核+自定义UI) / newsletter
+- WS-F:media library / OG generator(4 模板) / backup(完整备份 zip + 进度 + 历史下载)
 - WS-C:RSS reader page / mobile CSS / 浮动操作 pill
 
-### M5 — 收尾(进行中)
+### M5 — 非阻断后续巡检
 
 - [x] WS-H 文档站(CLI docs + Config docs)
 - [ ] 全站无障碍 reaudit(axe-core 扫描 + ACCESSIBILITY-AUDIT.md 更新)
 - [ ] Lighthouse / axe / VoiceOver 巡检(public 页面 ≥ 90)
 - [ ] 性能优化(图片懒加载、prefetch、OG 缓存策略)
-- [ ] MCP server(`/mcp` 端点)— 可选，后期
-- [ ] 自家广告卡(HfAd)— 低优先级
+- [x] 自家广告卡(HfAd)— 配置驱动广告位
+
+当前产品收口范围按 `GAP-ANALYSIS.md` 验收；本节未勾选项是后续质量巡检,不作为本轮新增需求。
 
 ## 并行粒度
 

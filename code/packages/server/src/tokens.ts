@@ -20,6 +20,9 @@ export class TokenService {
 
   /** 创建：返回**明文 token**（一次性显示给用户） */
   create(name: string, scope: Scope, ttlDays: number | null): { id: number; token: string } {
+    if (scope !== 'admin') {
+      throw new Error('Only admin scope tokens can be created');
+    }
     const raw = `tk_${randomBytes(24).toString('base64url')}`;
     const hash = createHash('sha256').update(raw).digest('hex');
     const expires = ttlDays ? new Date(Date.now() + ttlDays * 86400_000).toISOString() : null;

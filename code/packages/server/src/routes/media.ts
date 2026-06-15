@@ -21,7 +21,7 @@ export interface MediaDeps {
 
 /**
  * 注册 media 路由到主 app(/api/admin/media)。
- * 由主 agent 在 routes.ts 里 import 并 register(app, deps)。
+ * 由主入口在 routes.ts 里 import 并 register(app, deps)。
  */
 export function register(app: Hono, deps: MediaDeps): MediaRepo {
   const repo = new MediaRepo(deps.db);

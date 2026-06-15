@@ -270,6 +270,10 @@ export class NoteRepo {
       .all(slug);
   }
 
+  tagsForSlug(slug: string): string[] {
+    return this.tagsForSlugs([slug]).get(slug) ?? [];
+  }
+
   // -------------------------------------------------------------------
   // WS-G2 — Search FTS5 + Graph
   // -------------------------------------------------------------------

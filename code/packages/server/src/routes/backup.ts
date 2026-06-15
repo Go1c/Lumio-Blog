@@ -15,7 +15,7 @@ export interface BackupDeps {
 
 /**
  * 注册 backup 路由(/api/admin/backup)。
- * 主 agent 在 routes.ts 里调用 register(app, deps)。
+ * 主入口在 routes.ts 里调用 register(app, deps)。
  */
 export function register(app: Hono, deps: BackupDeps): void {
   const audit = new AuditLog(deps.db);

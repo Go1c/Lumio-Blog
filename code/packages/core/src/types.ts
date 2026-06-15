@@ -324,10 +324,8 @@ export interface Features {
     webhooks: boolean;
     og_generator: boolean;
   };
-  agent: {
+  workflow: {
     cli_enabled: boolean;
-    mcp_enabled: boolean;
-    mcp_tools: string[];
   };
   webhooks: Array<{ event: string; url: string }>;
 }

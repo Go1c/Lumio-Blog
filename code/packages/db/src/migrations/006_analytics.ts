@@ -5,7 +5,7 @@
  *   - analytics_events   原始打点流水(由 POST /api/track 写入)
  *   - analytics_daily    按日 + slug 物化(每日 cron 从 events rollup)
  *
- * 不直接改 migrate.ts —— 主 agent 把这个对象 import 进去 splice 到 MIGRATIONS。
+ * 不直接改 migrate.ts —— 主入口把这个对象 import 进去 splice 到 MIGRATIONS。
  */
 
 export const migration006Analytics = {

@@ -1,6 +1,6 @@
 # DevDoc — 把设计稿落地到产品
 
-这是把 `doc/prototype/` 里的设计稿落到 `code/` 真实代码的开发计划。**主要面向多 agent / 多人并行开发**。
+这是把 `doc/prototype/` 里的设计稿落到 `code/` 真实代码的开发计划。**主要面向多工作流 / 多人并行开发**。
 
 ## 这里有什么
 
@@ -31,16 +31,16 @@ doc/devdoc/
 ### 项目负责人(规划者)
 1. 先读 `ROADMAP.md` — 看清整张图、阶段、并行性
 2. 看 `GAP-ANALYSIS.md` — 确认设计稿的每个功能都被某个 workstream 覆盖
-3. 把每个 workstream 分配给一个 agent / 开发者(可以同一人多个,但 P0 阶段建议至少 3 路并行)
+3. 把每个 workstream 分配给一个开发者或独立任务(可以同一人多个,但 P0 阶段建议至少 3 路并行)
 
-### 开发者 / agent(执行者)
+### 开发者(执行者)
 1. 拿到分配的 workstream(例如 "WS-D")
 2. 读 `workstreams/D-admin-shell-dashboard.md` — 全部依赖、数据契约、UI 还原参考、验收标准都在里头
 3. 读 `contracts/` — 跨 workstream 的接口契约(只读,改要发协调 issue)
 4. 读 `conventions.md` — PR / commit / 测试要求
 5. 开干
 
-### 多 agent 并行约束
+### 多工作流并行约束
 
 | 同时改 | 风险 | 怎么办 |
 |---|---|---|
@@ -50,11 +50,11 @@ doc/devdoc/
 | 同一 server route | 中 | 路由按 workstream 切前缀(`/api/admin/analytics/*` 归 D) |
 | `package.json` 增加依赖 | 低(允许) | 加之前在 PR 描述里说为啥需要 |
 
-## 现状(截至 PR #5)
+## 现状(截至 2026-06-07 收口)
 
 - **后端 API**:全部 WS-G 路由已实现 — Settings / Analytics / Search(FTS5) / Media / Graph / OG / Backup / Newsletter / Tags / Comments / Subscribers / Webhooks(含投递历史+重发)
 - **同步管线**:fast-note-sync 已实现 — 见 `code/packages/sync/`
-- **前台静态站**:≈ 85% 完成 — 首页三栏、文章页、标签、404、About、搜索、图谱、评论、Newsletter、移动端 CSS
-- **后台 SPA**:≈ 90% 完成 — 所有导航页面(仪表盘/笔记/标签/媒体/评论/订阅/Analytics/设置/Tokens/Webhooks/审计/OG/备份/配置文档)均已实现
+- **前台静态站**:当前收口范围已达标 — 首页三栏、文章页、标签、404、About、搜索、图谱、评论、Newsletter、文件夹归档、RSS 阅读页、移动端 CSS 均已实现；公开 CLI 文档已下线,不纳入当前范围
+- **后台 SPA**:当前收口范围已达标 — 所有导航页面(仪表盘/笔记/标签/媒体/评论/订阅/Analytics/设置/Tokens/Webhooks/审计/OG/备份/配置文档)均已实现
 
-**剩余缺口**:自家广告卡(HfAd)、MCP server(`/mcp` 端点)。详见 `GAP-ANALYSIS.md`。
+**剩余工作**:以全站无障碍、Lighthouse 和性能巡检为主,属于非阻断后续巡检。详见 `GAP-ANALYSIS.md`。

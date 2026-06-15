@@ -39,10 +39,38 @@ function note(overrides: Partial<Record<string, unknown>>) {
 }
 
 describe('renderColumns article data', () => {
-  it('uses real category counts when backend posts exist', () => {
+  it('renders real vault-backed columns instead of static design columns when folder data exists', () => {
     const renderPost = note({
       slug: 'render-pipeline',
       title: '真实渲染管线笔记',
+      source_path: 'Rendering/pipeline.md',
+      word_count: 2400,
+    });
+    const aiPost = note({
+      slug: 'agent-notes',
+      title: 'Agent 工作流笔记',
+      source_path: 'AI/agent.md',
+      word_count: 1200,
+    });
+
+    const html = renderColumns(
+      [renderPost, aiPost],
+      new Map([['渲染', [renderPost]]]),
+      config,
+    );
+
+    expect(html).toContain('Rendering');
+    expect(html).toContain('AI');
+    expect(html).toContain('2 个真实专栏');
+    expect(html).toContain('真实渲染管线笔记');
+    expect(html).not.toContain('渲染管线精讲');
+  });
+
+  it('does not invent design columns when backend posts exist without folder-backed columns', () => {
+    const renderPost = note({
+      slug: 'render-pipeline',
+      title: '真实渲染管线笔记',
+      source_path: 'render-pipeline.md',
     });
 
     const html = renderColumns(
@@ -51,10 +79,10 @@ describe('renderColumns article data', () => {
       config,
     );
 
-    expect(html).toContain('渲染管线精讲');
-    expect(html).toContain('1 篇文章');
-    expect(html).toContain('性能优化之道');
-    expect(html).toContain('0 篇文章');
+    expect(html).toContain('还没有专栏');
+    expect(html).toContain('Obsidian vault 一级目录');
+    expect(html).not.toContain('渲染管线精讲');
+    expect(html).not.toContain('性能优化之道');
     expect(html).not.toContain('9 篇文章');
     expect(html).not.toContain('7 篇文章');
   });
@@ -66,5 +94,34 @@ describe('renderColumns article data', () => {
     expect(html).toContain('class="home-empty"');
     expect(html).not.toContain('9 篇文章');
     expect(html).not.toContain('7 篇文章');
+  });
+
+  it('renders configured column-slot ads above the column grid', () => {
+    const html = renderColumns(
+      [],
+      new Map(),
+      {
+        ...config,
+        home: {
+          ads: [
+            {
+              id: 'column-agent',
+              enabled: true,
+              slot: 'column',
+              tone: 'mint',
+              title: '专栏共创计划',
+              body: '把你的技术系列投递给 Lumio',
+              cta_label: '投递',
+              cta_href: 'https://blog.lumio.games/submit',
+            },
+          ],
+        },
+      } as any,
+    );
+
+    expect(html).toContain('data-ad-slot="column"');
+    expect(html).toContain('专栏共创计划');
+    expect(html).toContain('把你的技术系列投递给 Lumio');
+    expect(html).toContain('href="https://blog.lumio.games/submit"');
   });
 });

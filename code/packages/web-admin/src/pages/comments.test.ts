@@ -1,3 +1,4 @@
+import { readFileSync } from 'node:fs';
 import { describe, expect, it } from 'vitest';
 import { DEFAULT_COMMENT_TAB, emptyCommentMessage } from './comments.js';
 
@@ -10,5 +11,13 @@ describe('comments page defaults', () => {
     expect(emptyCommentMessage('pending')).toContain('没有待审评论');
     expect(emptyCommentMessage('approved')).toContain('没有已通过评论');
     expect(emptyCommentMessage('all')).toContain('还没有任何评论');
+  });
+
+  it('asks the admin shell to refresh sidebar badges after moderation actions', () => {
+    const source = readFileSync(new URL('./comments.tsx', import.meta.url), 'utf-8');
+
+    expect(source).toContain('requestAdminMenuCountsRefresh');
+    expect(source).toContain('await api.comments.setStatus');
+    expect(source).toContain('await api.comments.delete');
   });
 });

@@ -28,12 +28,13 @@ AUTH_SECRET=…            # 32+ random bytes
 AUTH_PROVIDERS=github    # github | google | local
 
 # 第三方
-GISCUS_REPO=lumio/blog
 BUTTONDOWN_API_KEY=…
 PLAUSIBLE_DOMAIN=lumio.games
 
-# Agent
-MCP_TOKEN=…              # 给 agent 用的 bearer，不要和后台 cookie 混用
+# 本地 server
+OPENNOTE_CONFIG=./config.yaml
+OPENNOTE_PASSWORD=…      # serve 登录密码
+PORT=3000
 ```
 
 ---
@@ -92,8 +93,8 @@ home:
 
 ```yaml
 content:
-  comments: true             # Giscus
-  newsletter: true           # 第三方订阅
+  comments: true             # 本地评论审核
+  newsletter: true           # Buttondown / 本地订阅
   rss: true
   graph: true                # 关系图
   search: true               # 站内搜索
@@ -106,18 +107,12 @@ admin:
   webhooks: true
   og_generator: true
 
-agent:
-  cli_enabled: true          # Blog CLI
-  mcp_enabled: true          # 暴露 MCP server，给 agent 调用
-  mcp_tools:
-    - blog_search
-    - blog_read
-    - blog_write             # 写权限谨慎开
-    - blog_patch_meta
+workflow:
+  cli_enabled: true          # 本地预览 / 同步配置
 
 webhooks:
-  - { event: "post.published", url: "https://hooks..." }
-  - { event: "post.updated",   url: "https://discord..." }
+  - { event: "note.published", url: "https://hooks..." }
+  - { event: "note.updated",   url: "https://discord..." }
 ```
 
 ---

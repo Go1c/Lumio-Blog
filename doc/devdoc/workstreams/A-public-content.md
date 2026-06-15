@@ -1,6 +1,6 @@
 # WS-A — Public 内容页面
 
-> **Owner**: FE-A agent  **Duration**: 5-7 天  **Depends on**: WS-0  **Touches**: `code/packages/web-public/src/templates/`
+> **Owner**: FE-A  **Duration**: 5-7 天  **Depends on**: WS-0  **Touches**: `code/packages/web-public/src/templates/`
 
 ## 目标
 

@@ -4,7 +4,7 @@
  * 表 settings_changes:每次 PATCH /api/admin/settings 写一条,
  * 记录变更的 section(可多个,逗号分隔)和完整 patch 的 JSON。
  *
- * 这个文件由主 agent 集成到 db/src/migrate.ts 的 MIGRATIONS 数组。
+ * 这个文件由主入口集成到 db/src/migrate.ts 的 MIGRATIONS 数组。
  * 集成方式见模块底部 export 的 Migration 对象。
  */
 

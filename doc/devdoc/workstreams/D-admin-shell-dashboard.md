@@ -1,6 +1,6 @@
 # WS-D — Admin 仪表盘 + 笔记详情 + Analytics
 
-> **Owner**: ADM-A agent  **Duration**: 7-10 天  **Depends on**: WS-0, WS-G(analytics)  **Touches**: `code/packages/web-admin/src/`
+> **Owner**: ADM-A  **Duration**: 7-10 天  **Depends on**: WS-0, WS-G(analytics)  **Touches**: `code/packages/web-admin/src/`
 
 ## 目标
 

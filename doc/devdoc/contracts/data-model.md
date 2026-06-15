@@ -117,7 +117,7 @@ type MediaReference = { slug: string; title: string };
 type Features = {
   content: { comments: boolean; newsletter: boolean; rss: boolean; graph: boolean; search: boolean; short_links: boolean };
   admin: { analytics: boolean; media_library: boolean; api_tokens: boolean; webhooks: boolean; og_generator: boolean };
-  agent: { cli_enabled: boolean; mcp_enabled: boolean; mcp_tools: string[] };
+  workflow: { cli_enabled: boolean };
   webhooks: Array<{ event: string; url: string }>;
 };
 

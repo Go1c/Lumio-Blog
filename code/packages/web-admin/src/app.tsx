@@ -20,10 +20,13 @@ import { CommentsPage } from './pages/comments.js';
 import { SubscriptionsPage } from './pages/subscriptions.js';
 import { AnalyticsOverviewPage } from './pages/analytics-overview.js';
 import { AdsPage } from './pages/ads.js';
+import { ADMIN_COUNTS_REFRESH_EVENT } from './admin-events.js';
+
+export { ADMIN_COUNTS_REFRESH_EVENT, requestAdminMenuCountsRefresh } from './admin-events.js';
 
 type Route =
   | { name: 'dashboard' }
-  | { name: 'list'; shortLinkIdle?: boolean }
+  | { name: 'list'; shortLinkIdle?: boolean; folderPath?: string }
   | { name: 'columns' }
   | { name: 'detail'; slug: string }
   | { name: 'analytics'; slug: string }
@@ -58,6 +61,14 @@ export function parseRouteHash(rawHash: string): ParsedRoute {
 function routeFromHashPath(hash: string, query: URLSearchParams): Route {
   if (hash === '' || hash === 'dashboard') return { name: 'dashboard' };
   if (hash === 'vault' || hash === 'notes') return { name: 'list', shortLinkIdle: query.get('short_link_idle') === '1' };
+  if (hash.startsWith('vault/')) {
+    const folderPath = decodeFolderPath(hash.slice('vault/'.length));
+    return {
+      name: 'list',
+      shortLinkIdle: query.get('short_link_idle') === '1',
+      folderPath,
+    };
+  }
   if (hash === 'columns') return { name: 'columns' };
   if (hash.startsWith('note/') || hash.startsWith('notes/')) {
     const rest = hash.startsWith('note/') ? hash.slice(5) : hash.slice(6);
@@ -99,7 +110,7 @@ function readRoute(): ParsedRoute {
 function currentPath(route: Route): string {
   switch (route.name) {
     case 'dashboard': return '#/';
-    case 'list': return '#/vault';
+    case 'list': return route.folderPath ? `#/vault/${encodeFolderPath(route.folderPath)}` : '#/vault';
     case 'columns': return '#/columns';
     case 'detail': return `#/note/${route.slug}`;
     case 'analytics': return `#/note/${route.slug}/analytics`;
@@ -117,6 +128,22 @@ function currentPath(route: Route): string {
     case 'subscriptions': return '#/subscriptions';
     case 'analytics-overview': return '#/analytics';
   }
+}
+
+function decodeFolderPath(value: string): string {
+  return value
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => decodeURIComponent(segment))
+    .join('/');
+}
+
+function encodeFolderPath(value: string): string {
+  return value
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
 }
 
 function breadcrumbsFor(route: Route): AdminBreadcrumb[] {
@@ -230,12 +257,24 @@ export function buildAdminMenu(counts: AdminMenuCounts = {}): AdminMenuGroup[] {
         { label: '广告位', href: '#/ads', icon: 'pin', ...badge(counts.ads) },
         { label: '数据统计', href: '#/analytics', icon: 'chart' },
         { label: '媒体库', href: '#/media', icon: 'image' },
+        { label: '订阅管理', href: '#/subscriptions', icon: 'mail' },
+        { label: 'OG 生成器', href: '#/og', icon: 'image' },
+      ],
+    },
+    {
+      label: '系统',
+      items: [
         {
           label: '系统设置',
           href: '#/settings',
           icon: 'settings',
           match: (p) => p === '#/settings' || p.startsWith('#/settings/'),
         },
+        { label: 'API Tokens', href: '#/tokens', icon: 'lock' },
+        { label: 'Webhooks', href: '#/webhooks', icon: 'webhook' },
+        { label: '审计日志', href: '#/audit', icon: 'activity' },
+        { label: '备份导出', href: '#/backup', icon: 'database' },
+        { label: '配置文档', href: '#/config-docs', icon: 'doc' },
       ],
     },
   ];
@@ -261,26 +300,31 @@ export function App() {
       return;
     }
     let cancelled = false;
-    void Promise.allSettled([
-      api.health(),
-      api.listNotes(),
-      api.tags.list(),
-      api.comments.list({ status: 'pending', limit: 1 }),
-      api.settings.get(),
-    ]).then(([health, notes, tags, comments, settings]) => {
-      if (cancelled) return;
-      const next: AdminMenuCounts = {};
-      assignCount(next, 'notes', health.status === 'fulfilled' ? health.value.note_count : undefined);
-      assignCount(next, 'columns', notes.status === 'fulfilled' ? countColumns(notes.value.notes) : undefined);
-      assignCount(next, 'tags', tags.status === 'fulfilled' ? tags.value.tags.length : undefined);
-      assignCount(next, 'pendingComments', comments.status === 'fulfilled' ? comments.value.counts.pending : undefined);
-      assignCount(next, 'ads', settings.status === 'fulfilled'
-        ? (settings.value.home?.ads ?? []).filter((ad) => ad.enabled !== false).length
-        : undefined);
-      setMenuCounts(next);
-    });
+    const refreshMenuCounts = () => {
+      void Promise.allSettled([
+        api.health(),
+        api.listNotes(),
+        api.tags.list(),
+        api.comments.list({ status: 'pending', limit: 1 }),
+        api.settings.get(),
+      ]).then(([health, notes, tags, comments, settings]) => {
+        if (cancelled) return;
+        const next: AdminMenuCounts = {};
+        assignCount(next, 'notes', health.status === 'fulfilled' ? health.value.note_count : undefined);
+        assignCount(next, 'columns', notes.status === 'fulfilled' ? countColumns(notes.value.notes) : undefined);
+        assignCount(next, 'tags', tags.status === 'fulfilled' ? tags.value.tags.length : undefined);
+        assignCount(next, 'pendingComments', comments.status === 'fulfilled' ? comments.value.counts.pending : undefined);
+        assignCount(next, 'ads', settings.status === 'fulfilled'
+          ? (settings.value.home?.ads ?? []).filter((ad) => ad.enabled !== false).length
+          : undefined);
+        setMenuCounts(next);
+      });
+    };
+    refreshMenuCounts();
+    window.addEventListener(ADMIN_COUNTS_REFRESH_EVENT, refreshMenuCounts);
     return () => {
       cancelled = true;
+      window.removeEventListener(ADMIN_COUNTS_REFRESH_EVENT, refreshMenuCounts);
     };
   }, [authed]);
 
@@ -327,7 +371,12 @@ export function App() {
         </div>
       )}
       {route.name === 'dashboard' && <Dashboard />}
-      {route.name === 'list' && <NoteList shortLinkIdle={route.shortLinkIdle ?? false} />}
+      {route.name === 'list' && (
+        <NoteList
+          shortLinkIdle={route.shortLinkIdle ?? false}
+          initialPath={route.folderPath ?? ''}
+        />
+      )}
       {route.name === 'columns' && <ColumnsPage />}
       {route.name === 'detail' && <NoteDetailPage slug={route.slug} />}
       {route.name === 'analytics' && <NoteAnalyticsPage slug={route.slug} />}

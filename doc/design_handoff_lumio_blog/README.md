@@ -4,6 +4,8 @@ Lumio.games 游戏技术博客的完整设计稿，供 Claude Code（或工程�
 
 > ⚠️ 说明：本包内为 **设计参考稿（静态 HTML/CSS/JS）**。所有数据均为**演示用假数据**，目标是还原视觉、布局与交互，再由你接入真实后端 / Obsidian 笔记库。参考图仅作风格与布局参考，具体实现以本稿为准，并**保持与主页一致的导航、外壳、配色与字体**。
 
+> 当前实现收口口径（2026-06-07）：本包仍保留原始静态设计稿说明，但验收以真实代码和 [`../devdoc/GAP-ANALYSIS.md`](../devdoc/GAP-ANALYSIS.md) 为准。暂不引入额外自动化接口；后台不伪写 Obsidian frontmatter，也不移动 vault 文件。标签来自 frontmatter `tags:` 同步聚合，专栏来自 `source_path` / vault 一级目录；设计稿中的标签/专栏 CRUD 仅作为交互参考，不作为本轮新需求。
+
 ---
 
 ## 1. 文件结构

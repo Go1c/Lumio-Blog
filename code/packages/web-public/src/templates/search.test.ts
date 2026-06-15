@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFile } from 'node:fs/promises';
 import { renderSearch } from './search.js';
 
 const config = {
@@ -66,5 +67,46 @@ describe('renderSearch Lumio shell', () => {
     expect(html).toContain('暂无搜索建议');
     expect(html).toContain('暂无标签');
     expect(html).not.toContain('性能优化');
+  });
+
+  it('exposes implemented search filters backed by the public search API', () => {
+    const post = note({ slug: 'unity-render', title: 'Unity Render' });
+    const html = renderSearch(config, {
+      posts: [post],
+      byTag: new Map([['Unity', [post]], ['Shader', [post]]]),
+    });
+
+    expect(html).toContain('data-search-filters');
+    expect(html).toContain('name="type"');
+    expect(html).toContain('value="post"');
+    expect(html).toContain('value="note"');
+    expect(html).not.toContain('value="tag"');
+    expect(html).not.toContain('value="media"');
+    expect(html).toContain('data-filter-from');
+    expect(html).toContain('data-filter-to');
+    expect(html).toContain('data-filter-tags');
+    expect(html).toContain('<option value="Unity">Unity</option>');
+    expect(html).toContain('<option value="Shader">Shader</option>');
+    expect(html).not.toContain('<option value="性能优化">性能优化</option>');
+  });
+
+  it('does not derive fake read counts from search relevance score', async () => {
+    const js = await readFile(new URL('../../public/search.js', import.meta.url), 'utf-8');
+
+    expect(js).not.toContain('((hit && hit.score) || 1) * 1.2');
+    expect(js).toContain('typeof hit.views ===');
+  });
+
+  it('passes filter controls through to /api/search and URL state', async () => {
+    const js = await readFile(new URL('../../public/search.js', import.meta.url), 'utf-8');
+
+    expect(js).toContain('function buildSearchUrl');
+    expect(js).toContain("params.set('type', filters.type)");
+    expect(js).toContain("params.set('from', filters.from)");
+    expect(js).toContain("params.set('to', filters.to)");
+    expect(js).toContain("params.set('tags', filters.tags)");
+    expect(js).toContain('fetch(buildSearchUrl(q)');
+    expect(js).toContain('writeUrlState(q)');
+    expect(js).not.toContain("fetch('/api/search?q=' + encodeURIComponent(q)");
   });
 });

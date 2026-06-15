@@ -2,12 +2,37 @@ import type { SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { renderPageHead, renderSubscribe } from './lumio-design.js';
 
-export function renderAbout(config: SiteConfig): string {
+export interface AboutStats {
+  articles: number;
+  columns: number;
+  tags: number;
+  years: number;
+}
+
+export function renderAbout(config: SiteConfig, stats?: AboutStats): string {
   const description = config.author.bio ?? `${config.site.title} 的技术分享阵地`;
   const authorName = config.author.name || 'Lumio';
   const authorInitial = authorName.charAt(0).toUpperCase();
   const bio = config.author.bio
     ?? '热爱游戏开发与图形学,专注于渲染与性能优化方向的研究与实践。在这里记录技术成长的点滴,也希望能帮到走在同一条路上的你。';
+  const avatar = renderAuthorAvatar(config.author.avatar, authorInitial);
+  const socialLinks = renderSocialLinks(config);
+  const statItems = stats
+    ? [
+        { value: formatStat(stats.articles), label: '文章' },
+        { value: formatStat(stats.columns), label: '专栏' },
+        { value: formatStat(stats.tags), label: '标签' },
+        { value: `${Math.max(1, stats.years)}年`, label: '持续创作' },
+      ]
+    : [
+        { value: '128+', label: '文章' },
+        { value: '24+', label: '专栏' },
+        { value: '15k+', label: '读者' },
+        { value: '3年+', label: '持续创作' },
+      ];
+  const statsHtml = statItems
+    .map((item) => `<div class="stat"><div class="stat__n">${esc(item.value)}</div><div class="stat__l">${esc(item.label)}</div></div>`)
+    .join('');
   const body = `
     ${renderPageHead('About', '关于 Lumio Games', '致力于分享游戏开发领域的技术经验与实践,涵盖渲染、性能、架构、工具链等方向。')}
     <main class="page">
@@ -41,7 +66,7 @@ export function renderAbout(config: SiteConfig): string {
       <div class="about-grid">
         <section class="author-card" aria-label="作者信息">
           <div class="author-card__top">
-            <div class="author-card__face" aria-hidden="true">${esc(authorInitial)}</div>
+            <div class="author-card__face" aria-hidden="true">${avatar}</div>
             <div>
               <div class="author-card__name">${esc(authorName)}</div>
               <div class="author-card__role">独立开发者<span class="pip" aria-hidden="true"></span>技术博主</div>
@@ -49,22 +74,16 @@ export function renderAbout(config: SiteConfig): string {
           </div>
           <p class="author-card__bio">${esc(bio)}</p>
           <div class="social" aria-label="社交链接">
-            <a href="https://github.com/Go1c" aria-label="GitHub">${githubIcon()}</a>
-            <a href="/" aria-label="博客">${docIcon()}</a>
-            <a href="/feed.xml" aria-label="RSS">${rssIcon()}</a>
-            <a href="mailto:hello@lumio.games" aria-label="邮箱">${mailIcon()}</a>
+            ${socialLinks}
           </div>
         </section>
 
         <section class="stats" aria-label="站点统计">
-          <div class="stat"><div class="stat__n">128+</div><div class="stat__l">文章</div></div>
-          <div class="stat"><div class="stat__n">24+</div><div class="stat__l">专栏</div></div>
-          <div class="stat"><div class="stat__n">15k+</div><div class="stat__l">读者</div></div>
-          <div class="stat"><div class="stat__n">3年+</div><div class="stat__l">持续创作</div></div>
+          ${statsHtml}
         </section>
       </div>
 
-      ${renderSubscribe('想和我们聊聊?', '合作、投稿或交流,欢迎留下你的邮箱', '联系我们', 'style="margin-top:34px;"')}
+      ${renderSubscribe('订阅更新', '留下邮箱接收最新技术文章与 Newsletter', '订阅', 'style="margin-top:34px;"')}
     </main>`;
 
   return layout({
@@ -75,6 +94,56 @@ export function renderAbout(config: SiteConfig): string {
     active: 'about',
     path: '/about.html',
   });
+}
+
+function formatStat(n: number): string {
+  if (n >= 10_000) return `${(n / 10_000).toFixed(1)}w`;
+  if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
+  return String(Math.max(0, n));
+}
+
+function renderAuthorAvatar(avatar: string | undefined, fallback: string): string {
+  const url = avatar?.trim();
+  if (!url) return esc(fallback);
+  return `<img src="${escAttr(url)}" alt="" loading="lazy" style="width:100%;height:100%;object-fit:cover;border-radius:inherit;">`;
+}
+
+function renderSocialLinks(config: SiteConfig): string {
+  const configured = (config.author.social ?? [])
+    .map((link) => ({
+      platform: link.platform.trim(),
+      url: link.url.trim(),
+    }))
+    .filter((link) => link.platform && link.url)
+    .map((link) => socialAnchor(link.platform, link.url));
+
+  const email = config.author.email?.trim();
+  if (email) configured.push(`<a href="mailto:${escAttr(email)}" aria-label="邮箱">${mailIcon()}</a>`);
+  if (configured.length > 0) return configured.join('');
+
+  return [
+    `<a href="${escAttr(config.site.url)}" aria-label="博客">${docIcon()}</a>`,
+    `<a href="/feed.xml" aria-label="RSS">${rssIcon()}</a>`,
+  ].join('');
+}
+
+function socialAnchor(platform: string, url: string): string {
+  const external = /^https?:\/\//i.test(url);
+  const rel = external ? ' target="_blank" rel="me noopener noreferrer"' : '';
+  return `<a href="${escAttr(url)}" aria-label="${escAttr(platform)}"${rel}>${socialIcon(platform)}</a>`;
+}
+
+function socialIcon(platform: string): string {
+  const key = platform.toLowerCase();
+  if (key.includes('github')) return githubIcon();
+  if (key === 'rss' || key.includes('feed')) return rssIcon();
+  if (key.includes('mail') || key.includes('email')) return mailIcon();
+  if (key.includes('blog') || key.includes('site') || key.includes('web')) return docIcon();
+  return linkIcon();
+}
+
+function escAttr(value: string): string {
+  return esc(value).replace(/"/g, '&quot;');
 }
 
 function uploadIcon(): string {
@@ -107,4 +176,8 @@ function rssIcon(): string {
 
 function mailIcon(): string {
   return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg>';
+}
+
+function linkIcon(): string {
+  return '<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14a4 4 0 0 0 6 .5l2-2a4 4 0 0 0-6-6l-1 1"></path><path d="M15 10a4 4 0 0 0-6-.5l-2 2a4 4 0 0 0 6 6l1-1"></path></svg>';
 }

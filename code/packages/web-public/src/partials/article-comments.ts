@@ -9,21 +9,10 @@ import { esc } from '../templates/layout.js';
  * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
  * - 高亮的句子 ↔ 右侧评论卡通过 `data-mid` 关联(高亮纯本地 localStorage)
  * - 评论本身走 Lumio 自带后端:GET 拉 approved 列表,POST 投到 pending 队列等审核
- * - 如果 CommentsConfig.repo 配了 Giscus,作为兼容路径同时加载,可拉 GitHub Discussions
  * - 若 features.comments === false → 调用方应 skip 整块
  */
 export interface CommentsConfig {
-  /** Giscus repo,例如 `lumio/lumio-blog` */
-  repo?: string;
-  /** Giscus repo id */
-  repoId?: string;
-  /** Giscus category */
-  category?: string;
-  /** Giscus category id */
-  categoryId?: string;
-  /** 文章标识,用作 mapping(默认 pathname) */
-  mapping?: 'pathname' | 'url' | 'title';
-  /** 文章 slug — 用于映射到 GitHub Discussion */
+  /** 文章 slug — 用于本地评论接口 /api/posts/:slug/comments */
   slug: string;
 }
 
@@ -35,20 +24,8 @@ export interface CommentsConfig {
  *  2. 把返回的 HTML 嵌入到 `<aside id="comments">` 容器
  */
 export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig): string {
-  const repo = opts.repo ?? '';
-  const repoId = opts.repoId ?? '';
-  const category = opts.category ?? 'Comments';
-  const categoryId = opts.categoryId ?? '';
-  const mapping = opts.mapping ?? 'pathname';
-
-  // 把 giscus 配置作为 data-* 属性,客户端 JS 读取
   const dataAttrs = [
     `data-component="comments"`,
-    `data-giscus-repo="${esc(repo)}"`,
-    `data-giscus-repo-id="${esc(repoId)}"`,
-    `data-giscus-category="${esc(category)}"`,
-    `data-giscus-category-id="${esc(categoryId)}"`,
-    `data-giscus-mapping="${esc(mapping)}"`,
     `data-slug="${esc(opts.slug)}"`,
   ].join(' ');
 
@@ -61,7 +38,7 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
             <span class="hf-mono hf-tiny" data-count aria-label="评论数">0</span>
           </h2>
           <div class="hf-grow"></div>
-          <span class="ui-tag" style="font-size:11px;font-family:var(--mono)">${repo ? 'Giscus' : 'Lumio'}</span>
+          <span class="ui-tag" style="font-size:11px;font-family:var(--mono)">Lumio</span>
         </header>
 
         <div class="wsb-comments__hint hf-tiny hf-muted">
@@ -90,9 +67,7 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
         </form>
 
         <footer class="wsb-comments__foot hf-tiny hf-faint">
-          ${repo
-            ? '后端:GitHub Discussions · <a id="wsb-comments-login" href="#" rel="nofollow noopener">登录 GitHub</a>'
-            : '评论需先经过审核才会公开 · <a id="wsb-comments-login" aria-disabled="true">以匿名身份留言</a>'}
+          评论需先经过审核才会公开 · <a id="wsb-comments-login" aria-disabled="true">以匿名身份留言</a>
         </footer>
       </div>
     </div>

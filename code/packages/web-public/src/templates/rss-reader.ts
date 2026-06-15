@@ -15,19 +15,14 @@ interface ReaderEntry {
 }
 
 /**
- * RSS / Atom / JSON Feed 美化阅读页 — `/feed/`
+ * RSS 美化阅读页 — `/feed/`
  * 对应设计稿:doc/prototype/hf-extras2.jsx §7 HFRssPage
- *
- * 注:目前只有 /feed.xml(RSS 2.0)真实存在;Atom/JSON 链到同一个 feed.xml,
- *     等 WS-B 增 atom.xml / feed.json 后再切。前端 UI 已布局好。
  */
 export function renderRssReader(config: SiteConfig): string {
   const siteUrl = config.site.url.replace(/\/+$/, '');
 
   const feeds: FeedEntry[] = [
     { name: '全部文章', url: '/feed.xml', fmt: 'RSS 2.0', recommended: '默认推荐' },
-    { name: '全部文章', url: '/feed.xml', fmt: 'Atom 1.0' },
-    { name: '全部文章', url: '/feed.xml', fmt: 'JSON Feed' },
   ];
 
   const readers: ReaderEntry[] = [
@@ -142,7 +137,7 @@ export function renderRssReader(config: SiteConfig): string {
       <header class="wsc-rss__head">
         <div class="wsc-rss__icon" aria-hidden="true">RSS</div>
         <div class="wsc-rss__head-text">
-          <div class="hf-mono hf-tiny hf-muted">RSS · Atom · JSON Feed</div>
+          <div class="hf-mono hf-tiny hf-muted">RSS 2.0</div>
           <h1 class="wsc-rss__title">用 RSS 订阅</h1>
         </div>
       </header>
@@ -178,7 +173,7 @@ export function renderRssReader(config: SiteConfig): string {
 
   return layout({
     title: `RSS 订阅 · ${config.site.title}`,
-    description: '通过 RSS / Atom / JSON Feed 订阅本站内容',
+    description: '通过 RSS 订阅本站内容',
     config,
     body,
     active: 'home',

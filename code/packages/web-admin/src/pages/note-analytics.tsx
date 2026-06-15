@@ -1,11 +1,8 @@
 import type { JSX } from 'preact';
 import { useEffect, useState } from 'preact/hooks';
-import type { ArticleAnalytics, AnalyticsRange, TimeSeriesPoint } from '@opennote/core';
-import { Button, HfIcon, Tag } from '@opennote/ui';
+import type { ArticleAnalytics } from '@opennote/core';
+import { Button, HfIcon } from '@opennote/ui';
 import { api, type NoteDetail } from '../api.js';
-import { AreaChart } from '../components/area-chart.js';
-
-const RANGES: AnalyticsRange[] = ['7d', '30d', '90d'];
 
 export const NOTE_ANALYTICS_RESPONSIVE_STYLE = `
 .note-analytics { min-width: 0; }
@@ -24,7 +21,7 @@ export const NOTE_ANALYTICS_RESPONSIVE_STYLE = `
 }
 .note-analytics__main-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.5fr) minmax(0, 1fr);
+  grid-template-columns: 1fr;
   gap: 14px;
   margin-bottom: 14px;
 }
@@ -49,10 +46,6 @@ export const NOTE_ANALYTICS_RESPONSIVE_STYLE = `
     overflow-wrap: anywhere;
   }
   .note-analytics__header .ui-btn { flex: 1 1 128px; }
-  .note-analytics__header [role="radiogroup"] {
-    flex: 1 1 180px;
-    overflow-x: auto;
-  }
   .note-analytics__kpis {
     grid-template-columns: repeat(2, minmax(0, 1fr));
     gap: 10px;
@@ -82,10 +75,8 @@ function NoteAnalyticsStyles(): null {
 }
 
 export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
-  const [range, setRange] = useState<AnalyticsRange>('30d');
   const [note, setNote] = useState<NoteDetail | null>(null);
   const [data, setData] = useState<ArticleAnalytics | null>(null);
-  const [series, setSeries] = useState<TimeSeriesPoint[] | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -110,22 +101,6 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
       cancelled = true;
     };
   }, [slug]);
-
-  useEffect(() => {
-    let cancelled = false;
-    setSeries(null);
-    void api.analytics
-      .timeseries(range, 'views')
-      .then((r) => {
-        if (!cancelled) setSeries(r.points);
-      })
-      .catch(() => {
-        /* 单篇 timeseries 暂回退到全站,等 WS-G 提供单篇 */
-      });
-    return () => {
-      cancelled = true;
-    };
-  }, [range]);
 
   if (error && !data) {
     return (
@@ -163,20 +138,6 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
         <Button size="sm" onClick={() => window.open(`/posts/${encodeURIComponent(slug)}.html`, '_blank')}>
           <HfIcon name="arrowR" size={11} /> 查看页面
         </Button>
-        <div role="radiogroup" aria-label="时间范围" style={{ display: 'flex', gap: 4 }}>
-          {RANGES.map((r) => (
-            <Tag
-              key={r}
-              pressable
-              pressed={range === r}
-              tone={range === r ? 'accent' : 'default'}
-              onClick={() => setRange(r)}
-              aria-label={`切换到 ${r}`}
-            >
-              {r}
-            </Tag>
-          ))}
-        </div>
       </div>
 
       {/* big numbers */}
@@ -187,21 +148,8 @@ export function NoteAnalyticsPage({ slug }: { slug: string }): JSX.Element {
         <KpiBox label="读完率" value={data ? `${formatPct(completionRate(data.completion_heatmap))}` : '—'} />
       </div>
 
-      {/* 2-col: chart + scroll-depth */}
+      {/* single-note engagement */}
       <div class="note-analytics__main-grid">
-        <div class="ui-card" style={{ padding: 16 }}>
-          <div style={{ display: 'flex', alignItems: 'center', marginBottom: 12 }}>
-            <span style={{ fontSize: 13, fontWeight: 600 }}>浏览趋势</span>
-            <div class="hf-grow" />
-            <span class="hf-tiny hf-muted">range: {range}</span>
-          </div>
-          {series ? <AreaChart points={series} aria-label={`浏览趋势 ${range}`} /> : (
-            <div class="hf-tiny hf-muted" style={{ padding: 24, textAlign: 'center' }} aria-busy="true">
-              载入中…
-            </div>
-          )}
-        </div>
-
         <div class="ui-card" style={{ padding: 16 }}>
           <div style={{ fontSize: 13, fontWeight: 600, marginBottom: 12 }}>阅读深度</div>
           {data ? <CompletionHeatmap heat={data.completion_heatmap} /> : (

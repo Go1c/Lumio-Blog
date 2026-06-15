@@ -6,12 +6,12 @@
 
 ## 项目定位
 
-这是一个**为单作者 + agent 优化**的博客系统。设计上有几个有意识的取舍：
+这是一个**为单作者 + 本地文件工作流优化**的博客系统。设计上有几个有意识的取舍：
 
 - 内容存储 = 文件系统，不是数据库
 - 编辑器 = Obsidian（或任何能写 Markdown 的东西），不是后台富文本
 - "评论 / 协作 / 多人编辑"不是核心场景；想要这些请考虑 Ghost / WordPress
-- Agent / CLI / MCP 是一等公民，不是事后补丁
+- OpenNote CLI 是一等公民，不是事后补丁
 
 如果你的 PR 让某个非核心场景变好但削弱了上面任何一条，会被劝退。
 
@@ -62,18 +62,19 @@ python3 -m http.server 8000
 ## 仓库结构
 
 ```
-apps/
-  web/              # 前台 + 后台（Next.js，App Router）
-  cli/              # blog CLI
-  mcp/              # MCP server
-packages/
-  fast-note-sync/   # 同步管线（独立 npm 包，可单跑）
-  parser/           # frontmatter / wikilink / 渲染
-  schema/           # zod schema + TS 类型
-docs/               # 你正在看的设计稿和文档
+code/packages/
+  web-public/       # 静态前台渲染模板
+  web-admin/        # 后台 SPA（Preact + Vite）
+  server/           # Hono API / admin / sync 入口
+  sync/             # Obsidian vault → SQLite / 静态站同步管线
+  obsidian/         # Markdown / wikilink / canvas / embed 渲染
+  db/               # SQLite schema + 查询仓储
+  core/             # 共享 schema + TS 类型
+  cli/              # OpenNote CLI
+doc/                # 设计稿、产品文档和开发文档
 ```
 
-> 实际仓库结构以代码仓为准。这里描述的是设计意图。
+> 实际仓库结构以代码仓为准。这里列的是当前主要包。
 
 ---
 
@@ -89,9 +90,9 @@ pnpm lint
 
 ### 如果改了 frontmatter schema
 
-- `packages/schema` 里同步改 zod schema
+- `code/packages/core` 里同步改 schema / 类型
 - `doc/CONFIGURATION.md` 里同步改字段表
-- 跑 `pnpm test --filter parser` 确认旧笔记能解析
+- 跑同步 / 解析相关测试，确认旧笔记能解析
 
 ### 如果改了可见性逻辑
 
@@ -138,7 +139,7 @@ pnpm lint
 - TypeScript，strict
 - 不写 class（除非是真的 stateful 业务对象）
 - React 组件优先用 function + hooks
-- CSS：Tailwind + 极少量手写 module（前台样式表 < 200 行）
+- CSS：共享 token + 页面模板样式；新增样式要沿用现有设计 token
 - 文件命名：`kebab-case.ts`，组件文件 `PascalCase.tsx`
 
 ### Commit

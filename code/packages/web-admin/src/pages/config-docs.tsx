@@ -38,7 +38,7 @@ interface FieldDoc {
 
 // ====== 内容 — 1:1 对齐 doc/CONFIGURATION.md ===============================
 
-const ENV_EXAMPLE = `# 站点
+export const ENV_EXAMPLE = `# 站点
 SITE_URL=https://lumio.games
 DATABASE_URL=sqlite:./data/index.db
 
@@ -52,15 +52,17 @@ AUTH_SECRET=…            # 32+ random bytes
 AUTH_PROVIDERS=github    # github | google | local
 
 # 第三方
-GISCUS_REPO=lumio/blog
 BUTTONDOWN_API_KEY=…
 PLAUSIBLE_DOMAIN=lumio.games
 
-# Agent
-MCP_TOKEN=…              # 给 agent 用的 bearer
+# 本地 server
+OPENNOTE_CONFIG=./config.yaml
+OPENNOTE_PASSWORD=…      # serve 登录密码
+PORT=3000
+
 `;
 
-const ENV_FIELDS: FieldDoc[] = [
+export const ENV_FIELDS: FieldDoc[] = [
   { name: 'SITE_URL',           type: 'url',    default: '—',       desc: 'canonical URL,影响 RSS / OG / sitemap' },
   { name: 'DATABASE_URL',       type: 'string', default: 'sqlite',  desc: '存储后端连接串' },
   { name: 'VAULT_PATH',         type: 'path',   default: '—',       desc: 'Obsidian vault 挂载路径' },
@@ -68,7 +70,9 @@ const ENV_FIELDS: FieldDoc[] = [
   { name: 'GIT_WEBHOOK_SECRET', type: 'string', default: '—',       desc: 'git push → rebuild 校验密钥' },
   { name: 'AUTH_SECRET',        type: 'string', default: '—',       desc: '后台 cookie 签名,32+ random bytes' },
   { name: 'AUTH_PROVIDERS',     type: 'enum',   default: 'github',  desc: 'github / google / local' },
-  { name: 'MCP_TOKEN',          type: 'string', default: '—',       desc: 'agent bearer,与后台 cookie 隔离' },
+  { name: 'OPENNOTE_CONFIG',    type: 'path',   default: './config.yaml', desc: 'config.yaml 路径' },
+  { name: 'OPENNOTE_PASSWORD',  type: 'string', default: '—',       desc: 'serve 登录密码' },
+  { name: 'PORT',               type: 'int',    default: '3000',    desc: 'server 端口' },
 ];
 
 const CONFIG_EXAMPLE = `site:
@@ -133,10 +137,10 @@ const CONFIG_FIELDS: FieldDoc[] = [
   { name: 'home.show_recent_posts', type: 'int',  default: '6',         desc: '首页文章流条数' },
 ];
 
-const FEATURES_EXAMPLE = `# 全是布尔,默认 true。关掉 → 对应 UI 隐藏 / API 404
+export const FEATURES_EXAMPLE = `# 全是布尔,默认 true。关掉 → 对应 UI 隐藏 / API 404
 content:
-  comments: true             # Giscus
-  newsletter: true           # 第三方订阅
+  comments: true             # 本地评论审核
+  newsletter: true           # Buttondown / 本地订阅
   rss: true
   graph: true                # 关系图
   search: true               # 站内搜索
@@ -149,24 +153,18 @@ admin:
   webhooks: true
   og_generator: true
 
-agent:
-  cli_enabled: true          # Blog CLI
-  mcp_enabled: true          # MCP server
-  mcp_tools:
-    - blog_search
-    - blog_read
-    - blog_write             # 写权限谨慎开
-    - blog_patch_meta
+workflow:
+  cli_enabled: true          # 本地预览 / 同步配置
 
 webhooks:
-  - { event: "post.published", url: "https://hooks..." }
-  - { event: "post.updated",   url: "https://discord..." }
+  - { event: "note.published", url: "https://hooks..." }
+  - { event: "note.updated",   url: "https://discord..." }
 `;
 
-const FEATURES_FIELDS: FieldDoc[] = [
-  { name: 'content.comments',     type: 'bool',  default: 'true', desc: 'Giscus 评论' },
+export const FEATURES_FIELDS: FieldDoc[] = [
+  { name: 'content.comments',     type: 'bool',  default: 'true', desc: '本地评论审核' },
   { name: 'content.newsletter',   type: 'bool',  default: 'true', desc: '订阅邮件通讯' },
-  { name: 'content.rss',          type: 'bool',  default: 'true', desc: 'RSS / Atom / JSON Feed' },
+  { name: 'content.rss',          type: 'bool',  default: 'true', desc: 'RSS 订阅' },
   { name: 'content.graph',        type: 'bool',  default: 'true', desc: '知识关系图' },
   { name: 'content.search',       type: 'bool',  default: 'true', desc: '站内搜索' },
   { name: 'content.short_links',  type: 'bool',  default: 'true', desc: '短链 lmg.sh/xxx' },
@@ -175,9 +173,7 @@ const FEATURES_FIELDS: FieldDoc[] = [
   { name: 'admin.api_tokens',     type: 'bool',  default: 'true', desc: 'API tokens 管理' },
   { name: 'admin.webhooks',       type: 'bool',  default: 'true', desc: 'Webhook 管理' },
   { name: 'admin.og_generator',   type: 'bool',  default: 'true', desc: 'OG 图生成器' },
-  { name: 'agent.cli_enabled',    type: 'bool',  default: 'true', desc: 'Blog CLI 入口' },
-  { name: 'agent.mcp_enabled',    type: 'bool',  default: 'true', desc: 'MCP server 暴露' },
-  { name: 'agent.mcp_tools',      type: 'list',  default: 'all',  desc: '允许 agent 调用的工具集' },
+  { name: 'workflow.cli_enabled', type: 'bool',  default: 'true', desc: '本地预览 / 同步配置' },
 ];
 
 const FRONTMATTER_EXAMPLE = `---

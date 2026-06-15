@@ -4,7 +4,7 @@ Self-hosted, Obsidian-vault-driven 博客 / 笔记平台。
 
 ## 它是什么
 
-把 Obsidian vault 当 source of truth：你在 Obsidian 里写 markdown，用 frontmatter 控制可见性，OpenNote 自动同步成静态前台 + 提供后台 + 暴露 API 让 LLM agent 也能操作。
+把 Obsidian vault 当 source of truth：你在 Obsidian 里写 markdown，用 frontmatter 控制可见性，OpenNote 自动同步成静态前台，并提供后台管理与公开读取 API。
 
 ## 一分钟跑起来
 
@@ -61,9 +61,6 @@ code/packages/
 - `GET  /api/search?q=`
 - `GET  /n/:short_id` → 302
 
-写（cookie session 或 `Authorization: Bearer <token>` write scope）:
-- `PATCH /api/notes/:slug/meta`  body `{ visibility?, searchable? }`
-
 后台（cookie session 或 admin scope token）:
 - `GET    /api/admin/notes`
 - `GET    /api/admin/notes/:slug`
@@ -84,7 +81,7 @@ code/packages/
 - ✅ Markdown 渲染：GFM + wikilink + Shiki 双主题 + KaTeX SSR + Mermaid 客户端
 - ✅ 静态前台：首页 + 文章 + 标签 + RSS + sitemap + robots + 404
 - ✅ 后台 SPA：登录 / 列表 / 详情 / tokens / webhooks
-- ✅ Auth：站长 cookie session + agent bearer token（read/write/admin 三档）
+- ✅ Auth：站长 cookie session + 后台 admin API token
 - ✅ Webhooks：HMAC 签名，事件订阅，投递记录
 - ✅ SSE `/api/admin/changes`：实时事件流 + 心跳
 - ✅ Scheduler：每分钟扫一次 scheduled_at 到期转 public

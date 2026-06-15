@@ -255,7 +255,7 @@ Caddy 自动申请 / 续期 Let's Encrypt 证书，不用自己配 certbot。
 
 如果上线想加：
 
-- Plausible / Umami — 站点流量
+- 后台 Analytics — 内置 `/api/track` 打点与统计面板
 - Sentry — 后端异常
 - Healthcheck endpoint：`GET /api/health` 返回 `{ ok: true, last_sync: "...", note_count: N }`
 

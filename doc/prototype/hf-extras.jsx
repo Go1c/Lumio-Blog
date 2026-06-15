@@ -190,7 +190,7 @@ function HFNewsletter({ theme = 'light', onTheme }) {
             ▸ 往期回顾
           </div>
           {[
-            ['#012 — 关于"AI agent"的祛魅', '2026-04', '本月推荐 3 篇 + 1 个失败实验复盘'],
+            ['#012 — 关于游戏 AI 的祛魅', '2026-04', '本月推荐 3 篇 + 1 个失败实验复盘'],
             ['#011 — 渲染管线的几个旧问题', '2026-03', 'Vulkan GPU-Driven 系列收尾'],
             ['#010 — 我为什么停了 5 个项目', '2026-02', '年初反思'],
           ].map(([t, d, sub], i) => (
@@ -366,7 +366,7 @@ function HFTagDetail({ theme = 'light', onTheme }) {
               <span className="hf-tag">MCTS · 7</span>
               <span className="hf-tag">行为树 · 6</span>
               <span className="hf-tag">强化学习 · 14</span>
-              <span className="hf-tag">LLM Agents · 9</span>
+              <span className="hf-tag">LLM NPC · 9</span>
               <span className="hf-tag">GOAP · 4</span>
             </div>
 
@@ -838,7 +838,7 @@ function HFApiTokens({ theme = 'light' }) {
         <div style={{ padding: '20px 24px', maxWidth: 980 }}>
           <h1 style={{ fontSize: 22, fontWeight: 700, margin: 0 }}>🔑 API tokens</h1>
           <p className="hf-sm hf-muted" style={{ marginTop: 4, marginBottom: 24 }}>
-            <code style={{ fontFamily: 'var(--mono)', background: 'var(--bg-sunk)', padding: '1px 6px', borderRadius: 3, color: 'var(--accent)', fontSize: 12 }}>fast-note-sync</code> 通过 token 推送笔记到博客。
+            后台 API token 用于受信任的管理脚本和 CI 集成。
             令牌只显示一次，建议存到密码管理器。
           </p>
 
@@ -884,10 +884,10 @@ function HFApiTokens({ theme = 'light' }) {
               <span></span>
             </div>
             {[
-              { name: 'obsidian-mac', prefix: 'lmg_pat_a4f2…', scope: 'notes:write', last: '2m 前', exp: '永不', calls: '4,128', client: '🍎' },
-              { name: 'obsidian-ios', prefix: 'lmg_pat_8b3c…', scope: 'notes:write', last: '2h 前', exp: '90d 后', calls: '892', client: '📱' },
-              { name: 'ci-deploy', prefix: 'lmg_pat_5e7f…', scope: 'admin:full', last: '3d 前', exp: '60d 后', calls: '142', client: '⚙️', warn: true },
-              { name: 'analytics-readonly', prefix: 'lmg_pat_1a0d…', scope: 'stats:read', last: '14d 前', exp: '已过期', calls: '23', client: '📊', danger: true },
+              { name: 'ci-deploy', prefix: 'lmg_pat_a4f2…', scope: 'admin', last: '2m 前', exp: '永不', calls: '4,128', client: '⚙️' },
+              { name: 'ops-script', prefix: 'lmg_pat_8b3c…', scope: 'admin', last: '2h 前', exp: '90d 后', calls: '892', client: '⌘' },
+              { name: 'backup-runner', prefix: 'lmg_pat_5e7f…', scope: 'admin', last: '3d 前', exp: '60d 后', calls: '142', client: '↥', warn: true },
+              { name: 'old-ci-token', prefix: 'lmg_pat_1a0d…', scope: 'admin', last: '14d 前', exp: '已过期', calls: '23', client: '×', danger: true },
             ].map((t, i) => (
               <div key={i} style={{ display: 'grid', gridTemplateColumns: '36px 1fr 100px 110px 120px 100px 70px', alignItems: 'center', padding: '12px 16px', borderBottom: i < 3 ? '1px solid var(--line)' : 'none', fontSize: 13 }}>
                 <span style={{ fontSize: 16 }}>{t.client}</span>

@@ -1,24 +1,20 @@
 import { useEffect, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact';
-import { Button, Tag, Modal, ModalHeader, ModalBody, ModalFooter } from '@opennote/ui';
+import { Tag } from '@opennote/ui';
 import { api, type BackupJob } from '../api.js';
 
-type ExportKind = 'vault' | 'db' | 'markdown';
+type ExportKind = 'vault';
 
 interface ExportSpec {
   kind: ExportKind;
   label: string;
-  hint: string;
-  /** markdown bundle 时的可选时间段 */
-  rangeFrom?: string;
-  rangeTo?: string;
 }
 
 const HISTORY_KEY = 'admin.backup.history.v1';
 
 interface HistoryRow {
   id: string;
-  kind: ExportKind;
+  kind: string;
   status: BackupJob['status'];
   bytes: number | null;
   created_at: string;
@@ -50,8 +46,6 @@ export function BackupPage(): JSX.Element {
   const [history, setHistory] = useState<HistoryRow[]>(() => loadHistory());
   const [activeJob, setActiveJob] = useState<BackupJob | null>(null);
   const [activeKind, setActiveKind] = useState<ExportKind | null>(null);
-  const [autoFreq, setAutoFreq] = useState<'off' | 'daily' | 'weekly'>('off');
-  const [danger, setDanger] = useState<{ open: boolean; action: 'wipe-drafts' | 'reset-stats' | 'wipe-all' | null; typedSlug: string }>({ open: false, action: null, typedSlug: '' });
   const [toast, setToast] = useState<{ msg: string; err?: boolean } | null>(null);
   const sseRef = useRef<EventSource | null>(null);
 
@@ -144,12 +138,6 @@ export function BackupPage(): JSX.Element {
     }
   };
 
-  const onConfirmDanger = () => {
-    // 真实的清空 / 重置端点不在本 WS 范围内 — 仅前端 UI 双确认
-    setToast({ msg: `${dangerLabel(danger.action)}:已记录(后端动作待实现)`, err: true });
-    setDanger({ open: false, action: null, typedSlug: '' });
-  };
-
   return (
     <div>
       <header style={{ marginBottom: 16 }}>
@@ -207,7 +195,7 @@ export function BackupPage(): JSX.Element {
         </div>
       </section>
 
-      {/* 三种导出 */}
+      {/* 导出 */}
       <section aria-labelledby="export-h" style={{ marginBottom: 18 }}>
         <h3 id="export-h" class="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', margin: '0 0 8px', letterSpacing: '.05em' }}>
           ▸ 导出
@@ -217,19 +205,8 @@ export function BackupPage(): JSX.Element {
             title="完整 vault zip"
             hint="Markdown 源 + 媒体 + sqlite + metadata.json"
             kindBadge="vault"
-            onStart={() => startExport({ kind: 'vault', label: '完整 vault 备份', hint: '' })}
+            onStart={() => startExport({ kind: 'vault', label: '完整 vault 备份' })}
             disabled={activeJob !== null && activeJob.status === 'running'}
-          />
-          <ExportCard
-            title="SQLite dump"
-            hint="单文件数据库 — 适合迁移或灾难恢复"
-            kindBadge="db"
-            onStart={() => startExport({ kind: 'db', label: 'SQLite 数据库 dump', hint: '' })}
-            disabled={activeJob !== null && activeJob.status === 'running'}
-          />
-          <MarkdownBundleCard
-            disabled={activeJob !== null && activeJob.status === 'running'}
-            onStart={(from, to) => startExport({ kind: 'markdown', label: 'Markdown bundle', hint: '', rangeFrom: from, rangeTo: to })}
           />
         </div>
       </section>
@@ -306,99 +283,6 @@ export function BackupPage(): JSX.Element {
         )}
       </section>
 
-      {/* 自动备份频率 */}
-      <section
-        aria-labelledby="auto-h"
-        style={{ padding: 14, marginBottom: 18, border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)' }}
-      >
-        <h3 id="auto-h" style={{ margin: 0, fontSize: 14 }}>自动备份</h3>
-        <p class="hf-muted hf-tiny" style={{ margin: '4px 0 8px 0' }}>定期触发完整 vault 备份(配置项 — 后端在 WS-G 之外实现)。</p>
-        <fieldset style={{ border: 0, padding: 0, margin: 0 }}>
-          <legend class="sr-only">自动备份频率</legend>
-          <div role="radiogroup" aria-label="自动备份频率" style={{ display: 'flex', gap: 12 }}>
-            {(['off', 'daily', 'weekly'] as const).map((f) => (
-              <label key={f} style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer' }}>
-                <input
-                  type="radio"
-                  name="auto-freq"
-                  value={f}
-                  checked={autoFreq === f}
-                  onChange={() => setAutoFreq(f)}
-                />
-                {f === 'off' ? '关闭' : f === 'daily' ? '每天' : '每周'}
-              </label>
-            ))}
-          </div>
-        </fieldset>
-      </section>
-
-      {/* 危险区 */}
-      <section
-        aria-labelledby="danger-h"
-        style={{ padding: 14, border: '1px solid var(--danger)', borderRadius: 'var(--radius-lg)', background: 'var(--danger-soft)' }}
-      >
-        <h3 id="danger-h" style={{ margin: 0, fontSize: 14, color: 'var(--danger-text)' }}>危险区</h3>
-        <p class="hf-tiny" style={{ margin: '4px 0 10px 0', color: 'var(--danger-text)' }}>
-          这些操作不可逆。建议先做一次完整备份。
-        </p>
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-          <Button size="sm" variant="danger" onClick={() => setDanger({ open: true, action: 'wipe-drafts', typedSlug: '' })}>
-            清空所有草稿
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => setDanger({ open: true, action: 'reset-stats', typedSlug: '' })}>
-            重置统计数据
-          </Button>
-          <Button size="sm" variant="danger" onClick={() => setDanger({ open: true, action: 'wipe-all', typedSlug: '' })}>
-            删除整站
-          </Button>
-        </div>
-      </section>
-
-      {/* 危险区双确认 modal */}
-      <Modal
-        open={danger.open}
-        onClose={() => setDanger({ open: false, action: null, typedSlug: '' })}
-        titleId="danger-modal-title"
-      >
-        <ModalHeader>
-          <h3 id="danger-modal-title" style={{ margin: 0, fontSize: 14, color: 'var(--danger-text)' }}>
-            确认:{dangerLabel(danger.action)}
-          </h3>
-        </ModalHeader>
-        <ModalBody>
-          <p style={{ marginTop: 0, color: 'var(--ink-2)' }}>
-            此操作无法撤销。
-          </p>
-          <p style={{ color: 'var(--ink-3)', fontSize: 13 }}>
-            为防误操作,请输入 <code style={{ background: 'var(--bg-sunk)', padding: '1px 6px', borderRadius: 3, fontFamily: 'var(--mono)' }}>{slugFor(danger.action)}</code> 以确认。
-          </p>
-          <label htmlFor="danger-slug-input" class="sr-only">确认词</label>
-          <input
-            id="danger-slug-input"
-            type="text"
-            autoFocus
-            value={danger.typedSlug}
-            onInput={(e) => setDanger((p) => ({ ...p, typedSlug: (e.target as HTMLInputElement).value }))}
-            aria-describedby="danger-help"
-            style={{ width: '100%' }}
-          />
-          <p id="danger-help" class="hf-tiny hf-muted" style={{ marginTop: 6 }}>
-            输入完成后再点一次"确认"按钮(双重确认)。
-          </p>
-        </ModalBody>
-        <ModalFooter>
-          <Button size="sm" variant="ghost" onClick={() => setDanger({ open: false, action: null, typedSlug: '' })}>取消</Button>
-          <button
-            type="button"
-            class="ui-btn ui-btn--sm ui-btn--danger"
-            disabled={danger.typedSlug !== slugFor(danger.action)}
-            onClick={onConfirmDanger}
-          >
-            确认 {dangerLabel(danger.action)}
-          </button>
-        </ModalFooter>
-      </Modal>
-
       {toast && (
         <div
           class={`toast${toast.err ? ' error' : ''}`}
@@ -442,41 +326,6 @@ function ExportCard({
   );
 }
 
-function MarkdownBundleCard({
-  disabled,
-  onStart,
-}: {
-  disabled: boolean;
-  onStart: (from: string, to: string) => void;
-}): JSX.Element {
-  const today = new Date().toISOString().slice(0, 10);
-  const lastMonth = new Date(Date.now() - 30 * 24 * 3600_000).toISOString().slice(0, 10);
-  const [from, setFrom] = useState(lastMonth);
-  const [to, setTo] = useState(today);
-  return (
-    <article style={{ padding: 14, border: '1px solid var(--line)', borderRadius: 'var(--radius-lg)', background: 'var(--bg)' }}>
-      <header style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 6 }}>
-        <h4 style={{ margin: 0, fontSize: 14 }}>Markdown bundle</h4>
-        <Tag tone="accent">range</Tag>
-      </header>
-      <p class="hf-muted" style={{ margin: '0 0 8px 0', fontSize: 12 }}>选时间段导出 markdown(其他 WS 兜底:目前等同 vault zip)。</p>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 10 }}>
-        <label style={{ flex: 1 }}>
-          <span class="hf-tiny" style={{ color: 'var(--ink-3)', display: 'block', marginBottom: 2 }}>从</span>
-          <input type="date" value={from} onInput={(e) => setFrom((e.target as HTMLInputElement).value)} style={{ width: '100%', minHeight: 30, padding: '4px 6px' }} />
-        </label>
-        <label style={{ flex: 1 }}>
-          <span class="hf-tiny" style={{ color: 'var(--ink-3)', display: 'block', marginBottom: 2 }}>至</span>
-          <input type="date" value={to} onInput={(e) => setTo((e.target as HTMLInputElement).value)} style={{ width: '100%', minHeight: 30, padding: '4px 6px' }} />
-        </label>
-      </div>
-      <button type="button" class="ui-btn ui-btn--sm ui-btn--primary" onClick={() => onStart(from, to)} disabled={disabled} aria-label="开始 markdown bundle">
-        开始导出
-      </button>
-    </article>
-  );
-}
-
 function StatusTag({ status }: { status: BackupJob['status'] }): JSX.Element {
   if (status === 'done') return <Tag tone="ok">完成</Tag>;
   if (status === 'failed') return <Tag tone="danger">失败</Tag>;
@@ -493,7 +342,7 @@ function formatBytes(b: number): string {
   return `${(b / 1024 / 1024 / 1024).toFixed(2)} GB`;
 }
 
-function rowFrom(j: BackupJob, kind: ExportKind): HistoryRow {
+function rowFrom(j: BackupJob, kind: string): HistoryRow {
   return {
     id: j.id,
     kind,
@@ -507,21 +356,5 @@ function rowFrom(j: BackupJob, kind: ExportKind): HistoryRow {
 
 function labelOf(kind: ExportKind | null): string {
   if (kind === 'vault') return '完整 vault 备份';
-  if (kind === 'db') return 'SQLite 数据库 dump';
-  if (kind === 'markdown') return 'Markdown bundle';
   return '备份';
-}
-
-function dangerLabel(a: 'wipe-drafts' | 'reset-stats' | 'wipe-all' | null): string {
-  if (a === 'wipe-drafts') return '清空所有草稿';
-  if (a === 'reset-stats') return '重置统计数据';
-  if (a === 'wipe-all') return '删除整站';
-  return '';
-}
-
-function slugFor(a: 'wipe-drafts' | 'reset-stats' | 'wipe-all' | null): string {
-  if (a === 'wipe-drafts') return 'WIPE-DRAFTS';
-  if (a === 'reset-stats') return 'RESET-STATS';
-  if (a === 'wipe-all') return 'DELETE-EVERYTHING';
-  return '';
 }

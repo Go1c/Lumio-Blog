@@ -43,10 +43,8 @@ const features: Features = {
     webhooks: true,
     og_generator: true,
   },
-  agent: {
+  workflow: {
     cli_enabled: true,
-    mcp_enabled: true,
-    mcp_tools: ['blog_search'],
   },
   webhooks: [],
 };
@@ -69,5 +67,10 @@ describe('applyRuntimeConfig', () => {
       post_summary: true,
     });
     expect(runtime.paths).toEqual(baseConfig.paths);
+  });
+
+  it('keeps local workflow configuration scoped to the CLI only', () => {
+    expect(features.workflow).toEqual({ cli_enabled: true });
+    expect(features).not.toHaveProperty('agent');
   });
 });

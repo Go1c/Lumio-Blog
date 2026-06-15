@@ -78,6 +78,12 @@ export function publicLayout(o: PublicLayoutOpts): string {
   const imageUrl = o.image ? absoluteUrl(o.config.site.url, o.image) : null;
   const ogType = normalizePath(o.path) === '/' ? 'website' : 'article';
   const brand = o.config.site.title || 'Lumio';
+  const footerLinks = [
+    ...(o.config.features?.graph === false ? [] : [{ href: '/graph/index.html', label: '知识图谱' }]),
+    ...(o.config.features?.newsletter === false ? [] : [{ href: '/newsletter/index.html', label: 'Newsletter' }]),
+    { href: '/folders/index.html', label: '文件夹' },
+    { href: '/feed/', label: 'RSS' },
+  ];
 
   return `<!doctype html>
 <html lang="${escHtml(lang)}">
@@ -138,6 +144,9 @@ export function publicLayout(o: PublicLayoutOpts): string {
     <main id="main-content" class="ui-public__main" role="main">${o.body}</main>
     <footer class="ui-public__footer" role="contentinfo">
       <p>${escHtml(o.config.author.name)} · ${escHtml(o.config.site.title)}</p>
+      <nav aria-label="站点工具">
+        ${footerLinks.map((link) => `<a href="${link.href}">${link.label}</a>`).join('\n        ')}
+      </nav>
     </footer>
   </div>
   <script>

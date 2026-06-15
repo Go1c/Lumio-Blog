@@ -44,7 +44,7 @@ beforeEach(() => {
 
   db = new Database(':memory:');
   runMigrations(db);
-  // 手动应用 004 迁移(测试时,主 agent 还没集成到 migrate.ts)
+  // 手动应用 004 迁移(测试时,主入口还没集成到 migrate.ts)
   db.exec(`
     CREATE TABLE IF NOT EXISTS settings_changes (
       id        INTEGER PRIMARY KEY AUTOINCREMENT,

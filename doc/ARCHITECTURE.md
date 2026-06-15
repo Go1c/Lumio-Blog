@@ -14,7 +14,7 @@
 │  ┌──────────┐  ┌────────────┐  ┌────────────┐  ┌─────────────────┐   │
 │  │ ingest   │→ │ normalize  │→ │ render     │→ │ output          │   │
 │  │ FS watch │  │ frontmatter│  │ MD/Mermaid │  │ HTML / RSS /    │   │
-│  │ git diff │  │ validate   │  │ KaTeX/Code │  │ JSON Feed / OG  │   │
+│  │ git diff │  │ validate   │  │ KaTeX/Code │  │ OG images       │   │
 │  └──────────┘  └────────────┘  └────────────┘  └─────────────────┘   │
 │                       │                                              │
 │                       ▼                                              │
@@ -25,13 +25,13 @@
 │              └──────────────────┘         └───────────────────┘      │
 └────────────────┬─────────────────────────────────────────────────────┘
                  │
-   ┌─────────────┼──────────────────┬─────────────────┐
-   ▼             ▼                  ▼                 ▼
-┌────────┐  ┌──────────┐      ┌──────────┐      ┌─────────────┐
-│ 前台   │  │ 后台 SPA │      │ MCP      │      │ Webhook     │
-│ 静态站 │  │ /admin   │      │ server   │      │ outbound    │
-│ + RSS  │  │          │      │ (agent)  │      │             │
-└────────┘  └──────────┘      └──────────┘      └─────────────┘
+   ┌─────────────┼──────────────────┐
+   ▼             ▼                  ▼
+┌────────┐  ┌──────────┐      ┌─────────────┐
+│ 前台   │  │ 后台 SPA │      │ Webhook     │
+│ 静态站 │  │ /admin   │      │ outbound    │
+│ + RSS  │  │          │      │             │
+└────────┘  └──────────┘      └─────────────┘
 ```
 
 ## 数据模型
@@ -92,7 +92,7 @@ type Note = {
 5. **渲染** —— Markdown → HTML，含 Mermaid、KaTeX、代码高亮、内嵌引用
 6. **写索引** —— 更新 SQLite，含全文搜索（FTS5）
 7. **触发构建** —— 增量重建受影响的静态页面 + RSS + sitemap
-8. **发 webhook** —— `post.published` / `post.updated` 等事件
+8. **发 webhook** —— `note.published` / `note.updated` 等事件
 
 ## 前台
 
@@ -100,32 +100,34 @@ type Note = {
 
 - 路由：`/`, `/posts/:slug`, `/notes/:slug`, `/tags/:tag`, `/n/:short_id`（短链 302）
 - 主题切换：CSS variables + `prefers-color-scheme` + `localStorage`
-- 搜索：客户端用 `pagefind` 或调用 `/api/search`（如果开了）
-- 评论：Giscus（GitHub Discussions）或自托管
-- Newsletter：第三方（Buttondown / Listmonk）
+- 搜索：客户端调用 `/api/search`（如果开了）
+- 评论：Lumio 本地评论接口，公开提交默认待审，后台审核后展示
+- Newsletter：Buttondown bridge；未配置 Buttondown 时公开订阅落本地 subscribers 表
 
 ## 后台
 
-**SPA**（React），与前台分离。
+**SPA**（Preact + Vite），与前台分离。
 
-- 走 `/admin/*`，需登录（cookie + CSRF）
-- 实时反映 vault 内容（轮询 `/api/changes` 或 SSE）
-- 写操作：直接 patch 文件 frontmatter，重新触发同步
-- 不直接编辑 Markdown 正文（用 Obsidian 编辑），只编辑 meta
+- 走 `/admin` 静态入口，调用 `/api/admin/*`，需登录（cookie session 或 bearer admin token）
+- 实时反映 vault 内容（`/api/admin/changes` SSE）
+- 后台只写服务端索引里的运营元数据：可见性、可发现性、定时发布、短链、站点配置等；修改后触发同步 / 静态站重建
+- 不直接编辑 Markdown 正文，也不伪写 Obsidian frontmatter 标签或移动 vault 文件；正文、标签和目录归属仍以 Obsidian vault 为源头
 
 ## API 表面
 
 ```
-GET  /api/posts                  # 列表，可加 ?tag=&visibility=
-GET  /api/posts/:slug            # 单篇
-PATCH /api/posts/:slug/meta      # 改 frontmatter
-GET  /api/search?q=&type=        # 全文搜索
-POST /api/short-links            # 手动创建短链
-GET  /n/:short_id                # 302 到正经 URL
+GET   /api/posts                         # 公开文章列表
+GET   /api/posts/:slug                   # 单篇，过滤 private
+GET   /api/search?q=&type=               # 全文搜索
+GET   /n/:short_id                       # 短链 302
 
-# Agent 友好
-POST /mcp                        # MCP 协议
-GET  /api/changes  (SSE)         # 实时推送变更
+GET   /api/admin/notes                   # 后台笔记列表
+GET   /api/admin/notes/tree              # vault 目录树
+GET   /api/admin/notes/:slug             # 单篇 + backlinks/outlinks/tags
+PATCH /api/admin/notes/:slug/meta        # 改运营元数据，不改 Markdown/frontmatter 文件
+POST  /api/admin/notes/:slug/short-link  # 创建 / 旋转短链
+POST  /api/admin/sync                    # 手动触发同步
+GET   /api/admin/changes  (SSE)          # 后台实时推送变更
 ```
 
 ## 构建产物
@@ -133,10 +135,14 @@ GET  /api/changes  (SSE)         # 实时推送变更
 ```
 public/
 ├── index.html              # 首页
-├── posts/2025/...html      # 文章
-├── tags/.../index.html     # 标签页
-├── n/g7k2x.html            # 短链跳转页（meta refresh，便于爬虫）
-├── feed.xml / atom.xml / feed.json
+├── posts/<slug>.html       # 文章
+├── articles/index.html     # 文章列表
+├── columns/index.html      # 专栏列表
+├── tags/index.html         # 标签索引
+├── tags/<tag>.html         # 标签页
+├── folders/index.html      # vault 顶层目录索引
+├── folders/<folder>.html   # 目录归档页
+├── feed.xml / feed/index.html
 ├── sitemap.xml
 ├── og/<slug>.png           # 预生成的 OG 图
 └── static/...              # 用户上传 + 主题资源

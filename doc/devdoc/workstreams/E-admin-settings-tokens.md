@@ -1,6 +1,6 @@
 # WS-E — Admin 设置 / Tokens / Webhooks / Audit
 
-> **Owner**: ADM-B agent  **Duration**: 5-7 天  **Depends on**: WS-0, WS-G(settings API)
+> **Owner**: ADM-B  **Duration**: 5-7 天  **Depends on**: WS-0, WS-G(settings API)
 > **Touches**: `code/packages/web-admin/src/pages/`, 部分 `server/`(audit + webhook 重试)
 
 ## 范围
@@ -26,7 +26,7 @@
 ## Tokens 关键点
 
 按 §10:
-- 顶部:用法说明卡(read/write/admin scope 各能干什么)
+- 顶部:用法说明卡(admin token 能访问哪些后台 API)
 - 中间:列表(name / scope / 创建时间 / 最后使用 / 过期时间)
 - 行操作:撤销 / 复制 ID(注意:secret 创建后只显示一次)
 - 底部:新建表单(name + scope + ttl_days)

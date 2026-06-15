@@ -162,13 +162,19 @@ export function renderPost(data: PostData, config: SiteConfig): string {
               <span class="m">${eyeIcon()}${displayViews(note)} 阅读</span>
             </div>
 
-            <div class="post-hero">
+            ${
+              note.cover
+                ? `<div class="post-hero post-hero--cover">
+              <img class="post-hero__img" src="${esc(note.cover)}" alt="${esc(note.title)}" loading="eager" />
+            </div>`
+                : `<div class="post-hero">
               <div class="thumb__grid" aria-hidden="true"></div>
               <div class="post-hero__art" aria-hidden="true">
                 ${articleDesign?.art ?? ''}
                 <div class="cube c-mint float" style="--s:40px; left:58%; top:46%; animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
               </div>
-            </div>
+            </div>`
+            }
 
             ${postBody}
             ${commentsHtml}

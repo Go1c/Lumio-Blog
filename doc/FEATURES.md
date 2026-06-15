@@ -56,7 +56,7 @@
 ### 搜索（`search.png`）
 - 全文 + 标题 + frontmatter 字段
 - 关键词高亮
-- 类型筛选（文章 / 笔记 / 标签 / 媒体）
+- 类型筛选（文章 / 笔记）+ 标签筛选
 - 时间过滤
 - 自动联想（前缀 + 拼音）
 
@@ -65,18 +65,18 @@
 ## 互动
 
 ### 评论（`comments.png`）
-- Giscus（GitHub Discussions 后端）
-- 作者回复气泡高亮
-- Markdown + 代码块支持
+- Lumio 本地评论接口（公开提交默认进入待审）
+- 划词评论与评论卡高亮联动
+- 纯文本评论展示，审核通过后出现在文章页
 - features.yaml 一键关闭
 
 ### Newsletter（`newsletter.png`）
-- Buttondown / Listmonk 等第三方
-- Hero + 表单 + 往期回顾
+- Buttondown bridge；未配置 Buttondown 时订阅表单落本地 subscribers 表
+- Hero + 表单 + Buttondown 往期回顾
 - 也支持 RSS-only 模式（不要邮件就关掉）
 
-### RSS / Atom / JSON Feed（`rss.png`）
-- 三种 feed 同时输出
+### RSS Feed（`rss.png`）
+- 输出 `/feed.xml`，并提供 `/rss.xml` 兼容别名
 - 美化预览页（直接访问 `/feed.xml` 在浏览器打开会渲染成可读列表）
 
 ---
@@ -105,7 +105,7 @@
 ### 媒体库（`media.png`）
 - 网格 / 列表视图
 - 引用计数（哪些笔记用了这张图）
-- 选中状态栏（批量删除 / 移动）
+- 选中状态栏（复制 URL / 批量删除）
 - 拖拽上传
 
 ### Tokens / Webhook（`tokens.png`）
@@ -124,29 +124,24 @@
 - 作者（名 / 邮箱 / 头像 / 简介 / 社交）
 - 外观（主题 / accent 色 / 字体）
 - SEO（默认 OG / sitemap / robots）
-- Analytics 后端（Plausible / Umami / 自托管）
+- Analytics（内置 `/api/track` + 后台统计）
 
 ---
 
-## Agent / 自动化
+## CLI / 本地工作流
 
-### Blog CLI（`cli.png`）
+### OpenNote CLI（`cli.png`）
 ```bash
-blog new "标题"
-blog visibility note.md unlisted
-blog publish --schedule "2d"
-blog query "tag:游戏 AI && month:2025-04"
-blog stats note.md
-blog short-link list
+opennote init ./lumio-vault
+OPENNOTE_CONFIG=./config.yaml opennote sync
+OPENNOTE_PASSWORD=secret OPENNOTE_CONFIG=./config.yaml opennote serve
+opennote version
 ```
 
-### MCP server（同 `cli.png`）
-- 标准 MCP 协议，Claude / Cursor / Continue 直接接入
-- 工具暴露：`blog_search` / `blog_read` / `blog_write` / `blog_patch_meta`
-- 写权限可在 `features.yaml` 单独开关
+CLI 用于初始化示例目录、从 Obsidian vault 同步并启动本地预览；不提供直接编辑 vault 笔记的 CRUD 命令。
 
 ### Webhook
-- `post.published` / `post.updated` / `post.unpublished`
+- `note.published` / `note.updated` / `note.unpublished`
 - 用例：发 Discord / Telegram、触发其他 CI、增量重建子域名
 
 ---

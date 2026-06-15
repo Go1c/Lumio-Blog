@@ -54,4 +54,42 @@ describe('publicLayout SEO metadata', () => {
     expect(html).toContain('Lumio · Lumio Blog');
     expect(html).not.toContain('powered by opennote');
   });
+
+  it('links generated utility pages that are inside the current public scope', () => {
+    const html = publicLayout({
+      title: 'Lumio Blog',
+      description: 'Lumio notes',
+      config,
+      body: '<p>Hello</p>',
+      path: '/',
+    });
+
+    expect(html).toContain('href="/graph/index.html"');
+    expect(html).toContain('href="/newsletter/index.html"');
+    expect(html).toContain('href="/folders/index.html"');
+    expect(html).toContain('href="/feed/"');
+    expect(html).not.toContain('href="/cli/index.html"');
+  });
+
+  it('does not link optional utility pages when the feature is disabled', () => {
+    const html = publicLayout({
+      title: 'Lumio Blog',
+      description: 'Lumio notes',
+      config: {
+        ...config,
+        features: {
+          graph: false,
+          newsletter: false,
+        },
+      },
+      body: '<p>Hello</p>',
+      path: '/',
+    });
+
+    expect(html).not.toContain('href="/graph/index.html"');
+    expect(html).not.toContain('href="/newsletter/index.html"');
+    expect(html).toContain('href="/folders/index.html"');
+    expect(html).toContain('href="/feed/"');
+    expect(html).not.toContain('href="/cli/index.html"');
+  });
 });

@@ -7,6 +7,7 @@ import {
   type CommentCounts,
 } from '../api.js';
 import { WsEStyles } from '../components/ws-e-styles.js';
+import { requestAdminMenuCountsRefresh } from '../admin-events.js';
 
 const STATUS_TABS: { value: CommentStatus | 'all'; label: string }[] = [
   { value: 'pending', label: '待审' },
@@ -72,6 +73,7 @@ export function CommentsPage() {
     try {
       await api.comments.setStatus(id, status);
       await load();
+      requestAdminMenuCountsRefresh();
     } catch (e) {
       setError((e as Error).message);
     } finally {
@@ -85,6 +87,7 @@ export function CommentsPage() {
     try {
       await api.comments.delete(id);
       await load();
+      requestAdminMenuCountsRefresh();
     } catch (e) {
       setError((e as Error).message);
     } finally {

@@ -9,7 +9,7 @@ import { AuditLog } from '../audit.js';
 export interface CommentsDeps {
   db: Database;
   ipSalt?: string;
-  /** 新评论入库时的默认状态。不传 = 'approved'(无需审核直接公开)。 */
+  /** 新评论入库时的默认状态。不传 = 'pending'(先进入审核队列)。 */
   defaultStatus?: CommentStatus;
 }
 
@@ -98,7 +98,7 @@ export function register(app: Hono, deps: CommentsDeps): void {
       anchor,
       ip_hash: hashIp(ip, salt),
       ua: c.req.header('user-agent')?.slice(0, 256) ?? null,
-      status: deps.defaultStatus ?? 'approved',
+      status: deps.defaultStatus ?? 'pending',
     });
     return c.json({ ok: true, id: row.id, status: row.status });
   });

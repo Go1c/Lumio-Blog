@@ -19,7 +19,7 @@ function HFRssPage({ theme = 'light', onTheme }) {
               <HfIcon name="rss" size={20} color="#fff" />
             </div>
             <div>
-              <div className="hf-mono hf-tiny hf-muted" style={{ marginBottom: 2 }}>RSS · Atom · JSON Feed</div>
+              <div className="hf-mono hf-tiny hf-muted" style={{ marginBottom: 2 }}>RSS 2.0</div>
               <h1 style={{ fontSize: 30, fontWeight: 800, margin: 0, letterSpacing: '-0.01em' }}>用 RSS 订阅</h1>
             </div>
           </div>
@@ -31,11 +31,6 @@ function HFRssPage({ theme = 'light', onTheme }) {
           <div className="hf-mono hf-tiny" style={{ color: 'var(--ink-4)', textTransform: 'uppercase', marginBottom: 8, letterSpacing: '.05em' }}>▸ Feed URL</div>
           {[
             ['全部文章', '/feed.xml', 'RSS 2.0', '默认推荐'],
-            ['全部文章', '/atom.xml', 'Atom 1.0'],
-            ['全部文章', '/feed.json', 'JSON Feed'],
-            ['仅 #游戏 AI', '/tags/game-ai/feed.xml', 'RSS 2.0'],
-            ['仅 #渲染', '/tags/rendering/feed.xml', 'RSS 2.0'],
-            ['仅笔记 (不含文章)', '/notes/feed.xml', 'RSS 2.0'],
           ].map(([n, url, fmt, rec], i) => (
             <div key={i} className="hf-card" style={{
               padding: 12, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 12,

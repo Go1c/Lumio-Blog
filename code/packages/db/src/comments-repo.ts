@@ -35,7 +35,7 @@ export interface CommentInsert {
   anchor?: CommentAnchor | null;
   ip_hash?: string | null;
   ua?: string | null;
-  /** 默认 'approved'(配置可改);保留 'pending' 用于触发审核 */
+  /** 默认 'pending';公开提交需审核通过后才会显示。 */
   status?: CommentStatus;
 }
 
@@ -60,7 +60,7 @@ export class CommentsRepo {
 
   insert(c: CommentInsert): CommentRow {
     const now = new Date().toISOString();
-    const status = c.status ?? 'approved';
+    const status = c.status ?? 'pending';
     const anchorJson = c.anchor ? JSON.stringify(c.anchor) : null;
     const r = this.db
       .prepare(

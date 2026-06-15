@@ -16,7 +16,7 @@ function AdminShell({ active, breadcrumb, children, theme }) {
   const items2 = [
     { id: '同步状态', icon: 'sync' },
     { id: 'Vaults', icon: 'folder' },
-    { id: 'MCP 配置', icon: 'cmd' },
+    { id: 'Webhook', icon: 'cmd' },
   ];
   const items3 = [
     { id: '设置', icon: 'settings' },

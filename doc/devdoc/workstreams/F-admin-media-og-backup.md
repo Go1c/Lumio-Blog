@@ -1,6 +1,6 @@
 # WS-F — Admin 媒体库 / OG 生成器 / 备份
 
-> **Owner**: ADM-C agent  **Duration**: 7-10 天  **Depends on**: WS-0, WS-G(media/og/backup APIs)
+> **Owner**: ADM-C  **Duration**: 7-10 天  **Depends on**: WS-0, WS-G(media/og/backup APIs)
 > **Touches**: `code/packages/web-admin/src/pages/`, 客户端依赖 server APIs
 
 ## 范围
@@ -17,7 +17,7 @@
 - 主区:网格 vs 列表切换
 - 网格:160×160 格子,显示缩略图 + 文件名 + 引用数
 - 列表:表格(文件名 / 大小 / 类型 / 上传时间 / 引用数)
-- 选中状态栏(底部):批量操作(删除 / 复制 URL / 移到目录)
+- 选中状态栏(底部):批量操作(复制 URL / 删除)
 - 拖拽上传区(整页 drag-over 时显示)
 - 详情侧栏:大图预览 / EXIF / 引用列表(哪些笔记用了)
 - a11y:每张图必须 alt(从文件名生成,可编辑)
@@ -33,14 +33,10 @@
 ## 备份 / 导出 §11
 
 - 顶部:最近备份卡(成功/失败、大小、时间、下载)
-- 中间:三种导出按钮
-  - 完整 vault zip
-  - SQLite 数据库 dump
-  - 单 markdown bundle(选时间段)
+- 中间:完整 vault zip 导出按钮
 - 进度条(SSE 订阅 `backup.started/done/failed`)
 - 历史列表(最近 10 个备份)
-- 危险区:清空 + 重置(双确认 + typed slug 验证)
-- 设置:自动备份频率(off / daily / weekly)
+- 当前不暴露未接后端的分类型导出、定时备份、清空 / 重置 / 删除整站按钮；这些不在本轮范围
 
 ## 数据需求
 
@@ -54,7 +50,7 @@ WS-G 提供:
 - [ ] 媒体库:上传 / 删除 / 复制 URL / 引用数显示正确
 - [ ] OG 生成:4 模板都能预览,生成 PNG 与设计稿一致
 - [ ] 备份:小型 vault 备份在 60s 内完成,下载链接有效
-- [ ] 危险区操作必须双确认 + typed slug
+- [ ] 页面不暴露未接后端的分类型导出、定时备份或破坏性操作
 
 ## 文件清单
 

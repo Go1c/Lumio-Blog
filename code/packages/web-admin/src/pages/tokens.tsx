@@ -6,27 +6,15 @@ import { WsEStyles } from '../components/ws-e-styles.js';
  * Tokens 页 — 重写,对齐 hf-extras §10 HFApiTokens。
  *
  * 结构:
- * 1. 顶部:用法说明卡(read / write / admin scope 各能干什么)
+ * 1. 顶部:用法说明卡(admin scope 的用途)
  * 2. 中间:列表(name / scope / created / last_used / expires)+ 行操作(撤销 / 复制 ID)
  * 3. 底部:新建表单(name + scope + ttl_days)
  * 4. 创建后:模态显示完整 token,有"我已复制"按钮才能关闭
  */
 
-type Scope = 'read' | 'write' | 'admin';
+type Scope = 'admin';
 
 const SCOPE_DOCS: { scope: Scope; label: string; tone: 'ink' | 'accent' | 'warn'; bullets: string[] }[] = [
-  {
-    scope: 'read',
-    label: 'read',
-    tone: 'ink',
-    bullets: ['只读笔记 / 标签 / 搜索', '不能修改任何内容'],
-  },
-  {
-    scope: 'write',
-    label: 'write',
-    tone: 'accent',
-    bullets: ['同步 / 修改笔记元数据', 'fast-note-sync 用这个', '不能管理 token / webhook'],
-  },
   {
     scope: 'admin',
     label: 'admin',
@@ -60,7 +48,7 @@ function expiresLabel(iso: string | null): { text: string; tone: 'muted' | 'warn
 export function TokensPage() {
   const [tokens, setTokens] = useState<TokenRow[] | null>(null);
   const [name, setName] = useState('');
-  const [scope, setScope] = useState<Scope>('write');
+  const [scope] = useState<Scope>('admin');
   const [ttlDays, setTtlDays] = useState<number>(90);
   const [created, setCreated] = useState<string | null>(null);
   const [copied, setCopied] = useState(false);
@@ -120,7 +108,7 @@ export function TokensPage() {
       <div class="ws-e__header">
         <h1 class="ws-e__h1"><span aria-hidden="true">🔑 </span>API tokens</h1>
         <p class="ws-e__lead">
-          外部脚本(<code>fast-note-sync</code>、CI、Agent)通过 token 访问后台 API。
+          CI 和受信任的运维脚本通过 admin token 访问后台 API。
           <strong>令牌只显示一次</strong>,建议存到密码管理器。
         </p>
       </div>
@@ -231,10 +219,8 @@ export function TokensPage() {
             <select
               id="token-scope"
               value={scope}
-              onChange={(e) => setScope((e.target as HTMLSelectElement).value as Scope)}
+              disabled
             >
-              <option value="read">read</option>
-              <option value="write">write</option>
               <option value="admin">admin</option>
             </select>
           </div>

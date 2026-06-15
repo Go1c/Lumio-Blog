@@ -31,9 +31,8 @@ export function register(app: Hono, deps: NewsletterRouteDeps = {}): void {
   app.post('/api/newsletter/subscribe', async (c) => {
     const key = deps.apiKey ?? process.env.BUTTONDOWN_API_KEY;
 
-    // 解析 email(本地 fallback / Buttondown 都要用)
-    const body = (await c.req.json<{ email?: string }>().catch(() => ({}))) as { email?: string };
-    const email = body.email?.trim();
+    // 解析 email(本地 fallback / Buttondown 都要用)。前台 JS 发 JSON;无 JS 表单发 x-www-form-urlencoded。
+    const email = (await readSubscribeEmail(c)).trim();
     if (!email || !/.+@.+\..+/.test(email)) {
       return c.json({ error: { code: 'validation_failed', field: 'email' } }, 400);
     }
@@ -114,6 +113,21 @@ export function register(app: Hono, deps: NewsletterRouteDeps = {}): void {
       );
     }
   });
+}
+
+async function readSubscribeEmail(c: Context): Promise<string> {
+  const contentType = c.req.header('content-type') ?? '';
+  if (/application\/json/i.test(contentType)) {
+    const body = (await c.req.json<{ email?: string }>().catch(() => ({}))) as { email?: string };
+    return body.email ?? '';
+  }
+  try {
+    const form = await c.req.formData();
+    const value = form.get('email');
+    return typeof value === 'string' ? value : '';
+  } catch {
+    return '';
+  }
 }
 
 interface ButtondownEmail {

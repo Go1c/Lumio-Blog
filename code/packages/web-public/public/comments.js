@@ -3,8 +3,7 @@
  * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
  * - 高亮 ↔ 评论卡通过 anchor.mid 关联(高亮 mid 走服务端 anchor JSON,引用文本可用于刷新后回锚)
  * - 评论支持 parent_id 楼中楼回复
- * - 评论本身走真后端:GET 拉 approved 列表,POST 默认直接 approved(后端可配为 pending)
- * - 如果配了 giscusRepo,作为兼容路径加载 giscus(可选);否则只用本地后端
+ * - 评论本身走真后端:GET 拉 approved 列表,POST 默认进入 pending 队列等审核
  */
 (function () {
   'use strict';
@@ -23,7 +22,6 @@
   var loginLink = document.getElementById('wsb-comments-login');
 
   var slug = root.getAttribute('data-slug') || location.pathname.replace(/^\/posts\/|\.html$/g, '');
-  var giscusRepo = root.getAttribute('data-giscus-repo') || '';
   var apiBase = '/api/posts/' + encodeURIComponent(slug) + '/comments';
 
   var HL_STORAGE_KEY = 'wsb-comments-hl:' + slug;
@@ -47,26 +45,7 @@
     }
   } catch (e) { /* ignore */ }
 
-  // ---- giscus.js (可选) ----
-  if (giscusRepo) {
-    var s = document.createElement('script');
-    s.src = 'https://giscus.app/client.js';
-    s.async = true; s.defer = true; s.crossOrigin = 'anonymous';
-    s.setAttribute('data-repo', giscusRepo);
-    s.setAttribute('data-repo-id', root.getAttribute('data-giscus-repo-id') || '');
-    s.setAttribute('data-category', root.getAttribute('data-giscus-category') || 'Comments');
-    s.setAttribute('data-category-id', root.getAttribute('data-giscus-category-id') || '');
-    s.setAttribute('data-mapping', root.getAttribute('data-giscus-mapping') || 'pathname');
-    s.setAttribute('data-emit-metadata', '1');
-    s.setAttribute('data-input-position', 'bottom');
-    s.setAttribute('data-theme', 'preferred_color_scheme');
-    s.setAttribute('data-loading', 'lazy');
-    var hidden = document.createElement('div');
-    hidden.style.display = 'none';
-    hidden.appendChild(s);
-    root.appendChild(hidden);
-    if (loginLink) loginLink.href = 'https://github.com/' + giscusRepo + '/discussions';
-  } else if (loginLink) {
+  if (loginLink) {
     loginLink.textContent = '以匿名身份留言';
     loginLink.removeAttribute('href');
     loginLink.setAttribute('aria-disabled', 'true');
@@ -207,11 +186,11 @@
     if (!visible.length) {
       listEl.innerHTML = '';
       if (emptyEl) emptyEl.hidden = false;
-      if (countEl && !giscusRepo) countEl.textContent = '0';
+      if (countEl) countEl.textContent = '0';
       return;
     }
     if (emptyEl) emptyEl.hidden = true;
-    if (countEl && !giscusRepo) countEl.textContent = String(visible.filter(function (c) { return c.status !== 'pending'; }).length);
+    if (countEl) countEl.textContent = String(visible.filter(function (c) { return c.status !== 'pending'; }).length);
 
     // 按 parent_id 分组成树
     var byParent = {};

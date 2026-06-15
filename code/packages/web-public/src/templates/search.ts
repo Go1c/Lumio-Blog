@@ -17,6 +17,9 @@ export interface SearchTemplateData {
 export function renderSearch(config: SiteConfig, data: SearchTemplateData = {}): string {
   const hotTags = buildHotTags(data.byTag);
   const suggestions = buildSuggestions(hotTags, data.posts);
+  const tagOptions = hotTags.length
+    ? hotTags.map((tag) => `<option value="${esc(tag.name)}">${esc(tag.name)}</option>`).join('')
+    : '';
   const suggestionHtml = suggestions.length
     ? suggestions.map((item) => `
                   <a class="suggest__item" href="/search/index.html?q=${esc(encodeURIComponent(item))}">
@@ -44,6 +47,43 @@ export function renderSearch(config: SiteConfig, data: SearchTemplateData = {}):
             </div>
           </div>
           <aside>
+            <form class="side-card wsb-search__filters" data-search-filters aria-label="搜索筛选">
+              <div class="side-card__title">筛选</div>
+
+              <fieldset class="wsb-search__facet">
+                <legend class="wsb-search__facet-h">类型</legend>
+                <div class="wsb-search__facet-list">
+                  ${renderTypeFilter('', '全部')}
+                  ${renderTypeFilter('post', '文章')}
+                  ${renderTypeFilter('note', '笔记')}
+                </div>
+              </fieldset>
+
+              <fieldset class="wsb-search__facet">
+                <legend class="wsb-search__facet-h">时间</legend>
+                <label class="wsb-search__field">
+                  <span>从</span>
+                  <input type="date" data-filter-from>
+                </label>
+                <label class="wsb-search__field">
+                  <span>到</span>
+                  <input type="date" data-filter-to>
+                </label>
+              </fieldset>
+
+              <label class="wsb-search__facet">
+                <span class="wsb-search__facet-h">标签</span>
+                <select class="wsb-search__select" data-filter-tags ${hotTags.length ? '' : 'disabled'}>
+                  <option value="">全部标签</option>
+                  ${tagOptions}
+                </select>
+              </label>
+
+              <div class="wsb-search__filter-actions">
+                <button type="button" class="ui-btn ui-btn--sm" data-filter-clear>清除筛选</button>
+              </div>
+            </form>
+
             <div class="side-card">
               <div class="side-card__title">搜索建议</div>
               <div class="suggest">
@@ -73,6 +113,13 @@ export function renderSearch(config: SiteConfig, data: SearchTemplateData = {}):
 
 function searchIcon(): string {
   return '<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>';
+}
+
+function renderTypeFilter(value: string, label: string): string {
+  return `<label class="wsb-search__facet-item">
+    <input type="radio" name="type" value="${esc(value)}" ${value ? '' : 'checked'}>
+    <span>${esc(label)}</span>
+  </label>`;
 }
 
 function buildHotTags(byTag?: Map<string, NoteRow[]>): Array<{ name: string; count: number }> {

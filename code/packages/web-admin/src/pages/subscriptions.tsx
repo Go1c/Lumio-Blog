@@ -93,8 +93,8 @@ export function SubscriptionsPage() {
       <div class="ws-e__header">
         <h1 class="ws-e__h1"><span aria-hidden="true">📬 </span>订阅</h1>
         <p class="ws-e__lead">
-          站点订阅者(本地存储)。公开提交端点是 <code>POST /api/subscribe</code>。
-          如果配置了 <code>BUTTONDOWN_API_KEY</code>,推荐站点改用 <code>/api/newsletter/subscribe</code> 由 Buttondown 接管。
+          站点订阅者(本地存储)。公开 Newsletter 表单提交到 <code>POST /api/newsletter/subscribe</code>；
+          如果配置了 <code>BUTTONDOWN_API_KEY</code> 会由 Buttondown 接管,否则自动落到本地订阅表。
         </p>
       </div>
 

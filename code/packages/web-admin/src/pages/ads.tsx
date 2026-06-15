@@ -4,9 +4,17 @@ import { useEffect, useMemo, useState } from 'preact/hooks';
 import { HfIcon, Tag, Toggle } from '@opennote/ui';
 import { api } from '../api.js';
 import { WsEStyles } from '../components/ws-e-styles.js';
+import { requestAdminMenuCountsRefresh } from '../admin-events.js';
 
-type AdSlot = 'home' | 'article' | 'column';
+export type AdSlot = 'home' | 'article' | 'column';
 type AdTone = NonNullable<HfAdSettings['tone']>;
+
+export interface AdsSummary {
+  total: number;
+  active: number;
+  homeActive: number;
+  clicks: number;
+}
 
 const SLOTS: Record<AdSlot, { label: string; short: string; size: string; hint: string }> = {
   home: {
@@ -39,92 +47,6 @@ const TONES: Record<AdTone, { label: string; cls: string; sw: string }> = {
 };
 
 const TONE_KEYS = Object.keys(TONES) as AdTone[];
-
-const DEFAULT_ADS: HfAdSettings[] = [
-  {
-    id: 'home-unity6',
-    name: 'Unity 6 性能套件',
-    enabled: true,
-    variant: 'native',
-    slot: 'home',
-    tone: 'blue',
-    title: 'Unity 6 性能套件',
-    body: '一键剖析 Draw Call 与 Overdraw,渲染优化提速 40%',
-    cta_label: '立即试用',
-    cta_href: 'https://example.com/unity6',
-    impressions: 18420,
-    clicks: 728,
-  },
-  {
-    id: 'home-renderx',
-    name: '云渲染农场 RenderX',
-    enabled: true,
-    variant: 'native',
-    slot: 'home',
-    tone: 'violet',
-    title: '云渲染农场 RenderX',
-    body: '按帧计费的分布式渲染,出图速度快 10 倍',
-    cta_label: '领取额度',
-    cta_href: 'https://renderx.dev',
-    impressions: 12600,
-    clicks: 512,
-  },
-  {
-    id: 'home-gameconf',
-    name: 'GameConf 2026 大会',
-    enabled: true,
-    variant: 'native',
-    slot: 'home',
-    tone: 'mint',
-    title: 'GameConf 2026',
-    body: '年度游戏技术大会,早鸟票 6 折,限时开售',
-    cta_label: '购票',
-    cta_href: 'https://gameconf.io',
-    impressions: 9800,
-    clicks: 430,
-  },
-  {
-    id: 'article-shader',
-    name: '侧边栏方图',
-    enabled: true,
-    variant: 'native',
-    slot: 'article',
-    tone: 'amber',
-    title: 'Shader 训练营',
-    body: '4 周从入门到实战',
-    cta_label: '报名',
-    cta_href: 'https://partner.io/x',
-    impressions: 9260,
-    clicks: 214,
-  },
-  {
-    id: 'article-hiring',
-    name: '文末推广位',
-    enabled: false,
-    variant: 'native',
-    slot: 'article',
-    tone: 'rose',
-    title: '招聘:图形工程师',
-    body: '远程可选,期权丰厚',
-    cta_label: '投递',
-    impressions: 5140,
-    clicks: 116,
-  },
-  {
-    id: 'column-agent',
-    name: '专栏页 Banner',
-    enabled: true,
-    variant: 'native',
-    slot: 'column',
-    tone: 'sky',
-    title: 'AI Agent 开发平台',
-    body: '托管你的多智能体工作流',
-    cta_label: '免费开始',
-    cta_href: 'https://sponsor.dev/ad',
-    impressions: 7300,
-    clicks: 181,
-  },
-];
 
 export const ADS_PAGE_STYLE = `
 .ads-page { min-width: 0; }
@@ -424,13 +346,8 @@ export function AdsPage(): JSX.Element {
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, []);
 
-  const summary = useMemo(() => {
-    const list = ads ?? [];
-    const active = list.filter((ad) => ad.enabled !== false).length;
-    const homeActive = list.filter((ad) => (ad.slot ?? 'home') === 'home' && ad.enabled !== false).length;
-    const clicks = list.reduce((sum, ad) => sum + (ad.clicks ?? 0), 0);
-    return { total: list.length, active, homeActive, clicks };
-  }, [ads]);
+  const summary = useMemo(() => summarizeAds(ads ?? []), [ads]);
+  const grouped = useMemo(() => groupAdsBySlot(ads ?? []), [ads]);
 
   const pushToast = (msg: string) => {
     setToast(msg);
@@ -497,6 +414,7 @@ export function AdsPage(): JSX.Element {
       const home = fresh.home ?? {};
       setLoadedHome(home);
       setAds(readAds(home));
+      requestAdminMenuCountsRefresh();
       pushToast('广告配置已保存');
     } catch (e) {
       setError(e instanceof Error ? e.message : String(e));
@@ -539,7 +457,7 @@ export function AdsPage(): JSX.Element {
       </div>
 
       {(Object.keys(SLOTS) as AdSlot[]).map((slot) => {
-        const slotAds = ads.filter((ad) => (ad.slot ?? 'home') === slot);
+        const slotAds = grouped[slot];
         const active = slotAds.filter((ad) => ad.enabled !== false).length;
         return (
           <section class="ads-page__slot" key={slot}>
@@ -763,10 +681,32 @@ function Field({ label, id, children }: { label: string; id: string; children: J
   );
 }
 
-function readAds(home: NonNullable<Awaited<ReturnType<typeof api.settings.get>>['home']>): HfAdSettings[] {
+export function readAds(home: NonNullable<Awaited<ReturnType<typeof api.settings.get>>['home']>): HfAdSettings[] {
   if (Array.isArray(home.ads) && home.ads.length > 0) return home.ads.map(normalizeAd);
   if (home.ad?.enabled) return [normalizeAd({ ...home.ad, id: 'legacy-home-ad', slot: 'home', tone: home.ad.tone ?? 'blue' })];
-  return DEFAULT_ADS.map(normalizeAd);
+  return [];
+}
+
+export function groupAdsBySlot(ads: HfAdSettings[]): Record<AdSlot, HfAdSettings[]> {
+  const grouped: Record<AdSlot, HfAdSettings[]> = {
+    home: [],
+    article: [],
+    column: [],
+  };
+  for (const ad of ads) {
+    const slot = (ad.slot ?? 'home') as AdSlot;
+    grouped[slot]?.push(ad);
+  }
+  return grouped;
+}
+
+export function summarizeAds(ads: HfAdSettings[]): AdsSummary {
+  return {
+    total: ads.length,
+    active: ads.filter((ad) => ad.enabled !== false).length,
+    homeActive: ads.filter((ad) => (ad.slot ?? 'home') === 'home' && ad.enabled !== false).length,
+    clicks: ads.reduce((sum, ad) => sum + (ad.clicks ?? 0), 0),
+  };
 }
 
 function normalizeAd(ad: HfAdSettings): HfAdSettings {

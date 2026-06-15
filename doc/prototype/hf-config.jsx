@@ -228,17 +228,12 @@ function HFConfigDocs({ theme = 'light', onTheme }) {
               {'  '}<K>enabled</K>: <B>true</B>{'             '}<C># 知识关系图</C>{'\n'}
               {'  '}<K>include_orphans</K>: <B>true</B>{'\n'}
               {'\n'}
-              <Sec>cli:</Sec>{'\n'}
-              {'  '}<K>mcp_enabled</K>: <B>true</B>{'         '}<C># 暴露 MCP server，给 agent 调用</C>{'\n'}
-              {'  '}<K>mcp_tools</K>:{'\n'}
-              {'    - '}<S>blog_search</S>{'\n'}
-              {'    - '}<S>blog_read</S>{'\n'}
-              {'    - '}<S>blog_write</S>{'             '}<C># 写权限谨慎开</C>{'\n'}
-              {'    - '}<S>blog_patch_meta</S>{'\n'}
+              <Sec>workflow:</Sec>{'\n'}
+              {'  '}<K>cli_enabled</K>: <B>true</B>{'         '}<C># 本地 CLI / 预览入口</C>{'\n'}
               {'\n'}
               <Sec>webhooks:</Sec>{'\n'}
-              {'    - { '}<K>event</K>: <S>"post.published"</S>, <K>url</K>: <S>"https://hooks..."</S> }{'\n'}
-              {'    - { '}<K>event</K>: <S>"post.updated"</S>,   <K>url</K>: <S>"https://discord..."</S> }{'\n'}
+              {'    - { '}<K>event</K>: <S>"note.published"</S>, <K>url</K>: <S>"https://hooks..."</S> }{'\n'}
+              {'    - { '}<K>event</K>: <S>"note.updated"</S>,   <K>url</K>: <S>"https://discord..."</S> }{'\n'}
             </>)}
 
             {/* ============ .env ============ */}

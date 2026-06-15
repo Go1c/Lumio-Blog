@@ -59,7 +59,7 @@ function fnsConfigPath(): string {
 export async function loadFeaturesYaml(path = featuresPath()): Promise<Features> {
   if (!existsSync(path)) return defaultFeatures();
   const raw = await readFile(path, 'utf-8');
-  const data = parseYaml(raw) ?? {};
+  const data = normalizeLegacyFeatureGroups(parseYaml(raw) ?? {});
   // 浅合并 default 以便部分缺失字段时不崩
   const merged = mergeWithDefaults(data, defaultFeatures());
   const parsed = featuresSchema.safeParse(merged);
@@ -153,6 +153,13 @@ function mergeWithDefaults<T>(value: unknown, def: T): T {
   return out as T;
 }
 
+function normalizeLegacyFeatureGroups(value: unknown): unknown {
+  if (!value || typeof value !== 'object' || Array.isArray(value)) return value;
+  const input = value as Record<string, unknown>;
+  if ('workflow' in input || !('agent' in input)) return input;
+  return { ...input, workflow: input.agent };
+}
+
 // ---------------- 审计 settings_changes ----------------
 function writeSettingsChange(deps: RouteDeps, actor: string, sections: SettingsSection[], diff: unknown): void {
   try {
@@ -162,7 +169,7 @@ function writeSettingsChange(deps: RouteDeps, actor: string, sections: SettingsS
       )
       .run(new Date().toISOString(), actor, sections.join(','), JSON.stringify(diff));
   } catch (e) {
-    // 表可能未迁移上(主 agent 还没集成 migration); 不阻塞主流程
+    // 表可能未迁移上(主入口还没集成 migration); 不阻塞主流程
     console.error('[settings] settings_changes insert failed', e);
   }
 }

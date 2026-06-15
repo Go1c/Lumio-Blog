@@ -1,6 +1,6 @@
 # WS-C — Public RSS 阅读页 + 移动端
 
-> **Owner**: FE-C agent  **Duration**: 4-6 天  **Depends on**: WS-0  **Touches**: `code/packages/web-public/`
+> **Owner**: FE-C  **Duration**: 4-6 天  **Depends on**: WS-0  **Touches**: `code/packages/web-public/`
 
 ## 目标
 
@@ -20,8 +20,7 @@
 ### RSS 美化页
 
 - 直接访问 `/feed.xml` 浏览器渲染会出 raw XML — 加 `<?xml-stylesheet href="/feed.xsl"?>` 让浏览器用 XSL 渲染成可读列表
-- 或者:做一个 `/feed/` HTML 页面,提供 RSS / Atom / JSON Feed 三种链接 + 每种的简短解释 + 客户端订阅工具(Feedly / Inoreader 等)按钮
-- 设计稿 §7 是后者,本 WS 实现 `/feed/` 页面
+- 另提供 `/feed/` HTML 页面,展示当前真实可用的 RSS 订阅链接和客户端订阅工具(Feedly / Inoreader 等)按钮
 
 ### 移动端响应式
 
@@ -49,7 +48,7 @@
 
 - [ ] 移动端 375px / 414px 下,home / article / tag 全部不溢出、不水平滚动
 - [ ] 浮动操作 pill 在文章页底部正确显示
-- [ ] `/feed/` 页面可访问,提供三种 feed 链接 + 客户端订阅按钮
+- [ ] `/feed/` 页面可访问,提供 RSS 链接 + 客户端订阅按钮
 - [ ] 直接访问 `/feed.xml` 在 Safari/Chrome 显示美化版(XSL / 备选 HTML 重定向)
 - [ ] axe-core 全过
 

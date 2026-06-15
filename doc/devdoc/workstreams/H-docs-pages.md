@@ -5,24 +5,15 @@
 
 ## 目标
 
-把 hf-cli / hf-config 的"配置即文档"理念落实到产品。
+把 hf-config 的"配置即文档"理念落实到后台产品。公开 CLI 文档已按当前收口范围下线,不再作为本轮交付项。
 
 ## 范围
 
 | 页面 | 设计稿 | 实现 |
 |---|---|---|
-| Blog CLI 文档(后台 + 公开) | `hf-cli.jsx HFBlogCli` | `web-public/src/templates/cli-docs.ts` 或 admin 内嵌 |
 | Config 文档(后台直接展示) | `hf-config.jsx HFConfigDocs` | `web-admin/src/pages/config-docs.tsx`,4-tab 切换 |
 
 ## 关键点
-
-### CLI docs 页
-
-- 复刻 hf-cli.jsx 的 4 个 section:
-  - Quick start(install + first command)
-  - 完整命令表(`blog new` / `blog visibility` / `blog publish` / `blog query` / `blog stats` / `blog short-link`)
-  - MCP server 接入(暴露的 tools 列表)
-  - 实战示例(几个 agent prompt)
 
 ### Config docs 页
 
@@ -41,12 +32,11 @@
 
 ## 验收
 
-- [ ] 视觉对齐 hf-cli / hf-config
+- [ ] 视觉对齐 hf-config
 - [ ] 配置示例 1:1 与 doc/CONFIGURATION.md 一致(用 build script 检查)
 
 ## 文件清单
 
 ```
-code/packages/web-public/src/templates/cli-docs.ts        (新)
 code/packages/web-admin/src/pages/config-docs.tsx          (新)
 ```

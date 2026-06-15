@@ -25,10 +25,8 @@ const settings: AdminSettings = {
       webhooks: true,
       og_generator: true,
     },
-    agent: {
+    workflow: {
       cli_enabled: true,
-      mcp_enabled: true,
-      mcp_tools: [],
     },
     webhooks: [],
   },

@@ -1,6 +1,6 @@
 # WS-B — Public 交互(搜索/图谱/评论/订阅)
 
-> **Owner**: FE-B agent  **Duration**: 7-10 天  **Depends on**: WS-0, WS-G(search / graph)  **Touches**: `code/packages/web-public/`, 部分 `server/`
+> **Owner**: FE-B  **Duration**: 7-10 天  **Depends on**: WS-0, WS-G(search / graph)  **Touches**: `code/packages/web-public/`, 部分 `server/`
 
 ## 目标
 
@@ -40,14 +40,14 @@
 - 选中文本浮 bubble:复制 / 高亮 / 评论
 - 高亮的句子 ↔ 右侧评论卡通过 `data-mid` 关联
 - 评论 hover 时左侧高亮变 active
-- 后端走 Giscus(GitHub Discussions API)— 客户端 JS 引入 giscus.js,但 UI 用我们自己的设计稿,不用 giscus 的默认样式
+- 后端走 Lumio 本地评论接口:`GET/POST /api/posts/:slug/comments`,公开提交默认进入待审队列
 - 如果 `features.comments=false`,整块不渲染
 
 ### Newsletter
 
 - Hero + 表单(submit 到 `/api/newsletter/subscribe`)+ 往期回顾(`GET /api/newsletter/recent`)
 - 表单:`<input type="email" required>` + `<label>`,错误提示 `aria-live`
-- 第三方桥(Buttondown / Listmonk)在 server 实现,本 WS 只 fetch
+- Buttondown bridge 在 server 实现;未配置 Buttondown 时订阅提交落本地 subscribers 表
 
 ## 数据需求
 

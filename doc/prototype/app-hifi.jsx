@@ -83,16 +83,16 @@ function App() {
           <DCArtboard id="tokens" label="后台 · API tokens / Webhook" width={1280} height={820}>
             <HFApiTokens theme={theme} />
           </DCArtboard>
-          <DCArtboard id="cli" label="Blog CLI — Agent 友好的命令行 + MCP" width={1280} height={820}>
+          <DCArtboard id="cli" label="OpenNote CLI — 本地同步与预览命令行" width={1280} height={820}>
             <HFBlogCli theme={theme} onTheme={onTheme} />
           </DCArtboard>
           <DCArtboard id="settings" label="后台 · 设置 (站点/作者/外观/SEO/社交)" width={1280} height={820}>
             <HFSettings theme={theme} />
           </DCArtboard>
-          <DCArtboard id="about" label="前台 · 关于 / Now / Contact" width={1280} height={820}>
+          <DCArtboard id="about" label="前台 · 关于 / Contact" width={1280} height={820}>
             <HFAbout theme={theme} onTheme={onTheme} />
           </DCArtboard>
-          <DCArtboard id="rss" label="前台 · RSS / Atom / JSON Feed 美化预览" width={1280} height={820}>
+          <DCArtboard id="rss" label="前台 · RSS Feed 美化预览" width={1280} height={820}>
             <HFRssPage theme={theme} onTheme={onTheme} />
           </DCArtboard>
           <DCArtboard id="og" label="后台 · OG 图生成器 (4 模板 + 社交预览)" width={1280} height={820}>

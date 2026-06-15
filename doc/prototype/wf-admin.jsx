@@ -307,7 +307,7 @@ function AdminC() {
           <div className="col gap-4">
             <div style={{ color: '#c8c2b4' }}>同步状态</div>
             <div style={{ color: '#c8c2b4' }}>vaults</div>
-            <div style={{ color: '#c8c2b4' }}>MCP 配置</div>
+            <div style={{ color: '#c8c2b4' }}>Webhook</div>
           </div>
           <div className="h-arch b" style={{ fontSize: 11, color: '#7a766c', marginTop: 16, marginBottom: 6 }}>▸ SYS</div>
           <div className="col gap-4">

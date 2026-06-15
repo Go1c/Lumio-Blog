@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { readFileSync } from 'node:fs';
 import type { AdminSettings } from '@opennote/core';
 import { pickPatch, validateSection } from './settings.js';
 
@@ -26,10 +27,8 @@ function baseSettings(fns: NonNullable<AdminSettings['fns']>): AdminSettings {
         webhooks: true,
         og_generator: true,
       },
-      agent: {
+      workflow: {
         cli_enabled: true,
-        mcp_enabled: true,
-        mcp_tools: [],
       },
       webhooks: [],
     },
@@ -61,5 +60,15 @@ describe('settings FNS token form helpers', () => {
     });
 
     expect(pickPatch('fns', draft).fns).toMatchObject({ token: 'new-token' });
+  });
+});
+
+describe('settings product copy', () => {
+  it('does not expose the removed Blog CLI surface in admin settings copy', () => {
+    const source = readFileSync(new URL('./settings.tsx', import.meta.url), 'utf-8');
+
+    expect(source).toContain('本地预览 / 同步配置');
+    expect(source).not.toContain('CLI / 本地预览');
+    expect(source).not.toContain('CLI 用 wss://');
   });
 });

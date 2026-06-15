@@ -1,7 +1,7 @@
 /**
  * NoteRepo 测试 — 重点覆盖 WS-G2 新增的 searchFTS / searchSuggest / getGraph。
  *
- * 测试用 in-memory DB,跑现有 migrations + migration 005(因为 main agent
+ * 测试用 in-memory DB,跑现有 migrations + migration 005(因为主入口
  * 还没集成到 migrate.ts 的 MIGRATIONS 数组)。
  */
 import { beforeEach, describe, expect, it } from 'vitest';
@@ -16,7 +16,7 @@ function freshDb(): DB {
   const db = new Database(':memory:');
   db.pragma('foreign_keys = ON');
   runMigrations(db);
-  // 手动应用 005 (main agent 的 migrate.ts 集成尚未完成)
+  // 手动应用 005 (主入口的 migrate.ts 集成尚未完成)
   const tx = db.transaction(() => {
     db.exec(migration005.up);
     db.prepare(

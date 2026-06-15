@@ -35,8 +35,6 @@ async function init() {
   const nodeLayer = d3.select('#wsb-graph-nodes');
 
   const data = await fetchGraph();
-  if (overlay) overlay.style.display = 'none';
-
   const nodes = (data.nodes || []).map((n) => ({
     ...n,
     id: String(n.id),
@@ -47,6 +45,13 @@ async function init() {
     source: String(e.src ?? e.source),
     target: String(e.dst ?? e.target),
   }));
+
+  if (!nodes.length) {
+    renderLegend([]);
+    showEmptyGraph(overlay);
+    return;
+  }
+  if (overlay) overlay.style.display = 'none';
 
   // ---- legend ----
   const clusters = aggregateClusters(nodes);
@@ -230,6 +235,16 @@ async function fetchGraph() {
   const res = await fetch('/api/graph', { headers: { accept: 'application/json' } });
   if (!res.ok) throw new Error('HTTP ' + res.status);
   return res.json();
+}
+
+function showEmptyGraph(overlay) {
+  if (overlay) {
+    overlay.style.display = '';
+    overlay.innerHTML =
+      '<span class="hf-tiny hf-muted">暂无可显示的公开文章。同步公开笔记并建立链接后,图谱会自动出现。</span>';
+  }
+  const sideEmpty = document.querySelector('#wsb-graph-side [data-empty] p');
+  if (sideEmpty) sideEmpty.textContent = '暂无节点可选';
 }
 
 function clusterFromTags(tags) {

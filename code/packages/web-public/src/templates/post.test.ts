@@ -80,6 +80,28 @@ describe('renderPost Lumio layout', () => {
   });
 });
 
+describe('renderPost cover image (题图)', () => {
+  it('renders the CSS hero animation when no cover is set', () => {
+    const html = renderPost({ note, byTag: new Map(), series: [] }, config);
+
+    expect(html).toContain('class="post-hero"');
+    expect(html).toContain('class="post-hero__art"');
+    expect(html).not.toContain('post-hero--cover');
+    expect(html).not.toContain('class="post-hero__img"');
+  });
+
+  it('renders the cover image and drops the animation when cover is set', () => {
+    const withCover = { ...note, cover: 'https://s3.example.com/hi-lumio.png' };
+    const html = renderPost({ note: withCover, byTag: new Map(), series: [] }, config);
+
+    expect(html).toContain('class="post-hero post-hero--cover"');
+    expect(html).toContain(
+      '<img class="post-hero__img" src="https://s3.example.com/hi-lumio.png"',
+    );
+    expect(html).not.toContain('class="post-hero__art"');
+  });
+});
+
 describe('post mobile CSS', () => {
   it('contains defensive overflow rules for code blocks and tables', async () => {
     const { POST_MOBILE_CSS } = await import('./post.js');

@@ -11,12 +11,12 @@
 | GET | `/api/health` | — | 健康检查 + 笔记计数(按 visibility) | ✅ |
 | GET | `/api/posts` | — | 公开文章列表(limit / offset) | ✅ |
 | GET | `/api/posts/:slug` | — | 单篇详情(过滤 private) | ✅ |
-| GET | `/api/search?q=&type=&from=&to=` | — | FTS5 全文搜索 + 类型 facet + 时间过滤 + 高亮 | ✅ |
+| GET | `/api/search?q=&type=&from=&to=&tags=` | — | FTS5 全文搜索 + 类型 / 标签 facet + 时间过滤 + 高亮 | ✅ |
 | GET | `/api/search/suggest?q=&limit=` | — | 自动联想(前缀) | ✅ |
 | GET | `/api/graph` | — | 知识图谱节点 + 边 | ✅ |
 | GET | `/n/:short_id` | — | 短链 302 | ✅ |
 | POST | `/api/track` | — | 浏览端打点(PV / dwell / scroll) | ✅ |
-| POST | `/api/newsletter/subscribe` | — | 邮件订阅(转发至 Buttondown) | ✅ |
+| POST | `/api/newsletter/subscribe` | — | 邮件订阅(Buttondown;未配置时落本地 subscribers 表) | ✅ |
 | GET | `/api/newsletter/recent` | — | 最近发布的几期(Buttondown) | ✅ |
 
 ## 认证
@@ -70,7 +70,8 @@
 |---|---|---|---|---|
 | GET | `/og/:slug.png?template=minimal\|newspaper\|terminal\|magazine` | — | 服务端渲染 PNG,磁盘缓存 | ✅ |
 | GET | `/api/admin/og/preview?slug=&template=&...` | admin | 实时预览(带 override 参数) | ✅ |
-| POST | `/api/admin/og/batch` | admin | 批量为所有公开笔记生成 OG 图,返回进度 | ✅ |
+
+> 后台“批量生成”通过前端逐篇请求公开 `/og/:slug.png` 触发服务端缓存刷新；当前没有单独的 batch API。
 
 ### 备份 / 导出
 
@@ -104,18 +105,6 @@
 |---|---|---|---|---|
 | GET | `/api/admin/audit?limit=&actor=&action_prefix=` | admin | 审计日志(含 diff) | ✅ |
 
-## Agent 写 API(bearer write scope)
-
-| Method | Path | Auth | 说明 | 状态 |
-|---|---|---|---|---|
-| PATCH | `/api/notes/:slug/meta` | bearer:write | 同 admin patchMeta,供 CLI / MCP 调用 | ✅ |
-
-## MCP server(可选)
-
-| Method | Path | Auth | 说明 | 状态 |
-|---|---|---|---|---|
-| POST | `/mcp` | bearer:MCP_TOKEN | MCP 协议入口 | ❌ 未实现 |
-
 ## 错误格式约定
 
 ```json
@@ -132,8 +121,6 @@ conflict | rate_limited | upstream_error | internal_error
 ## 鉴权约定
 
 - **admin scope**:cookie session 或 bearer admin token
-- **write scope**:bearer write/admin token(Agent 用)
-- **read scope**:bearer read/write/admin
 - **public**:无 auth
 
 ## 版本

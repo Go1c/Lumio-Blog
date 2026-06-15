@@ -1,13 +1,55 @@
 import type { JSX } from 'preact';
 import { useEffect, useMemo, useState } from 'preact/hooks';
 import { HfIcon } from '@opennote/ui';
-import { api, type HealthInfo, type NoteSummary, type CommentCounts, type SubscriberCounts } from '../api.js';
+import type { AdminSettings, HfAdSettings } from '@opennote/core';
+import {
+  api,
+  type AuditEntry,
+  type HealthInfo,
+  type NoteSummary,
+  type SyncDiagnosticsResponse,
+} from '../api.js';
+import { readAds } from './ads.js';
 
 interface TrendPoint {
   label: string;
   value: number;
   height: number;
 }
+
+export interface DashboardOverviewStat {
+  icon: 'eye' | 'note' | 'sync' | 'book';
+  tone: string;
+  label: string;
+  value: string;
+  delta: string;
+  deltaTone: 'up' | 'down';
+}
+
+export interface DashboardAdRow {
+  id: string;
+  name: string;
+  detail: string;
+  stat: string;
+  statLabel: string;
+  href: string;
+  enabled: boolean;
+}
+
+export interface SyncSummary {
+  title: string;
+  detail: string;
+  tone: 'ok' | 'warn' | 'default';
+  scanned: string;
+  removed: string;
+  atLabel: string;
+}
+
+const DASHBOARD_AD_SLOT_LABELS: Record<NonNullable<HfAdSettings['slot']>, string> = {
+  home: '首页',
+  article: '文章页',
+  column: '专栏页',
+};
 
 export const DASHBOARD_RESPONSIVE_STYLE = `
 .adm-body { min-width: 0; }
@@ -21,24 +63,64 @@ export const DASHBOARD_RESPONSIVE_STYLE = `
   grid-template-columns: 1.55fr 1fr;
   gap: 24px;
 }
-.task-row {
-  display: flex;
-  align-items: center;
-  gap: 14px;
+.dash-sync {
+  display: grid;
+  gap: 12px;
 }
+.dash-sync__status {
+  padding: 13px 14px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: var(--bg-soft);
+}
+.dash-sync__status.is-ok { border-color: rgba(31,158,128,.28); background: rgba(93,226,198,.12); }
+.dash-sync__status.is-warn { border-color: rgba(194,65,91,.28); background: rgba(255,184,107,.14); }
+.dash-sync__title { font-weight: 750; color: var(--ink); }
+.dash-sync__detail { margin-top: 4px; color: var(--ink-3); font-size: 12.5px; line-height: 1.5; }
+.dash-sync__metrics {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+.dash-sync__metric {
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  background: #fff;
+}
+.dash-sync__metric b { display: block; font-family: var(--mono); font-size: 18px; color: var(--ink); }
+.dash-sync__metric span { display: block; margin-top: 2px; color: var(--ink-4); font-size: 11px; }
+.activity-list {
+  display: grid;
+  gap: 10px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+.activity-row {
+  display: grid;
+  grid-template-columns: 86px minmax(0, 1fr);
+  gap: 10px;
+  align-items: baseline;
+}
+.activity-row time { color: var(--ink-4); font-family: var(--mono); font-size: 11px; }
+.activity-row__main { min-width: 0; color: var(--ink); font-size: 13px; }
+.activity-row__target { display: block; margin-top: 2px; color: var(--ink-4); font-family: var(--mono); font-size: 11px; overflow-wrap: anywhere; }
 .adrow {
   display: flex;
   align-items: center;
   gap: 14px;
 }
+.adrow.is-paused { opacity: .64; }
 @media (max-width: 1100px) {
   .stat-row { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .two-col { grid-template-columns: 1fr; }
 }
 @media (max-width: 680px) {
   .stat-row { grid-template-columns: 1fr; }
+  .dash-sync__metrics { grid-template-columns: 1fr; }
+  .activity-row { grid-template-columns: 1fr; gap: 2px; }
   .adrow { align-items: flex-start; }
-  .task-row { align-items: flex-start; }
   .tbl { min-width: 760px; }
   .panel { overflow: auto; }
 }
@@ -62,8 +144,9 @@ interface DashboardState {
   notes: NoteSummary[];
   views30d: number | null;
   trend: TrendPoint[];
-  comments: CommentCounts | null;
-  subscribers: SubscriberCounts | null;
+  sync: SyncDiagnosticsResponse | null;
+  audit: AuditEntry[];
+  ads: DashboardAdRow[];
 }
 
 const EMPTY_STATE: DashboardState = {
@@ -71,8 +154,9 @@ const EMPTY_STATE: DashboardState = {
   notes: [],
   views30d: null,
   trend: [],
-  comments: null,
-  subscribers: null,
+  sync: null,
+  audit: [],
+  ads: [],
 };
 
 export function Dashboard(): JSX.Element {
@@ -89,11 +173,12 @@ export function Dashboard(): JSX.Element {
       api.listNotes(),
       api.analytics.overview('30d'),
       api.analytics.timeseries('7d', 'views'),
-      api.comments.list({ status: 'pending', limit: 5 }),
-      api.subscribers.list(true),
-    ]).then(([health, notes, overview, series, comments, subscribers]) => {
+      api.syncDiagnostics(),
+      api.audit(6),
+      api.settings.get(),
+    ]).then(([health, notes, overview, series, sync, audit, settings]) => {
       if (cancelled) return;
-      const failures = [health, notes, overview, series, comments, subscribers]
+      const failures = [health, notes, overview, series, sync, audit, settings]
         .filter((r): r is PromiseRejectedResult => r.status === 'rejected');
       if (failures.length > 0) {
         setError(failures[0]?.reason instanceof Error ? failures[0].reason.message : String(failures[0]?.reason));
@@ -104,8 +189,9 @@ export function Dashboard(): JSX.Element {
         notes: notes.status === 'fulfilled' ? notes.value.notes : [],
         views30d: overview.status === 'fulfilled' ? overview.value.total_views : null,
         trend: makeTrend(rawTrend),
-        comments: comments.status === 'fulfilled' ? comments.value.counts : null,
-        subscribers: subscribers.status === 'fulfilled' ? subscribers.value.counts : null,
+        sync: sync.status === 'fulfilled' ? sync.value : null,
+        audit: audit.status === 'fulfilled' ? audit.value.entries : [],
+        ads: settings.status === 'fulfilled' ? buildDashboardAdRows(settings.value.home) : [],
       });
       setLoading(false);
     });
@@ -118,10 +204,14 @@ export function Dashboard(): JSX.Element {
     () => [...state.notes].sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1)).slice(0, 7),
     [state.notes],
   );
-  const privateCount = state.health?.visibility_counts.private ?? 0;
-  const publishedCount = state.health?.visibility_counts.public ?? 0;
-  const pendingComments = state.comments?.pending ?? 0;
-  const activeSubscribers = state.subscribers?.active ?? 0;
+  const overview = buildDashboardOverview({
+    health: state.health,
+    notes: state.notes,
+    views30d: state.views30d,
+    syncAt: state.sync?.at ?? null,
+    filesScanned: state.sync?.diag.files_scanned ?? 0,
+  });
+  const syncSummary = buildSyncSummary(state.sync);
 
   return (
     <div class="adm-body">
@@ -134,38 +224,17 @@ export function Dashboard(): JSX.Element {
       )}
 
       <section class="stat-row" aria-label="核心指标" aria-busy={loading ? 'true' : 'false'}>
-        <StatCard
-          icon="eye"
-          tone="i-blue"
-          delta="analytics · 30d"
-          deltaTone="up"
-          value={state.views30d === null ? '—' : formatNum(state.views30d)}
-          label="近 30 日访问量"
-        />
-        <StatCard
-          icon="note"
-          tone="i-mint"
-          delta={`${privateCount} 篇待公开`}
-          deltaTone={privateCount > 0 ? 'down' : 'up'}
-          value={formatNum(publishedCount)}
-          label="已公开文章"
-        />
-        <StatCard
-          icon="mail"
-          tone="i-amber"
-          delta="本地订阅表"
-          deltaTone="up"
-          value={formatNum(activeSubscribers)}
-          label="邮件订阅数"
-        />
-        <StatCard
-          icon="comment"
-          tone="i-rose"
-          delta={pendingComments > 0 ? '需要审核' : '暂无待审'}
-          deltaTone={pendingComments > 0 ? 'down' : 'up'}
-          value={formatNum(pendingComments)}
-          label="待审评论"
-        />
+        {overview.map((stat) => (
+          <StatCard
+            key={stat.label}
+            icon={stat.icon}
+            tone={stat.tone}
+            delta={stat.delta}
+            deltaTone={stat.deltaTone}
+            value={stat.value}
+            label={stat.label}
+          />
+        ))}
       </section>
 
       <section class="two-col">
@@ -200,34 +269,24 @@ export function Dashboard(): JSX.Element {
           </div>
         </div>
 
+        <SyncStatusPanel summary={syncSummary} />
+      </section>
+
+      <section class="two-col">
+        <ActivityPanel entries={state.audit} />
+
         <div class="panel">
           <div class="panel__head">
-            <div class="panel__title">待处理</div>
+            <div class="panel__title">广告位管理</div>
             <div class="panel__spacer" />
-            <a class="panel__link" href="#/comments">评论审核</a>
+            <a class="panel__link" href="#/ads">管理广告</a>
           </div>
           <div class="adlist">
-            <TaskRow
-              icon="comment"
-              name="待审评论"
-              detail="公开前需要管理员审核"
-              stat={pendingComments}
-              href="#/comments"
-            />
-            <TaskRow
-              icon="lock"
-              name="私有文章"
-              detail="默认不公开,需要手动发布"
-              stat={privateCount}
-              href="#/vault"
-            />
-            <TaskRow
-              icon="tag"
-              name="全部文章"
-              detail="来自后端同步数据库"
-              stat={state.health?.note_count ?? state.notes.length}
-              href="#/vault"
-            />
+            {state.ads.length === 0 ? (
+              <AdSummaryEmpty />
+            ) : state.ads.map((ad) => (
+              <AdSummaryRow key={ad.id} row={ad} />
+            ))}
           </div>
         </div>
       </section>
@@ -295,7 +354,7 @@ function StatCard({
   value,
   label,
 }: {
-  icon: 'eye' | 'note' | 'mail' | 'comment';
+  icon: 'eye' | 'note' | 'sync' | 'book';
   tone: string;
   delta: string;
   deltaTone: 'up' | 'down';
@@ -314,34 +373,208 @@ function StatCard({
   );
 }
 
-function TaskRow({
-  icon,
-  name,
-  detail,
-  stat,
-  href,
-}: {
-  icon: 'comment' | 'lock' | 'tag';
-  name: string;
-  detail: string;
-  stat: number;
-  href: string;
-}): JSX.Element {
+function SyncStatusPanel({ summary }: { summary: SyncSummary }): JSX.Element {
   return (
-    <a class="adrow task-row" href={href} style={{ color: 'inherit', textDecoration: 'none' }}>
+    <div class="panel">
+      <div class="panel__head">
+        <div class="panel__title">同步状态</div>
+        <div class="panel__spacer" />
+        <a class="panel__link" href="#/audit?action_prefix=sync.">同步日志</a>
+      </div>
+      <div class="dash-sync">
+        <div class={`dash-sync__status is-${summary.tone}`}>
+          <div class="dash-sync__title">{summary.title}</div>
+          <div class="dash-sync__detail">{summary.detail}</div>
+        </div>
+        <div class="dash-sync__metrics" aria-label="最近同步指标">
+          <span class="dash-sync__metric">
+            <b>{summary.scanned}</b>
+            <span>扫描文件</span>
+          </span>
+          <span class="dash-sync__metric">
+            <b>{summary.removed}</b>
+            <span>移除记录</span>
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function ActivityPanel({ entries }: { entries: AuditEntry[] }): JSX.Element {
+  return (
+    <div class="panel">
+      <div class="panel__head">
+        <div class="panel__title">实时活动流</div>
+        <div class="panel__spacer" />
+        <a class="panel__link" href="#/audit">查看全部</a>
+      </div>
+      {entries.length === 0 ? (
+        <p class="hf-sm hf-muted" style={{ padding: 22 }}>暂无后台活动。</p>
+      ) : (
+        <ul class="activity-list">
+          {entries.slice(0, 6).map((entry) => (
+            <li class="activity-row" key={entry.id}>
+              <time dateTime={entry.ts}>{formatActivityTime(entry.ts)}</time>
+              <span class="activity-row__main">
+                {activityLabel(entry.action)}
+                {entry.target && <span class="activity-row__target">{entry.target}</span>}
+              </span>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+function AdSummaryRow({ row }: { row: DashboardAdRow }): JSX.Element {
+  return (
+    <a class={`adrow ${row.enabled ? '' : 'is-paused'}`} href={row.href} style={{ color: 'inherit', textDecoration: 'none' }}>
       <div class="adrow__thumb" aria-hidden="true">
-        <HfIcon name={icon} size={18} />
+        <HfIcon name="image" size={18} />
       </div>
       <div class="adrow__info">
-        <div class="adrow__name">{name}</div>
-        <div class="adrow__url">{detail}</div>
+        <div class="adrow__name">{row.name}</div>
+        <div class="adrow__url">{row.detail}</div>
       </div>
       <div class="adrow__stat">
-        <b>{formatNum(stat)}</b>
-        <small>条目</small>
+        <b>{row.stat}</b>
+        <small>{row.statLabel}</small>
       </div>
     </a>
   );
+}
+
+function AdSummaryEmpty(): JSX.Element {
+  return (
+    <a class="adrow" href="#/ads" style={{ color: 'inherit', textDecoration: 'none' }}>
+      <div class="adrow__thumb" aria-hidden="true">
+        <HfIcon name="image" size={18} />
+      </div>
+      <div class="adrow__info">
+        <div class="adrow__name">未配置广告位</div>
+        <div class="adrow__url">从首页、文章页或专栏页添加真实投放配置</div>
+      </div>
+      <div class="adrow__stat">
+        <b>0</b>
+        <small>广告</small>
+      </div>
+    </a>
+  );
+}
+
+export function buildDashboardAdRows(home: AdminSettings['home'] | null | undefined): DashboardAdRow[] {
+  return readAds((home ?? {}) as NonNullable<AdminSettings['home']>).slice(0, 3).map((ad, index) => {
+    const slot = (ad.slot ?? 'home') as NonNullable<HfAdSettings['slot']>;
+    const enabled = ad.enabled !== false;
+    const impressions = ad.impressions ?? 0;
+    const clicks = ad.clicks ?? 0;
+    return {
+      id: ad.id ?? `${slot}-${index}`,
+      name: ad.name || ad.title || '未命名广告',
+      detail: `${DASHBOARD_AD_SLOT_LABELS[slot]} · ${enabled ? '开启' : '暂停'} · 曝光 ${formatCount(impressions)}`,
+      stat: formatCount(clicks),
+      statLabel: '点击 / 周',
+      href: '#/ads',
+      enabled,
+    };
+  });
+}
+
+export function buildDashboardOverview(input: {
+  health: Pick<HealthInfo, 'note_count' | 'visibility_counts'> | null;
+  notes: Array<Pick<NoteSummary, 'source_path' | 'slug'>>;
+  views30d: number | null;
+  syncAt: string | null;
+  filesScanned: number;
+  now?: Date;
+}): DashboardOverviewStat[] {
+  const publicCount = input.health?.visibility_counts.public ?? 0;
+  const privateCount = input.health?.visibility_counts.private ?? 0;
+  const notesCount = input.health?.note_count ?? input.notes.length;
+  const todaySync = isSameDate(input.syncAt, input.now ?? new Date()) ? input.filesScanned : 0;
+  const syncDelta = input.syncAt ? `最近 ${formatSyncAt(input.syncAt, input.now ?? new Date())}` : '暂无同步记录';
+  return [
+    {
+      icon: 'note',
+      tone: 'i-blue',
+      label: '笔记总数',
+      value: formatNum(notesCount),
+      delta: `${publicCount} 篇公开 · ${privateCount} 篇待公开`,
+      deltaTone: privateCount > 0 ? 'down' : 'up',
+    },
+    {
+      icon: 'sync',
+      tone: 'i-mint',
+      label: '今日同步扫描',
+      value: formatNum(todaySync),
+      delta: syncDelta,
+      deltaTone: todaySync > 0 ? 'up' : 'down',
+    },
+    {
+      icon: 'eye',
+      tone: 'i-amber',
+      label: '近 30 日浏览',
+      value: input.views30d === null ? '—' : formatNum(input.views30d),
+      delta: 'analytics · 30d',
+      deltaTone: 'up',
+    },
+    {
+      icon: 'book',
+      tone: 'i-rose',
+      label: '活跃专栏',
+      value: formatNum(countColumnsFromNotes(input.notes)),
+      delta: 'vault 一级目录',
+      deltaTone: 'up',
+    },
+  ];
+}
+
+export function buildSyncSummary(sync: SyncDiagnosticsResponse | null): SyncSummary {
+  if (!sync?.at) {
+    return {
+      title: '还没有同步记录',
+      detail: '执行一次同步后,这里会显示扫描文件数、解析问题和移除记录。',
+      tone: 'default',
+      scanned: '0',
+      removed: '0',
+      atLabel: '—',
+    };
+  }
+  const diag = sync.diag;
+  const issues = [
+    ...diag.parse_failed,
+    ...diag.normalize_warnings,
+    ...diag.slug_conflicts.map((item) => ({
+      source_path: item.source_path,
+      message: `slug 冲突:${item.desired} → ${item.final}`,
+    })),
+    ...diag.process_failed,
+  ];
+  const atLabel = formatSyncAt(sync.at);
+  if (issues.length === 0) {
+    return {
+      title: '最近同步正常',
+      detail: `最近 ${atLabel} 完成同步,没有解析失败或 slug 冲突。`,
+      tone: 'ok',
+      scanned: formatCount(diag.files_scanned),
+      removed: formatCount(diag.removed_slugs.length),
+      atLabel,
+    };
+  }
+  const detail = issues
+    .slice(0, 3)
+    .map((item) => `${item.source_path}: ${item.message}`)
+    .join(' · ');
+  return {
+    title: `最近同步有 ${issues.length} 个问题`,
+    detail,
+    tone: 'warn',
+    scanned: formatCount(diag.files_scanned),
+    removed: formatCount(diag.removed_slugs.length),
+    atLabel,
+  };
 }
 
 function makeTrend(points: { date: string; value: number }[]): TrendPoint[] {
@@ -373,6 +606,44 @@ function formatNum(n: number): string {
   if (n >= 10_000) return n.toLocaleString('en-US');
   if (n >= 1000) return `${(n / 1000).toFixed(1)}k`;
   return String(n);
+}
+
+function formatCount(n: number): string {
+  return n.toLocaleString('en-US');
+}
+
+function countColumnsFromNotes(notes: Array<Pick<NoteSummary, 'source_path' | 'slug'>>): number {
+  const ids = new Set<string>();
+  for (const note of notes) {
+    const path = note.source_path ?? note.slug;
+    const first = path.includes('/') ? path.split('/')[0]!.trim() : '';
+    ids.add(first || '__root__');
+  }
+  return ids.size;
+}
+
+function isSameDate(value: string | null, now: Date): boolean {
+  if (!value) return false;
+  return value.slice(0, 10) === now.toISOString().slice(0, 10);
+}
+
+function formatSyncAt(value: string, now = new Date()): string {
+  if (isSameDate(value, now)) return value.slice(11, 16);
+  return `${value.slice(5, 10)} ${value.slice(11, 16)}`;
+}
+
+function formatActivityTime(value: string): string {
+  return value.slice(5, 16).replace('T', ' ');
+}
+
+function activityLabel(action: string): string {
+  if (action.startsWith('sync.')) return action === 'sync.force' ? '强制同步' : '手动同步';
+  if (action.startsWith('note.')) return '笔记更新';
+  if (action.startsWith('shortlink.')) return '短链变更';
+  if (action.startsWith('webhook.')) return 'Webhook 变更';
+  if (action.startsWith('token.')) return 'Token 变更';
+  if (action.startsWith('auth.')) return '登录与权限';
+  return action;
 }
 
 function visLabel(v: string): string {

@@ -13,7 +13,7 @@ export interface AnalyticsDeps {
   db: Database;
   /** salt for IP hashing — 不要和别处复用 */
   ipSalt?: string;
-  /** disable POST /api/track(若用户用 Plausible 等外部) */
+  /** disable POST /api/track when built-in tracking is turned off */
   trackingDisabled?: boolean;
 }
 
@@ -23,7 +23,7 @@ const VALID_METRICS: ReadonlyArray<AnalyticsMetric> = ['views', 'unique_visitors
 
 /**
  * 注册 analytics 路由到主 app。
- * 由主 agent 在 routes.ts 里调用 register(app, deps)。
+ * 由主入口在 routes.ts 里调用 register(app, deps)。
  */
 export function register(app: Hono, deps: AnalyticsDeps): void {
   const repo = new AnalyticsRepo(deps.db);

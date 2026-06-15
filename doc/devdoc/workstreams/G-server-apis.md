@@ -1,13 +1,13 @@
 # WS-G — Server APIs(后端关键能力)
 
-> **Owner**: BE agent(可分 4 个子 agent 并行)  **Duration**: 7-10 天
+> **Owner**: BE(可分 4 个子任务并行)  **Duration**: 7-10 天
 > **Depends on**: core / db 现状  **Blocks**: WS-B / WS-D / WS-E / WS-F
 
 ## 目标
 
 建好所有前端依赖的服务端能力。**这是关键路径** — 越早稳越早不阻塞前端。
 
-## 子任务(可拆 4 个 agent 并行)
+## 子任务(可拆 4 路并行)
 
 ### G1 — Settings API + DB
 
@@ -31,7 +31,7 @@
 
 - DB:`analytics_events` 表(slug / event / ts / meta) + `analytics_daily` 物化(每日 cron rollup)
 - 路由:
-  - `POST /api/track` 接收浏览端打点(可关闭 / 可桥接 Plausible)
+  - `POST /api/track` 接收浏览端打点(可关闭)
   - `GET /api/admin/analytics/overview?range=`
   - `GET /api/admin/analytics/timeseries?range=&metric=`
   - `GET /api/admin/analytics/posts/:slug`
@@ -51,16 +51,16 @@
   - 4 个 React-style 模板(.tsx)
   - `GET /og/:slug.png` 缓存到磁盘(/data/og/)
   - 路由:`server/src/routes/og.ts`
-- Newsletter:Buttondown bridge
-  - `POST /api/newsletter/subscribe` 投递到 Buttondown API
+- Newsletter:Buttondown bridge + 本地 fallback
+  - `POST /api/newsletter/subscribe` 配置 Buttondown 时投递到 Buttondown API,未配置时落本地 subscribers 表
   - `GET /api/newsletter/recent` 拉 Buttondown 最近 issues
   - 路由:`server/src/routes/newsletter.ts`
 
 ## 协调
 
-`server/src/routes.ts` 是 monolith。每个 G 子 agent 都把自己的路由放新文件 `routes/<name>.ts`,导出 `register(app, deps)`。**主 agent**(我)负责修改 `routes.ts` 调用各 register。子 agent 不要互相改 routes.ts。
+`server/src/routes.ts` 是 monolith。每个 G 子任务都把自己的路由放新文件 `routes/<name>.ts`,导出 `register(app, deps)`。**主协调者**负责修改 `routes.ts` 调用各 register。子任务不要互相改 routes.ts。
 
-DB 迁移:每个子 agent 加自己的 migration 文件 `migrations/004_<name>.sql` 等。**migration 序号由主 agent 协调分配**:
+DB 迁移:每个子任务加自己的 migration 文件 `migrations/004_<name>.sql` 等。**migration 序号由主协调者分配**:
 - G1: `004_settings_audit.sql`
 - G2: `005_search_fts.sql`
 - G3: `006_analytics.sql`
@@ -96,7 +96,7 @@ code/packages/db/src/migrations/004-007*.sql       (各)
 code/packages/core/src/types.ts                     (扩,所有 G 共同补)
 ```
 
-主 agent 负责改:
+主协调者负责改:
 ```
 code/packages/server/src/routes.ts                  (注册各 register)
 code/packages/server/src/main.ts                    (启动 cron / job runner)

@@ -2,8 +2,6 @@
 
 > 一个把 **Obsidian 笔记库** 直接同步成博客 + 公开知识库的系统。
 > 围绕 [`fast-note-sync`](../fast-note-sync) 的同步层构建，前端是静态站，后台是单页应用。
->
-> **特别为 AI agent 友好而设计**：CLI 一等公民、MCP server、Webhook、纯文件存储、原子写入。
 
 设计稿（高保真，浅 / 深 / 跟随系统三档主题）见 `doc/prototype/index.html`。
 线框版（白纸黑笔风）在 `doc/prototype/wireframes.html`。
@@ -21,13 +19,13 @@
 |---|---|
 | **首页** — Hero 动画 + 三栏目录（按月 / 按标签 / 笔记） | ![首页](./img/hifi-home.png) |
 | **文章详情** — 进度条 / 代码块 / Mermaid / KaTeX / 反向链接图 | ![文章](./img/hifi-article.png) |
-| **关于 / Now / Contact** — 三栏个人页 | ![关于](./img/about.png) |
+| **关于 / Contact** — 作者卡、站点统计与联系入口 | ![关于](./img/about.png) |
 | **标签详情** — `#游戏 AI` 按年份分组 | ![标签](./img/tag.png) |
 | **搜索结果** — 关键词高亮 / 类型筛选 / 时间过滤 | ![搜索](./img/search.png) |
 | **知识关系图** — 全屏 SVG / 集群图例 / 节点详情侧栏 | ![关系图](./img/graph.png) |
-| **文章评论** — Giscus 风格，作者高亮气泡 | ![评论](./img/comments.png) |
+| **文章评论** — 本地审核评论，作者高亮气泡 | ![评论](./img/comments.png) |
 | **Newsletter 订阅** — Hero + 表单 + 往期回顾 | ![Newsletter](./img/newsletter.png) |
-| **RSS / Atom / JSON Feed** — 美化预览页 | ![RSS](./img/rss.png) |
+| **RSS Feed** — 美化预览页 | ![RSS](./img/rss.png) |
 | **404 / 私有拦截** — 诊断面板告诉你为啥进不来 | ![404](./img/404.png) |
 
 ### ⚙️ 后台
@@ -42,11 +40,11 @@
 | **OG 图生成器** — 4 模板 + 社交平台预览 | ![OG](./img/og.png) |
 | **设置** — 站点 / 作者 / 外观 / SEO / 社交 | ![设置](./img/settings.png) |
 
-### 🤖 Agent / 开源
+### 本地工作流 / 开源
 
 | 页面 | 截图 |
 |---|---|
-| **Blog CLI** — Agent 友好的命令行 + MCP | ![CLI](./img/cli.png) |
+| **OpenNote CLI** — 本地同步与预览命令行 | ![CLI](./img/cli.png) |
 | **配置文件参考** — `config.yaml` / `features.yaml` / `.env` / frontmatter | ![Config](./img/config.png) |
 
 ### 📱 移动端
@@ -87,27 +85,27 @@
 lumio.games/n/g7k2x  →  lumio.games/posts/2025/mcts-llm-rts
 ```
 
-短链是稳定的（即使你改了 slug 或 URL 结构）。后台可以查看、删除、批量管理。
+短链是稳定的（即使你改了 slug 或 URL 结构）。后台可以查看、复制、设密码、旋转；旧链会墓碑化并立即 404。
 
-### 3. Agent / CLI 一等公民
+### 3. CLI 一等公民
 
 ```bash
-blog new "新文章标题"               # 创建草稿
-blog visibility note.md unlisted   # 改可见性
-blog publish --schedule "2d"       # 2 天后发
-blog query "tag:游戏 AI && month:2025-04"  # JSON-Path 查询
+opennote init ./lumio-vault                # 创建示例 vault 和 config.yaml
+OPENNOTE_CONFIG=./config.yaml opennote sync
+OPENNOTE_PASSWORD=secret opennote serve    # 本地预览 + watcher
+opennote version
 ```
 
-加上 MCP server，Claude / Cursor / 各种 agent 都能直接调用。
+当前 CLI 覆盖初始化、一次性同步和本地预览；内容源头仍是 Obsidian vault。
 
 ### 4. 纯文件 + 增量构建
 
 - 所有内容 = Obsidian vault 的 Markdown 文件
 - `fast-note-sync` 监听变更，跑全量解析 + 渲染
-- 输出是静态站点（HTML / RSS / JSON Feed / OG 图全在构建时生成）
+- 输出是静态站点（HTML / RSS / OG 图全在构建时生成）
 - 数据库只用作搜索索引（可选 SQLite / Meilisearch）
 
-后台 = SPA，对着同一份 SQLite 索引 + 文件系统读写。
+后台 = SPA，对着同一份 SQLite 索引读取运营数据。
 
 ---
 
@@ -139,7 +137,7 @@ doc/prototype/hf-extras.jsx          # 评论 / Newsletter / 搜索 / 标签 / 4
 doc/prototype/hf-extras2.jsx         # 关于 / RSS
 doc/prototype/hf-og.jsx              # OG 图生成器
 doc/prototype/hf-config.jsx          # 配置文件参考（开源用户文档）
-doc/prototype/hf-cli.jsx             # CLI / MCP 文档
+doc/prototype/hf-cli.jsx             # CLI 文档
 doc/prototype/hf-mobile.jsx          # 移动端
 doc/prototype/ios-frame.jsx          # iOS 设备框
 

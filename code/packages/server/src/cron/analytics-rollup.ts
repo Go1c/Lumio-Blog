@@ -21,7 +21,7 @@ const ONE_MIN = 60_000;
  * 跑 yesterday 的 rollup。重启后第一次会立即检查,
  * 若当天的「触发分钟」已过,补跑 yesterday(幂等 — DELETE+INSERT)。
  *
- * main.ts 集成由主 agent 做。
+ * main.ts 负责集成。
  */
 export function startAnalyticsRollup(deps: AnalyticsRollupDeps): Stop {
   const repo = new AnalyticsRepo(deps.db);

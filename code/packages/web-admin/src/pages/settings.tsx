@@ -740,7 +740,7 @@ function FeaturesForm({ draft, update }: { draft: AdminSettings; update: (n: Adm
       items: [
         { key: 'comments', label: '评论' },
         { key: 'newsletter', label: 'Newsletter' },
-        { key: 'rss', label: 'RSS / Atom / JSON Feed' },
+        { key: 'rss', label: 'RSS 订阅' },
         { key: 'graph', label: '知识图谱' },
         { key: 'search', label: '全文搜索' },
         { key: 'short_links', label: '短链(/n/xxxxx)' },
@@ -759,11 +759,10 @@ function FeaturesForm({ draft, update }: { draft: AdminSettings; update: (n: Adm
       ],
     },
     {
-      id: 'agent',
-      label: 'Agent',
+      id: 'workflow',
+      label: '本地工作流',
       items: [
-        { key: 'cli_enabled', label: 'CLI 入口' },
-        { key: 'mcp_enabled', label: 'MCP server' },
+        { key: 'cli_enabled', label: '本地预览 / 同步配置' },
       ],
     },
   ];
@@ -797,24 +796,6 @@ function FeaturesForm({ draft, update }: { draft: AdminSettings; update: (n: Adm
         </section>
       ))}
 
-      <section class="ws-e__panel">
-        <header class="ws-e__panel-head"><h2>▸ Agent · MCP tools</h2></header>
-        <p class="ws-e__sm hf-muted">逗号分隔。空 = 关闭所有 MCP 工具。</p>
-        <div class="ws-e__field">
-          <label htmlFor="mcp-tools">MCP tools</label>
-          <input
-            id="mcp-tools" type="text"
-            value={f.agent.mcp_tools.join(', ')}
-            onInput={(e) => {
-              const list = (e.target as HTMLInputElement).value
-                .split(',')
-                .map((s) => s.trim())
-                .filter(Boolean);
-              setGroup('agent', { mcp_tools: list });
-            }}
-          />
-        </div>
-      </section>
     </>
   );
 }
@@ -881,7 +862,7 @@ function FnsForm({ draft, update, errs }: FormProps) {
             />
             {errs['fns.api_url'] && <p class="ws-e__err" role="alert">{errs['fns.api_url']}</p>}
             <p class="hf-tiny hf-muted">
-              你已经部署的 FastNoteSync 服务地址。CLI 用 wss:// 连这里的 <code>/api/user/sync</code>。
+              你已经部署的 FastNoteSync 服务地址。同步客户端通过 WebSocket 连接这里的 <code>/api/user/sync</code>。
             </p>
           </div>
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { siteConfigSchema } from './schema.js';
+import { defaultFeatures, siteConfigSchema } from './schema.js';
 
 describe('siteConfigSchema', () => {
   it('preserves render-facing home, theme, and seo settings from config.yaml', () => {
@@ -28,5 +28,10 @@ describe('siteConfigSchema', () => {
     expect(parsed.site.locale).toBe('zh-CN');
     expect(parsed.author.bio_md).toBe('**maker** notes');
     expect(parsed.features?.post_summary).toBe(true);
+  });
+
+  it('defaults local workflow features to the CLI entrypoint only', () => {
+    expect(defaultFeatures().workflow).toEqual({ cli_enabled: true });
+    expect(defaultFeatures()).not.toHaveProperty('agent');
   });
 });

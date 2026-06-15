@@ -22,7 +22,7 @@ function freshDb(): Database.Database {
   const d = new Database(':memory:');
   d.pragma('foreign_keys = ON');
   runMigrations(d);
-  // 手动应用 005 (main agent 还没集成到 migrate.ts)
+  // 手动应用 005 (主入口还没集成到 migrate.ts)
   const tx = d.transaction(() => {
     d.exec(migration005.up);
     d.prepare(

@@ -9,7 +9,7 @@ import { layout, esc } from './layout.js';
  * - 表单 submit → POST /api/newsletter/subscribe(JSON)
  * - 失败 → role="alert" + aria-live 显示错误
  * - 无 JS fallback:`form action="/api/newsletter/subscribe"` POST,
- *   退化到第三方页(Buttondown / Listmonk URL 由 server 决定)
+ *   服务端接受 form body,并按配置转发 Buttondown 或落本地订阅表。
  */
 export function renderNewsletter(config: SiteConfig): string {
   const author = config.author;
@@ -145,7 +145,7 @@ export function renderNewsletter(config: SiteConfig): string {
           return r.json().then(function(j){ throw j && j.error || { message: '订阅失败,请稍后再试' }; },
             function(){ throw { message: '订阅失败,请稍后再试' }; });
         }).then(function(){
-          setOk('已发送验证邮件,请查收。');
+          setOk('订阅已记录,感谢关注。');
           form.reset();
         }).catch(function(e){
           setError((e && e.message) || '订阅失败 — 你可以直接打开邮箱客户端发送一封空白邮件给作者。');
@@ -159,8 +159,9 @@ export function renderNewsletter(config: SiteConfig): string {
       var emptyEl = document.querySelector('[data-recent-empty]');
       if (listEl) {
         fetch('/api/newsletter/recent', { headers: { accept: 'application/json' } })
-          .then(function(r){ return r.ok ? r.json() : []; })
-          .then(function(items){
+          .then(function(r){ return r.ok ? r.json() : { issues: [] }; })
+          .then(function(data){
+            var items = data && Array.isArray(data.issues) ? data.issues : Array.isArray(data) ? data : [];
             listEl.innerHTML = '';
             if (!items || !items.length) {
               if (emptyEl) emptyEl.hidden = false;
@@ -169,9 +170,9 @@ export function renderNewsletter(config: SiteConfig): string {
             items.forEach(function(it){
               var li = document.createElement('li');
               li.className = 'wsb-news__past-row hf-hover';
-              var d = (it && it.date) || '';
-              var t = (it && it.title) || '(未命名)';
-              var sub = (it && it.summary) || '';
+              var d = (it && it.sent_at) || '';
+              var t = (it && it.subject) || '(未命名)';
+              var sub = (it && it.excerpt) || '';
               var url = (it && it.url) || '#';
               li.innerHTML = '<a class="wsb-news__past-link" href="'+url.replace(/"/g,'&quot;')+'">'
                 + '<span class="hf-mono hf-tiny hf-faint wsb-news__past-date">'+d.replace(/[<>]/g,'')+'</span>'

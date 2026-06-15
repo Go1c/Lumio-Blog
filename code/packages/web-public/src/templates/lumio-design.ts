@@ -1704,6 +1704,8 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 }
 .post-hero .thumb__grid { opacity: .55; }
 .post-hero__art { position: relative; width: 280px; height: 180px; }
+.post-hero--cover { background: #0b1220; }
+.post-hero__img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .prose { font-family: var(--font-zh); color: #34415C; }
 .prose.post-prose {
   padding: 0;
