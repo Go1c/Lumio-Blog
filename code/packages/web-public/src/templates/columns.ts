@@ -1,90 +1,55 @@
-import type { NoteRow, SiteConfig } from '@opennote/core';
+import type { HfAdSettings, NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
-import { buildLumioArticles, renderEmptyState, renderPageHead } from './lumio-design.js';
+import { renderEmptyState, renderPageHead } from './lumio-design.js';
 
-interface ColumnItem {
+const TONES = ['t-blue', 't-mint', 't-amber', 't-violet'] as const;
+
+const COLUMN_ART = '<div class="cube float" style="--s:34px; left:40%; top:42%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-mint float" style="--s:24px; left:58%; top:58%; animation-delay:-1.3s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>';
+
+interface Column {
   name: string;
-  desc: string;
-  cat: string;
-  tone: string;
-  art: string;
+  notes: NoteRow[];
 }
 
-const COLUMNS: ColumnItem[] = [
-  {
-    name: '渲染管线精讲',
-    desc: '从光栅化到延迟渲染,逐篇拆解现代渲染管线的核心机制。',
-    cat: '渲染',
-    tone: 't-blue',
-    art: '<div class="cube float" style="--s:34px; left:38%; top:40%;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube c-mint float" style="--s:24px; left:56%; top:58%; animation-delay:-1.3s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>',
-  },
-  {
-    name: '性能优化之道',
-    desc: 'CPU、GPU、内存、加载,全链路性能优化的实战方法论。',
-    cat: '性能',
-    tone: 't-mint',
-    art: '<div class="cube c-mint float" style="--s:38px; left:50%; top:46%; margin:-19px 0 0 -19px;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>',
-  },
-  {
-    name: 'Shader 实验室',
-    desc: '用一系列可运行的案例,带你从零写出炫酷的着色器效果。',
-    cat: '图形学',
-    tone: 't-amber',
-    art: '<div class="orb" style="left:32%;top:28%;"></div>',
-  },
-  {
-    name: '架构演进实录',
-    desc: '真实项目中架构如何随规模演进,踩过的坑与得到的经验。',
-    cat: '架构',
-    tone: 't-violet',
-    art: '<div class="cube float" style="--s:28px; left:30%; top:36%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div><div class="cube float" style="--s:28px; left:54%; top:52%; --t:#D9D2FF; --r:#B5A6FF; --l:#8E76F0; animation-delay:-1.6s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>',
-  },
-];
-
+/**
+ * 专栏页 — 专栏 = Obsidian vault 一级目录(含至少一篇公开文章)。
+ * 不再渲染静态 demo 专栏:无文章 → 空态;有文章但都在根目录 → "还没有专栏"。
+ */
 export function renderColumns(
   posts: NoteRow[],
-  byTag: Map<string, NoteRow[]>,
+  _byTag: Map<string, NoteRow[]>,
   config: SiteConfig,
 ): string {
+  const head = renderPageHead(
+    'Columns',
+    '技术专栏',
+    '成体系的系列文章,跟随专栏由浅入深,系统掌握一个领域。',
+  );
+  const ads = renderColumnAds(config);
+  const columns = groupByTopFolder(posts);
+
+  let main: string;
   if (posts.length === 0) {
-    const body = `
-    ${renderPageHead('Columns', '技术专栏', '成体系的系列文章,跟随专栏由浅入深,系统掌握一个领域。')}
-    <main class="page">
-      ${renderEmptyState('暂无公开专栏', '当前没有设为公开的笔记。把后台笔记可见性切回公开后,这里会重新显示专栏。')}
-    </main>`;
-    return layout({
-      title: `专栏 · ${config.site.title}`,
-      description: '技术专栏',
-      config,
-      body,
-      active: 'columns',
-    });
+    main = renderEmptyState(
+      '暂无公开专栏',
+      '当前没有设为公开的笔记。把后台笔记可见性切回公开后,这里会重新显示专栏。',
+    );
+  } else if (columns.length === 0) {
+    main = renderEmptyState(
+      '还没有专栏',
+      '专栏来自 Obsidian vault 一级目录。把文章放进某个一级子目录(如 Rendering/、AI/),这里就会自动生成对应专栏。',
+    );
+  } else {
+    const meta = `<div class="cols__meta">${columns.length} 个真实专栏</div>`;
+    const cards = columns.map((column, i) => renderColumnCard(column, TONES[i % TONES.length]!)).join('');
+    main = `${meta}<div class="cols">${cards}</div>`;
   }
 
-  const counts = countByCategory(posts, byTag);
-  const cards = COLUMNS.map((column) => `
-    <a class="col-card" href="/articles/index.html?cat=${encodeURIComponent(column.cat)}">
-      <div class="col-card__cover thumb ${esc(column.tone)}">
-        <div class="thumb__grid" aria-hidden="true"></div>
-        <div class="thumb__art" aria-hidden="true">${column.art}</div>
-      </div>
-      <div class="col-card__body">
-        <div class="col-card__name">${esc(column.name)}</div>
-        <p class="col-card__dek">${esc(column.desc)}</p>
-        <div class="col-card__foot">
-          <span class="col-card__count">
-            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>
-            ${counts.get(column.cat) ?? 0} 篇文章
-          </span>
-          <span class="btn-ghost">订阅专栏</span>
-        </div>
-      </div>
-    </a>`).join('');
-
   const body = `
-    ${renderPageHead('Columns', '技术专栏', '成体系的系列文章,跟随专栏由浅入深,系统掌握一个领域。')}
+    ${head}
     <main class="page">
-      <div class="cols">${cards}</div>
+      ${ads}
+      ${main}
     </main>`;
 
   return layout({
@@ -96,10 +61,68 @@ export function renderColumns(
   });
 }
 
-function countByCategory(posts: NoteRow[], byTag: Map<string, NoteRow[]>): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const article of buildLumioArticles(posts, byTag)) {
-    counts.set(article.category, (counts.get(article.category) ?? 0) + 1);
+/** 按 source_path 一级目录分组;根目录文件(无 `/`)不构成专栏。 */
+function groupByTopFolder(posts: NoteRow[]): Column[] {
+  const groups = new Map<string, NoteRow[]>();
+  for (const post of posts) {
+    const segs = (post.source_path ?? '').split('/');
+    if (segs.length < 2) continue;
+    const folder = segs[0]?.trim();
+    if (!folder) continue;
+    const bucket = groups.get(folder);
+    if (bucket) bucket.push(post);
+    else groups.set(folder, [post]);
   }
-  return counts;
+  return [...groups.entries()]
+    .map(([name, notes]) => ({ name, notes }))
+    .sort((a, b) => a.name.localeCompare(b.name));
+}
+
+function renderColumnCard(column: Column, tone: string): string {
+  const recent = column.notes
+    .slice()
+    .sort((a, b) => (a.updated_at < b.updated_at ? 1 : -1))
+    .slice(0, 3)
+    .map((n) => `<li>${esc(n.title)}</li>`)
+    .join('');
+  return `
+    <a class="col-card" href="/articles/index.html?cat=${encodeURIComponent(column.name)}">
+      <div class="col-card__cover thumb ${esc(tone)}">
+        <div class="thumb__grid" aria-hidden="true"></div>
+        <div class="thumb__art" aria-hidden="true">${COLUMN_ART}</div>
+      </div>
+      <div class="col-card__body">
+        <div class="col-card__name">${esc(column.name)}</div>
+        <ul class="col-card__list">${recent}</ul>
+        <div class="col-card__foot">
+          <span class="col-card__count">
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M3 3h10v10H3z"></path><path d="M3 6.5h10M6.5 6.5V13"></path></svg>
+            ${column.notes.length} 篇文章
+          </span>
+          <span class="btn-ghost">进入专栏</span>
+        </div>
+      </div>
+    </a>`;
+}
+
+/** slot=column 的广告,渲染在专栏网格上方。 */
+function renderColumnAds(config: SiteConfig): string {
+  const ads = (config.home?.ads ?? []).filter(
+    (ad: HfAdSettings) => ad.enabled !== false && ad.slot === 'column',
+  );
+  if (ads.length === 0) return '';
+  const cards = ads
+    .map((ad) => {
+      const tone = ad.tone ?? 'blue';
+      const href = ad.cta_href && /^https?:\/\//i.test(ad.cta_href) ? ad.cta_href : '#';
+      return `
+      <a class="col-ad t-${esc(tone)}" data-ad-slot="column" href="${esc(href)}" target="_blank" rel="noopener sponsored">
+        <span class="ad__label">赞助 · Sponsored</span>
+        <span class="col-ad__title">${esc(ad.title)}</span>
+        ${ad.body ? `<span class="col-ad__body">${esc(ad.body)}</span>` : ''}
+        ${ad.cta_label ? `<span class="col-ad__cta">${esc(ad.cta_label)}</span>` : ''}
+      </a>`;
+    })
+    .join('');
+  return `<div class="col-ads" aria-label="赞助广告">${cards}</div>`;
 }
