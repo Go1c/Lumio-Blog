@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
 import {
-  adjustVisibilityCounts,
-  applyNoteVisibilityPatch,
   buildListVisibilityPatch,
+  applyNoteVisibilityPatch,
+  adjustVisibilityCounts,
   filterFoldersByVisibility,
   folderCountForFilter,
   formatNoteListHeader,

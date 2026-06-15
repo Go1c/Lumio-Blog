@@ -8,6 +8,7 @@ import {
   type NoteSummary,
   type Visibility,
 } from '../api.js';
+import { requestAdminMenuCountsRefresh } from '../admin-events.js';
 
 const VISIBILITY_FILTERS: Array<{ id: Visibility | 'all'; label: string }> = [
   { id: 'all', label: '全部' },
@@ -93,7 +94,10 @@ export function buildListVisibilityPatch(next: Visibility): ListVisibilityPatch 
   };
 }
 
-export function applyNoteVisibilityPatch(note: NoteSummary, next: Visibility): NoteSummary {
+export function applyNoteVisibilityPatch(
+  note: NoteSummary,
+  next: Visibility,
+): NoteSummary {
   const patch = buildListVisibilityPatch(next);
   return {
     ...note,
@@ -164,9 +168,15 @@ export function adjustVisibilityCounts<T extends Partial<Record<Visibility | 'al
   } as T;
 }
 
-export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean }): JSX.Element {
+export function NoteList({
+  shortLinkIdle = false,
+  initialPath,
+}: {
+  shortLinkIdle?: boolean;
+  initialPath?: string;
+}): JSX.Element {
   const [view, setView] = useState<ViewMode>(readView);
-  const [path, setPath] = useState<string>(readPath);
+  const [path, setPath] = useState<string>(() => initialPath ?? readPath());
   const [tree, setTree] = useState<FolderTreeResponse | null>(null);
   const [notes, setNotes] = useState<NoteSummary[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -183,6 +193,12 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
   useEffect(() => {
     try { localStorage.setItem(PATH_STORAGE_KEY, path); } catch { /* ignore */ }
   }, [path]);
+
+  useEffect(() => {
+    if (initialPath === undefined) return;
+    setView('tree');
+    setPath(initialPath);
+  }, [initialPath]);
 
   const loadFlat = (): Promise<void> =>
     api
@@ -218,6 +234,15 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
       })
       .catch((e: unknown) => setError(e instanceof Error ? e.message : String(e)));
   }, [shortLinkIdle]);
+
+  const reload = (): Promise<void> =>
+    view === 'flat' ? loadFlat() : loadTree(path);
+
+  const enterFolder = (nextPath: string) => {
+    setPath(nextPath);
+    setView('tree');
+    syncVaultHash(nextPath);
+  };
 
   // 平铺视图筛选
   const filteredFlat = useMemo(() => {
@@ -286,21 +311,24 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
 
   const setVisibility = async (n: NoteSummary, next: Visibility): Promise<void> => {
     if (next === n.visibility) return;
-    setError(null);
-    setBusySlugs((prev) => new Set(prev).add(n.slug));
-    setNotes((current) => updateFlatNotesVisibility(current, n.slug, next));
+    const previousNote = n;
     setTree((current) => updateTreeVisibility(current, n.slug, next));
+    setNotes((current) => updateFlatNotesVisibility(current, n.slug, next));
+    setBusySlugs((current) => new Set(current).add(n.slug));
+    setError(null);
     try {
       await api.patchMeta(n.slug, buildListVisibilityPatch(next));
+      requestAdminMenuCountsRefresh();
     } catch (e) {
-      setNotes((current) => restoreFlatNote(current, n));
-      setTree((current) => restoreTreeNote(current, n));
+      setTree((current) => restoreTreeNote(current, previousNote));
+      setNotes((current) => restoreFlatNote(current, previousNote));
       setError(e instanceof Error ? e.message : String(e));
+      void reload();
     } finally {
-      setBusySlugs((prev) => {
-        const nextBusy = new Set(prev);
-        nextBusy.delete(n.slug);
-        return nextBusy;
+      setBusySlugs((current) => {
+        const nextSlugs = new Set(current);
+        nextSlugs.delete(n.slug);
+        return nextSlugs;
       });
     }
   };
@@ -355,7 +383,7 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
         <Breadcrumbs
           path={tree.path}
           breadcrumbs={tree.breadcrumbs}
-          onJump={(p) => setPath(p)}
+          onJump={enterFolder}
         />
       )}
 
@@ -438,7 +466,7 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
           notes={filteredTreeNotes}
           filter={filter}
           busySlugs={busySlugs}
-          onEnterFolder={(p) => setPath(p)}
+          onEnterFolder={enterFolder}
           onSetVisibility={setVisibility}
         />
       ) : (
@@ -450,6 +478,20 @@ export function NoteList({ shortLinkIdle = false }: { shortLinkIdle?: boolean })
       )}
     </div>
   );
+}
+
+function syncVaultHash(path: string): void {
+  if (typeof location === 'undefined') return;
+  const next = path ? `#/vault/${encodeFolderPath(path)}` : '#/vault';
+  if (location.hash !== next) location.hash = next;
+}
+
+function encodeFolderPath(path: string): string {
+  return path
+    .split('/')
+    .filter(Boolean)
+    .map((segment) => encodeURIComponent(segment))
+    .join('/');
 }
 
 function sortNotes(arr: NoteSummary[], sort: SortKey): NoteSummary[] {
