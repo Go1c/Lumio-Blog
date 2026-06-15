@@ -76,6 +76,7 @@ export interface NoteDetail {
   published_at: string | null;
   scheduled_at: string | null;
   cover: string | null;
+  tags: string[];
 }
 
 export interface IdleShortLinkItem {
@@ -330,6 +331,11 @@ export const api = {
       }),
     );
   },
+  async deleteNote(slug: string): Promise<void> {
+    await jsonOrThrow(
+      await req(`/api/admin/notes/${encodeURIComponent(slug)}`, { method: 'DELETE' }),
+    );
+  },
   /** 生成短链(若已存在则原样返回);用 rotate=true 强制旋转。返回 short_id。 */
   async createShortLink(
     slug: string,
@@ -414,7 +420,7 @@ export const api = {
   async listTokens(): Promise<{ tokens: TokenRow[] }> {
     return jsonOrThrow(await req('/api/admin/tokens'));
   },
-  async createToken(name: string, scope: 'read' | 'write' | 'admin', ttl_days = 90): Promise<{ id: number; token: string }> {
+  async createToken(name: string, scope: 'admin', ttl_days = 90): Promise<{ id: number; token: string }> {
     return jsonOrThrow(await req('/api/admin/tokens', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ name, scope, ttl_days }) }));
   },
   async revokeToken(id: number): Promise<void> {

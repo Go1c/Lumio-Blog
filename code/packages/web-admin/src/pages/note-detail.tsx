@@ -117,6 +117,7 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
   const [scheduledAt, setScheduledAt] = useState('');
   const [pwModalOpen, setPwModalOpen] = useState(false);
   const [pwInput, setPwInput] = useState('');
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
 
   const load = (): Promise<void> =>
     api.getNote(slug).then((r) => {
@@ -269,8 +270,25 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
     }
   };
 
+  const deleteNote = async (): Promise<void> => {
+    if (!deleteConfirm) { setDeleteConfirm(true); return; }
+    setBusy(true);
+    try {
+      await api.deleteNote(slug);
+      location.hash = '#/vault';
+    } catch (e) {
+      setToast({ msg: (e as Error).message, err: true });
+      setDeleteConfirm(false);
+    } finally {
+      setBusy(false);
+    }
+  };
+
   const searchableDisabled = note.visibility === 'link-only' || note.visibility === 'private';
   const updatedAgo = timeAgoZh(note.updated_at);
+  const columnLabel = columnLabelFromSourcePath(note.source_path);
+  const columnPath = columnPathFromSourcePath(note.source_path);
+  const tagLinks = noteTagLinks(note.tags ?? []);
 
   return (
     <div class="note-detail">
@@ -294,6 +312,16 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
         >
           <HfIcon name="chart" size={11} /> 数据
         </a>
+        <button
+          type="button"
+          class={`ui-btn ui-btn--sm${deleteConfirm ? ' ui-btn--danger' : ' ui-btn--ghost'}`}
+          disabled={busy}
+          onClick={() => void deleteNote()}
+          title={deleteConfirm ? '再次点击确认删除' : '从服务器删除此笔记'}
+          onBlur={() => setDeleteConfirm(false)}
+        >
+          <HfIcon name="trash" size={11} /> {deleteConfirm ? '确认删除?' : '删除'}
+        </button>
       </div>
       <div class="hf-mono hf-tiny hf-muted note-detail__source">
         {note.source_path} · 修改 {updatedAgo} · {note.reading_minutes} min · {note.word_count} 字
@@ -550,6 +578,37 @@ export function NoteDetailPage({ slug }: { slug: string }): JSX.Element {
             <dd class="hf-mono" style={{ margin: 0, wordBreak: 'break-all' }}>{note.slug}</dd>
             <dt class="hf-muted">source</dt>
             <dd class="hf-mono" style={{ margin: 0, wordBreak: 'break-all' }}>{note.source_path}</dd>
+            <dt class="hf-muted">专栏</dt>
+            <dd style={{ margin: 0 }}>
+              {columnPath ? (
+                <a class="hf-sm" href={`#/vault/${encodeURIComponent(columnPath)}`} style={{ color: 'var(--accent)' }}>
+                  {columnLabel}
+                </a>
+              ) : columnLabel}
+            </dd>
+            <dt class="hf-muted">标签</dt>
+            <dd style={{ margin: 0 }}>
+              {tagLinks.length ? (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {tagLinks.map((tag) => (
+                    <a
+                      key={tag.tag}
+                      class="ui-badge"
+                      href={tag.href}
+                      title="查看标签聚合"
+                      style={{ textDecoration: 'none' }}
+                    >
+                      #{tag.tag}
+                    </a>
+                  ))}
+                </div>
+              ) : (
+                <span class="hf-muted">无标签</span>
+              )}
+              <div class="hf-tiny hf-muted" style={{ marginTop: 4 }}>
+                来自 frontmatter <code>tags:</code>,在 Obsidian 中调整后同步。
+              </div>
+            </dd>
             <dt class="hf-muted">created</dt>
             <dd class="hf-mono" style={{ margin: 0 }}>
               <time dateTime={note.created_at}>{note.created_at.slice(0, 10)}</time>
@@ -726,6 +785,23 @@ function toLocalInput(iso: string): string {
   } catch {
     return '';
   }
+}
+
+export function columnLabelFromSourcePath(sourcePath: string | undefined | null): string {
+  return columnPathFromSourcePath(sourcePath) || '未分栏';
+}
+
+export function noteTagLinks(tags: readonly string[]): Array<{ tag: string; href: string }> {
+  return tags
+    .map((tag) => tag.trim())
+    .filter(Boolean)
+    .map((tag) => ({ tag, href: `#/tags/${encodeURIComponent(tag)}` }));
+}
+
+function columnPathFromSourcePath(sourcePath: string | undefined | null): string {
+  const cleaned = (sourcePath ?? '').replace(/\\/g, '/').split('/').filter(Boolean);
+  if (cleaned.length <= 1) return '';
+  return cleaned[0] ?? '';
 }
 
 function timeAgoZh(iso: string): string {

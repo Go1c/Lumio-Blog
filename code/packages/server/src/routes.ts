@@ -51,7 +51,7 @@ export interface RouteDeps {
   mediaStore?: MediaStore;
   /** main.ts 注入,用来回吐 syncAll 的诊断给 /api/admin/sync/diagnostics */
   syncDiagnostics?: SyncDiagnosticsBuffer;
-  /** DB-only metadata changes need static regeneration, not a vault rescan. */
+  /** DB-only metadata changes only need static regeneration, not a vault rescan. */
   renderSite?: () => Promise<void>;
 }
 
@@ -303,11 +303,22 @@ export function buildApp(deps: RouteDeps): Hono {
       }
     }
     return c.json({
-      note,
+      note: { ...note, tags: noteRepo.tagsForSlug(slug) },
       backlinks: noteRepo.backlinks(slug),
       outlinks: noteRepo.outlinks(slug),
       short_link,
     });
+  });
+
+  admin.delete('/notes/:slug', (c) => {
+    const slug = c.req.param('slug');
+    const note = noteRepo.getBySlug(slug);
+    if (!note) return c.json({ error: { code: 'not_found' } }, 404);
+    noteRepo.delete(slug);
+    audit.write({ actor: c.get('actor') ?? 'owner', action: 'note.delete', target: slug });
+    deps.bus.emit({ kind: 'note.unpublished', slug, reason: 'admin.delete' });
+    requestStaticRefresh('note.delete');
+    return c.json({ ok: true });
   });
 
   admin.patch('/notes/:slug/meta', async (c) => {
@@ -435,7 +446,7 @@ export function buildApp(deps: RouteDeps): Hono {
   admin.get('/tokens', (c) => c.json({ tokens: tokens.list() }));
   admin.post('/tokens', async (c) => {
     const { name, scope, ttl_days } = await c.req.json<{ name: string; scope: 'read' | 'write' | 'admin'; ttl_days?: number }>();
-    if (!name || !scope) return c.json({ error: { code: 'validation_failed' } }, 400);
+    if (!name || scope !== 'admin') return c.json({ error: { code: 'validation_failed', field: 'scope' } }, 400);
     const r = tokens.create(name, scope, ttl_days ?? 90);
     audit.write({ actor: c.get('actor') ?? 'owner', action: 'token.create', target: String(r.id), diff: JSON.stringify({ name, scope }) });
     return c.json(r);
@@ -494,10 +505,6 @@ export function buildApp(deps: RouteDeps): Hono {
   });
 
   app.route('/api/admin', admin);
-
-  // ---------- Agent write API（bearer write scope）----------
-  // 共享 patchMeta 实现，权限来自 actorMw('write')
-  app.patch('/api/notes/:slug/meta', actorMw('write'), patchMeta);
 
   // ---------- WS-G register (settings / search / graph / analytics / media / backup / og / newsletter) ----------
   registerSettings(app, deps);
