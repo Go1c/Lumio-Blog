@@ -1726,7 +1726,7 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 .post-meta svg { color: var(--faint); }
 .post-hero {
   position: relative;
-  height: 260px;
+  height: 200px;
   border-radius: var(--radius);
   overflow: hidden;
   display: grid;
@@ -1736,7 +1736,9 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 }
 .post-hero .thumb__grid { opacity: .55; }
 .post-hero__art { position: relative; width: 280px; height: 180px; }
-.post-hero--cover { background: #0b1220; }
+/* 题图(作者上传的封面)按自然比例整体缩放,不裁切、控制高度不过大 */
+.post-hero--cover { height: auto; max-height: 210px; background: transparent; }
+.post-hero--cover .post-hero__img { height: auto; max-height: 210px; object-fit: contain; }
 .post-hero__img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .prose { font-family: var(--font-zh); color: #34415C; }
 .prose.post-prose {
@@ -2186,8 +2188,12 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   .grid-4 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .feature__link { grid-template-columns: 1fr; }
   .cols { grid-template-columns: 1fr; }
-  .post-layout { grid-template-columns: 1fr; }
+  .layout,
+  .layout--post,
+  .post-layout { grid-template-columns: minmax(0, 1fr); }
+  .layout aside,
   .post-rail { position: static; }
+  .toc { position: static; }
   .feat-row { grid-template-columns: 1fr; }
   .team { grid-template-columns: repeat(2, 1fr); }
   .page-head__title { font-size: 32px; }
@@ -2220,6 +2226,11 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   .post-head__title { font-size: 28px; }
   .post-head__meta { font-size: 12px; }
   .post-page { padding: 22px 16px 28px; }
+  .post-hero { height: 150px; margin-bottom: 22px; }
+  .post-hero--cover { max-height: 150px; }
+  .post-hero--cover .post-hero__img { max-height: 150px; }
+  .post-title { font-size: 26px; }
+  .crumb { flex-wrap: wrap; }
   .post-article__bar { align-items: flex-start; flex-direction: column; }
   .post-prose { padding: 24px 18px; border-radius: 14px; }
   .post-prose.hf-prose { font-size: 15.5px; line-height: 1.78; }
