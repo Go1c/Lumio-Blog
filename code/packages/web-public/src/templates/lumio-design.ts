@@ -1736,9 +1736,9 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 }
 .post-hero .thumb__grid { opacity: .55; }
 .post-hero__art { position: relative; width: 280px; height: 180px; }
-/* 题图(作者上传的封面)铺满内容宽度,按原比例完整显示,不裁切、不缩小留白 */
-.post-hero--cover { height: auto; background: transparent; }
-.post-hero--cover .post-hero__img { width: 100%; height: auto; object-fit: contain; display: block; }
+/* 题图(作者上传的封面):全宽扁横幅,3:1 比例,裁切对齐顶部,高度不过大 */
+.post-hero--cover { height: auto; aspect-ratio: 3 / 1; background: transparent; }
+.post-hero--cover .post-hero__img { width: 100%; height: 100%; object-fit: cover; object-position: center top; display: block; }
 .post-hero__img { width: 100%; height: 100%; object-fit: cover; display: block; }
 .prose { font-family: var(--font-zh); color: #34415C; }
 .prose.post-prose {
