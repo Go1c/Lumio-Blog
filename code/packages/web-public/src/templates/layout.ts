@@ -19,7 +19,14 @@ export interface LayoutOpts {
   extraHead?: string;
 }
 
-const STYLES_HREF = '/styles.css?v=20260604-lumio-contrast';
+// 样式版本号:默认占位,构建时由 render-site 用 styles.css 内容 hash 覆盖,
+// 保证 CSS 一变 URL 就变、浏览器/CDN 缓存自动失效。
+let stylesVersion = '20260604-lumio-contrast';
+
+/** 由 render-site 在写出 styles.css 时调用,传入内容 hash 作为缓存版本号。 */
+export function setStylesVersion(version: string): void {
+  if (version) stylesVersion = version;
+}
 
 const LUMIO_CONTRAST_HEAD = `<style>
 body.ui-public.lumio-public {
@@ -75,7 +82,7 @@ export function layout(o: LayoutOpts): string {
     description: o.description,
     config: o.config,
     body: o.body,
-    stylesHref: STYLES_HREF,
+    stylesHref: `/styles.css?v=${stylesVersion}`,
     extraHead: `${LUMIO_CONTRAST_HEAD}${o.extraHead ?? ''}`,
     extraScripts,
   };

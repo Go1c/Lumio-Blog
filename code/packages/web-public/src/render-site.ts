@@ -1,11 +1,13 @@
 import { mkdir, writeFile, copyFile, access, readFile, readdir, unlink } from 'node:fs/promises';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { createHash } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { NoteRepo } from '@opennote/db';
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
 import { CANVAS_RUNTIME_JS, HTML_EMBED_RUNTIME_JS } from '@opennote/obsidian';
+import { setStylesVersion } from './templates/layout.js';
 import { renderHome } from './templates/home.js';
 import { renderArticles } from './templates/articles.js';
 import { renderColumns } from './templates/columns.js';
@@ -87,6 +89,13 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   const folders = [...folderCountMap.entries()]
     .sort((a, b) => b[1] - a[1])
     .map(([name, count]) => ({ name, count }));
+
+  // 先算出最终 styles.css(含 obsidian.css)的内容 hash,作为缓存版本号。
+  // 必须在渲染任何页面之前设置,这样所有页面引用的 styles.css?v= 都带上当前 hash,
+  // CSS 内容一变 URL 就变,浏览器/CDN 缓存自动失效。
+  const obsidianCss = await readObsidianCss();
+  const fullCss = composeStyles(obsidianCss);
+  setStylesVersion(createHash('sha1').update(fullCss).digest('hex').slice(0, 12));
 
   await writeFile(
     join(opts.out, 'index.html'),
@@ -253,9 +262,8 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     'utf-8',
   );
 
-  // CSS = ui token + 站点 CSS + obsidian.css(运行时 readFile,避免 build 时 inline)
-  const obsidianCss = await readObsidianCss();
-  await writeFile(join(opts.out, 'styles.css'), composeStyles(obsidianCss), 'utf-8');
+  // CSS = ui token + 站点 CSS + obsidian.css(已在前面读取并算好 hash,这里直接写出)
+  await writeFile(join(opts.out, 'styles.css'), fullCss, 'utf-8');
 
   // 注入 obsidian 客户端运行时(canvas panzoom + html-embed iframe 自适应)
   await writeFile(
