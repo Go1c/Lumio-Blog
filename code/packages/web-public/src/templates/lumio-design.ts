@@ -2001,6 +2001,25 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   max-width: 100%;
   overflow-x: auto;
 }
+/* 正文 markdown 图片 — 不影响顶部 .post-hero__img cover */
+.post-prose.hf-prose img {
+  display: block;
+  max-width: min(100%, 860px);
+  height: auto;
+  margin: 20px auto 8px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-card);
+}
+/* 图片下紧跟的 caption(<em>)保持居中、与图片贴合 */
+.post-prose.hf-prose img + em,
+.post-prose.hf-prose p > img + em {
+  display: block;
+  margin: 0 auto 16px;
+  text-align: center;
+  font-size: 13px;
+  color: var(--muted);
+}
 .post-author,
 .post-panel {
   border: 1px solid var(--line);

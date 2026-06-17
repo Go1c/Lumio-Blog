@@ -96,6 +96,22 @@ describe('composeStyles', () => {
     expect(styles).toContain('body.ui-public.lumio-public .post-prose.hf-prose p');
     expect(styles).toContain('color: #1E2A3A');
   });
+
+  it('constrains body markdown images without touching the cover hero', () => {
+    const styles = composeStyles('');
+
+    // 正文 markdown 图片被约束
+    const imgRule = styles.indexOf('.post-prose.hf-prose img {');
+    expect(imgRule).toBeGreaterThan(-1);
+    const imgBlock = styles.slice(imgRule, imgRule + 240);
+    expect(imgBlock).toContain('max-width: min(100%, 860px)');
+    expect(imgBlock).toContain('height: auto');
+    expect(imgBlock).toContain('display: block');
+
+    // 顶部 cover hero 仍然使用 object-fit: cover,未被正文图片样式影响
+    expect(styles).toContain('.post-hero__img { width: 100%; height: 100%; object-fit: cover; display: block; }');
+    expect(styles).not.toContain('.post-hero__img { display: block; max-width');
+  });
 });
 
 const config: SiteConfig = {
