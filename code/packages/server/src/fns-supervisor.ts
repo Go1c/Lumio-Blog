@@ -31,9 +31,10 @@ export interface FnsSupervisorOpts {
 }
 
 const RESTART_BACKOFFS_MS = [1_000, 5_000, 15_000, 30_000, 60_000];
-const DISCONNECTED_RESTART_MS = 60_000;
-const STATUS_CONNECTED = /Authenticated\.|Connected\./;
-const STATUS_DISCONNECTED = /ConnectionClosed|Connection lost/;
+const DISCONNECTED_RESTART_MS = 15_000;
+const STATUS_CONNECTED = /Authentication successful|Authenticated\.|WebSocket connected|Connected\./i;
+const STATUS_DISCONNECTED = /ConnectionClosed|Connection lost|websocket listener ended/i;
+const STATUS_ERROR = /Authentication failed|Failed to authenticate|Traceback \(most recent call last\)|\bError:/i;
 
 export class FnsSupervisor {
   private opts: FnsSupervisorOpts;
@@ -150,6 +151,8 @@ export class FnsSupervisor {
     const python = this.opts.python ?? 'python3';
     const args = ['-m', 'fns_cli.main', 'run', '-c', this.opts.configOutPath];
 
+    await this.updateStatus('unknown');
+
     this.opts.log('info', 'fns.supervisor.spawn', {
       python, args, cliDir: this.opts.cliDir, vault: this.opts.vaultDir,
     });
@@ -161,7 +164,6 @@ export class FnsSupervisor {
     });
     const childGeneration = ++this.childGeneration;
     this.child = child;
-    await this.updateStatus('unknown');
 
     const onLine = (data: Buffer) => {
       const text = data.toString('utf-8');
@@ -170,7 +172,9 @@ export class FnsSupervisor {
         if (!trimmed) continue;
         process.stdout.write(`[fns] ${trimmed}\n`);
         // 简单解析状态
-        if (STATUS_CONNECTED.test(trimmed)) {
+        if (STATUS_ERROR.test(trimmed)) {
+          void this.updateStatus('error', trimmed);
+        } else if (STATUS_CONNECTED.test(trimmed)) {
           this.clearDisconnectedRestart();
           this.restartCount = 0;
           void this.updateStatus('connected');
@@ -190,7 +194,9 @@ export class FnsSupervisor {
       if (this.stopping) return;
       if (childGeneration !== this.childGeneration) return;
       if (!this.current?.enabled) return;
-      void this.updateStatus('disconnected', `fns_cli exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
+      if (this.lastStatus !== 'error') {
+        void this.updateStatus('disconnected', `fns_cli exited code=${code ?? 'null'} signal=${signal ?? 'null'}`);
+      }
       // 调度重启
       const delay = RESTART_BACKOFFS_MS[Math.min(this.restartCount, RESTART_BACKOFFS_MS.length - 1)] ?? 60_000;
       this.restartCount += 1;

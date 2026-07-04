@@ -68,6 +68,7 @@ describe('settings product copy', () => {
     const source = readFileSync(new URL('./settings.tsx', import.meta.url), 'utf-8');
 
     expect(source).toContain('本地预览 / 同步配置');
+    expect(source).toContain('重新连接');
     expect(source).not.toContain('CLI / 本地预览');
     expect(source).not.toContain('CLI 用 wss://');
   });

@@ -372,6 +372,9 @@ export const api = {
   async sync(): Promise<void> {
     await jsonOrThrow(await req('/api/admin/sync', { method: 'POST' }));
   },
+  async restartFns(): Promise<{ ok: true }> {
+    return jsonOrThrow(await req('/api/admin/fns/restart', { method: 'POST' }));
+  },
   async audit(limit = 50): Promise<{ entries: AuditEntry[] }> {
     return jsonOrThrow(await req(`/api/admin/audit?limit=${limit}`));
   },

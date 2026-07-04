@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'preact/hooks';
+import { useCallback, useEffect, useMemo, useState } from 'preact/hooks';
 import type { AdminSettings, AdminSettingsPatch, Features } from '@opennote/core';
 import { api } from '../api.js';
 import { WsEStyles } from '../components/ws-e-styles.js';
@@ -147,6 +147,18 @@ export function SettingsPage({ section }: { section: SettingsSectionId }) {
     setSaveErr(null);
   };
 
+  const refreshFnsStatus = useCallback(async () => {
+    const fresh = await api.settings.get();
+    setOriginal((cur) => {
+      if (!cur) return fresh;
+      return withFreshFnsStatus(cur, fresh);
+    });
+    setDraft((cur) => {
+      if (!cur) return fresh;
+      return withFreshFnsStatus(cur, fresh);
+    });
+  }, []);
+
   const save = async () => {
     if (!draft) return;
     const v = validateSection(section, draft);
@@ -222,7 +234,15 @@ export function SettingsPage({ section }: { section: SettingsSectionId }) {
           {section === 'seo' && <SeoForm draft={draft} update={update} errs={errs} />}
           {section === 'home' && <HomeForm draft={draft} update={update} errs={errs} />}
           {section === 'features' && <FeaturesForm draft={draft} update={update} />}
-          {section === 'fns' && <FnsForm draft={draft} update={update} errs={errs} />}
+          {section === 'fns' && (
+            <FnsForm
+              draft={draft}
+              update={update}
+              errs={errs}
+              onRefreshStatus={refreshFnsStatus}
+              pushToast={pushToast}
+            />
+          )}
           {section === 'security' && <SecurityForm pushToast={pushToast} />}
 
           {section !== 'security' && (
@@ -259,6 +279,40 @@ interface FormProps {
   draft: AdminSettings;
   update: (next: AdminSettings) => void;
   errs: ErrMap;
+}
+
+interface FnsFormProps extends FormProps {
+  onRefreshStatus: () => Promise<void>;
+  pushToast: (msg: string, tone?: ToastTone) => void;
+}
+
+function mergeFnsStatus(
+  current: NonNullable<AdminSettings['fns']> | undefined,
+  fresh: NonNullable<AdminSettings['fns']> | undefined,
+): NonNullable<AdminSettings['fns']> | undefined {
+  if (!fresh) return current;
+  const next: NonNullable<AdminSettings['fns']> = {
+    ...(current ?? fresh),
+    token: current?.token ?? '',
+  };
+  if (fresh.token_set !== undefined) next.token_set = fresh.token_set;
+  else delete next.token_set;
+  if (fresh.last_status !== undefined) next.last_status = fresh.last_status;
+  else delete next.last_status;
+  if (fresh.last_status_at !== undefined) next.last_status_at = fresh.last_status_at;
+  else delete next.last_status_at;
+  if (fresh.last_error !== undefined) next.last_error = fresh.last_error;
+  else delete next.last_error;
+  return next;
+}
+
+function withFreshFnsStatus(current: AdminSettings, fresh: AdminSettings): AdminSettings {
+  const fns = mergeFnsStatus(current.fns, fresh.fns);
+  if (!fns) {
+    const { fns: _fns, ...rest } = current;
+    return rest;
+  }
+  return { ...current, fns };
 }
 
 function FieldErr({ field, errs }: { field: string; errs: ErrMap }) {
@@ -801,7 +855,7 @@ function FeaturesForm({ draft, update }: { draft: AdminSettings; update: (n: Adm
 }
 
 // ----------------------------- FnsForm -----------------------------
-function FnsForm({ draft, update, errs }: FormProps) {
+function FnsForm({ draft, update, errs, onRefreshStatus, pushToast }: FnsFormProps) {
   const fns = draft.fns ?? {
     enabled: false,
     api_url: '',
@@ -809,6 +863,8 @@ function FnsForm({ draft, update, errs }: FormProps) {
     vault: 'notes',
     last_status: 'unknown' as const,
   };
+  const [reconnectBusy, setReconnectBusy] = useState(false);
+  const [statusErr, setStatusErr] = useState<string | null>(null);
   const set = (k: 'enabled' | 'api_url' | 'token' | 'vault', v: string | boolean): void => {
     update({ ...draft, fns: { ...fns, [k]: v } });
   };
@@ -822,12 +878,61 @@ function FnsForm({ draft, update, errs }: FormProps) {
   };
   const status = statusBadge[fns.last_status ?? 'unknown'];
 
+  useEffect(() => {
+    if (!fns.enabled) return undefined;
+    let cancelled = false;
+    const refresh = () => {
+      void onRefreshStatus()
+        .then(() => {
+          if (!cancelled) setStatusErr(null);
+        })
+        .catch((e) => {
+          if (!cancelled) setStatusErr(e instanceof Error ? e.message : String(e));
+        });
+    };
+    refresh();
+    const id = window.setInterval(refresh, 15_000);
+    return () => {
+      cancelled = true;
+      window.clearInterval(id);
+    };
+  }, [fns.enabled, onRefreshStatus]);
+
+  const reconnect = async () => {
+    setReconnectBusy(true);
+    setStatusErr(null);
+    try {
+      await api.restartFns();
+      pushToast('正在重新连接 FNS', 'success');
+      await onRefreshStatus();
+      window.setTimeout(() => { void onRefreshStatus(); }, 2500);
+      window.setTimeout(() => { void onRefreshStatus(); }, 8000);
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      setStatusErr(msg);
+      pushToast('重连失败', 'error');
+    } finally {
+      setReconnectBusy(false);
+    }
+  };
+
   return (
     <>
       <section class="ws-e__panel">
         <header class="ws-e__panel-head">
           <h2>▸ FastNoteSync 同步</h2>
-          <span class={`ws-e__pill ws-e__pill--${status.tone}`}>{status.label}</span>
+          <div class="ws-e__panel-actions">
+            <span class={`ws-e__pill ws-e__pill--${status.tone}`}>{status.label}</span>
+            <button
+              type="button"
+              class="ws-e__row-btn"
+              disabled={!fns.enabled || reconnectBusy}
+              title="重新连接 FNS WebSocket"
+              onClick={reconnect}
+            >
+              ↻ {reconnectBusy ? '连接中…' : '重新连接'}
+            </button>
+          </div>
         </header>
 
         <p class="hf-tiny hf-muted" style={{ padding: '0 16px 8px' }}>
@@ -909,6 +1014,11 @@ function FnsForm({ draft, update, errs }: FormProps) {
                 <time dateTime={fns.last_status_at}>{fns.last_status_at}</time>
                 {fns.last_error && <><br /><span class="ws-e__err">{fns.last_error}</span></>}
               </p>
+            </div>
+          )}
+          {statusErr && (
+            <div class="ws-e__field">
+              <p class="ws-e__err" role="alert">FNS 状态刷新失败:{statusErr}</p>
             </div>
           )}
         </div>

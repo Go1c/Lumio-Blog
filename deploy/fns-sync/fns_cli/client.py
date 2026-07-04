@@ -87,6 +87,8 @@ class WSClient:
                 await self._connect()
                 retries = 0
                 await self._listen()
+                if self._running:
+                    log.warning("Connection lost: websocket listener ended")
             except (
                 websockets.ConnectionClosed,
                 ConnectionError,
@@ -124,16 +126,15 @@ class WSClient:
         )
         log.info("Connecting to %s", url)
 
-        # The server already sends keepalive pings and will close dead
-        # connections on its side. During large attachment uploads, our own
-        # client-initiated ping/pong cycle causes false timeouts and forces an
-        # expensive reconnect + full resync loop, which then delays realtime
-        # local pushes even further. Rely on the server heartbeat here.
+        heartbeat = self.config.client.heartbeat_interval
+        ping_interval = heartbeat if heartbeat > 0 else None
+        ping_timeout = max(heartbeat * 3, 90) if heartbeat > 0 else None
+
         self.ws = await websockets.connect(
             url,
             max_size=128 * 1024 * 1024,
-            ping_interval=None,
-            ping_timeout=None,
+            ping_interval=ping_interval,
+            ping_timeout=ping_timeout,
             close_timeout=10,
         )
         log.info("WebSocket connected, sending auth")

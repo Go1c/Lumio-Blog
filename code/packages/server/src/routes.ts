@@ -4,7 +4,7 @@ import type { Database } from 'better-sqlite3';
 import { resolve } from 'node:path';
 import { NoteRepo, ShortLinkRepo, SubscribersRepo } from '@opennote/db';
 import { generateUniqueShortId } from '@opennote/core';
-import type { SiteConfig, SyncEvent, Visibility } from '@opennote/core';
+import type { FnsSettings, SiteConfig, SyncEvent, Visibility } from '@opennote/core';
 import { AuthService, clearSessionCookie, setSessionCookie, getSessionToken } from './auth.js';
 import {
   hasValidUnlockCookie,
@@ -17,7 +17,7 @@ import { TokenService, requireToken } from './tokens.js';
 import { WebhookService } from './webhooks.js';
 import { AuditLog } from './audit.js';
 import type { EventBus } from './events.js';
-import { register as registerSettings } from './routes/settings.js';
+import { loadFnsYaml, register as registerSettings } from './routes/settings.js';
 import { register as registerSearch } from './routes/search.js';
 import { register as registerGraph } from './routes/graph.js';
 import { register as registerAnalytics } from './routes/analytics.js';
@@ -437,9 +437,72 @@ export function buildApp(deps: RouteDeps): Hono {
 
   admin.post('/sync', async (c) => {
     const forceAll = c.req.query('force') === '1' || c.req.query('force') === 'true';
+    let fns: FnsSettings;
+    try {
+      fns = await loadFnsYaml();
+    } catch (e) {
+      audit.write({
+        actor: c.get('actor') ?? 'owner',
+        action: 'sync.blocked',
+        target: 'fns',
+        diff: JSON.stringify({ reason: 'fns_config_load_failed', message: (e as Error).message }),
+      });
+      return c.json(
+        { error: { code: 'fns_config_invalid', message: `FNS 配置读取失败:${(e as Error).message}` } },
+        500,
+      );
+    }
+    if (fns?.enabled && fns.last_status !== 'connected') {
+      const status = fns.last_status ?? 'unknown';
+      audit.write({
+        actor: c.get('actor') ?? 'owner',
+        action: 'sync.blocked',
+        target: 'fns',
+        diff: JSON.stringify({ status, last_status_at: fns.last_status_at ?? null }),
+      });
+      return c.json(
+        {
+          error: {
+            code: 'fns_disconnected',
+            message: `FNS 未连接(${status}),无法确认 FastNoteSync 已拉到最新内容。请先在设置里的 FNS 同步重新连接。`,
+          },
+        },
+        409,
+      );
+    }
     audit.write({ actor: c.get('actor') ?? 'owner', action: forceAll ? 'sync.force' : 'sync.manual' });
     await deps.triggerSync({ forceAll });
     return c.json({ ok: true, forceAll });
+  });
+
+  admin.post('/fns/restart', async (c) => {
+    const fns = await loadFnsYaml().catch((e) => {
+      audit.write({
+        actor: c.get('actor') ?? 'owner',
+        action: 'fns.restart.failed',
+        target: 'fns',
+        diff: JSON.stringify({ reason: 'fns_config_load_failed', message: (e as Error).message }),
+      });
+      return null;
+    });
+    if (!fns) {
+      return c.json({ error: { code: 'fns_config_invalid', message: 'FNS 配置读取失败' } }, 500);
+    }
+    if (!fns.enabled) {
+      return c.json({ error: { code: 'fns_disabled', message: 'FNS 同步未启用' } }, 409);
+    }
+    if (!fns.api_url || !fns.token) {
+      return c.json({ error: { code: 'fns_incomplete', message: 'FNS URL 或 Token 为空' } }, 400);
+    }
+
+    audit.write({
+      actor: c.get('actor') ?? 'owner',
+      action: 'fns.restart',
+      target: fns.vault,
+      diff: JSON.stringify({ status: fns.last_status ?? 'unknown' }),
+    });
+    deps.bus.emit({ kind: 'settings.changed', sections: ['fns'] });
+    return c.json({ ok: true });
   });
 
   // Tokens

@@ -35,6 +35,14 @@ export const WS_E_STYLE = `
   margin: 0; font-size: 13px; font-weight: 600; letter-spacing: 0.01em;
 }
 .ws-e__panel-head > * + * { margin-left: 12px; }
+.ws-e__panel-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
 .ws-e__panel-hint { font-family: var(--mono); font-size: 11px; color: var(--ink-4); margin-left: auto; }
 .ws-e__empty { padding: 16px; color: var(--ink-3); font-size: 13px; }
 
