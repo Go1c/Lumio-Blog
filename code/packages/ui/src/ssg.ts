@@ -6,7 +6,9 @@
 export {
   publicLayout,
   escHtml,
+  jsonLdScript,
   type PublicLayoutOpts,
+  type ArticleMeta,
 } from './layout/public-layout.js';
 
 export { TOKENS_CSS, PRIMITIVES_CSS, ALL_CSS } from './tokens.css.js';

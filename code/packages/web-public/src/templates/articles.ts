@@ -1,5 +1,6 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
+import { collectionEntities } from '../partials/jsonld.js';
 import {
   buildLumioArticles,
   categoryCounts,
@@ -16,6 +17,15 @@ export function renderArticles(
   config: SiteConfig,
 ): string {
   const hasPosts = posts.length > 0;
+  const ARTICLES_PATH = '/articles/index.html';
+  const ARTICLES_DESC = '从渲染、性能到架构与工具链,系统沉淀的游戏开发技术干货。';
+  const jsonLd = collectionEntities({
+    config,
+    path: ARTICLES_PATH,
+    name: `全部文章 · ${config.site.title}`,
+    description: ARTICLES_DESC,
+    items: posts.map((p) => ({ title: p.title, path: `/posts/${p.slug}.html` })),
+  });
 
   if (!hasPosts) {
     const body = `
@@ -25,10 +35,12 @@ export function renderArticles(
     </main>`;
     return layout({
       title: `全部文章 · ${config.site.title}`,
-      description: '全部文章',
+      description: ARTICLES_DESC,
       config,
       body,
       active: 'articles',
+      path: ARTICLES_PATH,
+      jsonLd,
     });
   }
 
@@ -126,9 +138,11 @@ export function renderArticles(
 
   return layout({
     title: `全部文章 · ${config.site.title}`,
-    description: '全部文章',
+    description: ARTICLES_DESC,
     config,
     body,
     active: 'articles',
+    path: ARTICLES_PATH,
+    jsonLd,
   });
 }

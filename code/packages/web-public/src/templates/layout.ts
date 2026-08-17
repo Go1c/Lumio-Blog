@@ -1,4 +1,9 @@
-import { publicLayout, escHtml as escFromUi, type PublicLayoutOpts } from '@opennote/ui/ssg';
+import {
+  publicLayout,
+  escHtml as escFromUi,
+  type ArticleMeta,
+  type PublicLayoutOpts,
+} from '@opennote/ui/ssg';
 import type { SiteConfig } from '@opennote/core';
 
 export const esc = escFromUi;
@@ -15,6 +20,10 @@ export interface LayoutOpts {
   path?: string;
   /** 分享图路径或绝对 URL */
   image?: string;
+  /** schema.org 实体,noindex 页面会被 publicLayout 丢弃 */
+  jsonLd?: unknown[];
+  /** 文章页的 article:* Open Graph meta */
+  article?: ArticleMeta;
   /** 额外的 head HTML */
   extraHead?: string;
 }
@@ -90,5 +99,7 @@ export function layout(o: LayoutOpts): string {
   if (o.active) opts.active = o.active;
   if (o.path) opts.path = o.path;
   if (o.image) opts.image = o.image;
+  if (o.jsonLd?.length) opts.jsonLd = o.jsonLd;
+  if (o.article) opts.article = o.article;
   return publicLayout(opts);
 }

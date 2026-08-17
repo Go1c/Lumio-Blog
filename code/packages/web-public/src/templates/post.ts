@@ -3,6 +3,8 @@ import { layout, esc } from './layout.js';
 import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { renderArticleComments } from '../partials/article-comments.js';
 import { type Neighborhood } from '../partials/backlinks-graph.js';
+import { isMarkdownNote } from '../geo-outputs.js';
+import { blogPostingEntity, breadcrumbEntity, type CrumbItem } from '../partials/jsonld.js';
 import { buildLumioArticles } from './lumio-design.js';
 
 export interface PostData {
@@ -252,16 +254,58 @@ export function renderPost(data: PostData, config: SiteConfig): string {
       })();
     </script>`;
 
+  const path = `/posts/${note.slug}.html`;
+  const noindex = note.visibility !== 'public' || (note.seo_indexable ?? 1) === 0;
+  // 没有自定义 cover 时回退到 /og/<slug>.png 生成器,保证每篇都有分享图
+  const image = note.cover ? String(note.cover) : `/og/${note.slug}.png`;
+  const datePublished = isoDateTime(note.published_at ?? note.created_at ?? note.updated_at);
+  const dateModified = isoDateTime(note.updated_at ?? datePublished);
+
+  // 面包屑 JSON-LD 必须与上面 <nav class="crumb"> 的可见层级一致
+  const crumbs: CrumbItem[] = [
+    { name: '首页', path: '/' },
+    { name: '文章', path: '/articles/index.html' },
+    ...(tags[0] ? [{ name: tags[0], path: `/tags/${encodeURIComponent(tags[0])}.html` }] : []),
+    { name: note.title },
+  ];
+  const jsonLd = noindex
+    ? []
+    : [
+        blogPostingEntity({ note, config, tags, image, datePublished, dateModified }),
+        breadcrumbEntity(config, path, crumbs),
+      ];
+
+  // 原始 markdown 端点只对 markdown 笔记生成(canvas / html 没有可读原文)
+  const markdownAlternate = isMarkdownNote(note)
+    ? `<link rel="alternate" type="text/markdown" href="/posts/${esc(note.slug)}.md" title="${esc(note.title)} (Markdown)">`
+    : '';
+
   return layout({
     title: `${note.title} · ${config.site.title}`,
     description: note.summary ?? '',
     config,
-    noindex: note.visibility !== 'public' || (note.seo_indexable ?? 1) === 0,
+    noindex,
     body,
     active: 'articles',
-    path: `/posts/${note.slug}.html`,
-    ...(note.cover ? { image: String(note.cover) } : {}),
+    path,
+    image,
+    jsonLd,
+    article: {
+      publishedTime: datePublished,
+      modifiedTime: dateModified,
+      tags,
+      author: author.name,
+    },
+    extraHead: markdownAlternate,
   });
+}
+
+/** 补齐成完整 ISO 8601 时间戳;只有日期时补 UTC 零点。 */
+function isoDateTime(raw: string | null | undefined): string {
+  if (!raw) return '';
+  if (/^\d{4}-\d{2}-\d{2}$/.test(raw)) return `${raw}T00:00:00.000Z`;
+  const ms = Date.parse(raw);
+  return Number.isFinite(ms) ? new Date(ms).toISOString() : raw;
 }
 
 function labelOf(v: string): string {

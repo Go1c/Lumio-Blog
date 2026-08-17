@@ -1,6 +1,7 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { isoDate } from '../partials/shared.js';
+import { collectionEntities } from '../partials/jsonld.js';
 import {
   buildLumioArticles,
   LUMIO_TAGS,
@@ -16,6 +17,18 @@ import {
  */
 export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig): string {
   const tags = buildTagCloud(byTag);
+  const TAG_INDEX_PATH = '/tags/index.html';
+  const TAG_INDEX_DESC = '按主题快速找到你关心的内容,标签越大代表文章越多。';
+  const jsonLd = collectionEntities({
+    config,
+    path: TAG_INDEX_PATH,
+    name: `标签 · ${config.site.title}`,
+    description: TAG_INDEX_DESC,
+    items: tags.map((t) => ({
+      title: t.name,
+      path: `/tags/${encodeURIComponent(t.name)}.html`,
+    })),
+  });
 
   if (tags.length === 0) {
     const body = `
@@ -25,11 +38,12 @@ export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig
     </main>`;
     return layout({
       title: `标签 · ${config.site.title}`,
-      description: '所有标签',
+      description: TAG_INDEX_DESC,
       config,
       body,
       active: 'tags',
-      path: '/tags/index.html',
+      path: TAG_INDEX_PATH,
+      jsonLd,
     });
   }
 
@@ -52,11 +66,12 @@ export function renderTagIndex(byTag: Map<string, NoteRow[]>, config: SiteConfig
     </main>`;
   return layout({
     title: `标签 · ${config.site.title}`,
-    description: '所有标签',
+    description: TAG_INDEX_DESC,
     config,
     body,
     active: 'tags',
-    path: '/tags/index.html',
+    path: TAG_INDEX_PATH,
+    jsonLd,
   });
 }
 
@@ -171,13 +186,21 @@ export function renderTagPage(
       })();
     </script>`;
 
+  const path = `/tags/${encodeURIComponent(tag)}.html`;
   return layout({
     title: `#${tag} · ${config.site.title}`,
     description,
     config,
     body,
     active: 'tags',
-    path: `/tags/${encodeURIComponent(tag)}.html`,
+    path,
+    jsonLd: collectionEntities({
+      config,
+      path,
+      name: `标签:${tag}`,
+      description,
+      items: sorted.map((n) => ({ title: n.title, path: `/posts/${n.slug}.html` })),
+    }),
   });
 }
 

@@ -102,6 +102,68 @@ describe('renderPost cover image (题图)', () => {
   });
 });
 
+describe('renderPost head meta (GEO)', () => {
+  it('falls back to the generated OG image when the note has no cover', () => {
+    const html = renderPost({ note, byTag: new Map(), series: [] }, config);
+
+    expect(html).toContain(
+      '<meta property="og:image" content="https://blog.lumio.games/og/hello.png">',
+    );
+    expect(html).toContain(
+      '<meta name="twitter:image" content="https://blog.lumio.games/og/hello.png">',
+    );
+  });
+
+  it('prefers an explicit cover over the OG fallback', () => {
+    const withCover = { ...note, cover: 'https://s3.example.com/hi-lumio.png' };
+    const html = renderPost({ note: withCover, byTag: new Map(), series: [] }, config);
+
+    expect(html).toContain(
+      '<meta property="og:image" content="https://s3.example.com/hi-lumio.png">',
+    );
+    expect(html).not.toContain('/og/hello.png');
+  });
+
+  it('publishes article:* meta and a named author', () => {
+    const tagged = { ...note, title: 'Tagged' };
+    const html = renderPost(
+      { note: tagged, byTag: new Map([['Unity', [tagged]]]), series: [] },
+      config,
+    );
+
+    expect(html).toContain(
+      '<meta property="article:published_time" content="2026-06-01T00:00:00.000Z">',
+    );
+    expect(html).toContain(
+      '<meta property="article:modified_time" content="2026-06-01T00:00:00.000Z">',
+    );
+    expect(html).toContain('<meta property="article:tag" content="Unity">');
+    expect(html).toContain('<meta name="author" content="Lumio">');
+  });
+
+  it('advertises the raw markdown endpoint for markdown notes only', () => {
+    const markdown = renderPost({ note, byTag: new Map(), series: [] }, config);
+    const canvas = renderPost(
+      { note: { ...note, kind: 'canvas' }, byTag: new Map(), series: [] },
+      config,
+    );
+
+    expect(markdown).toContain(
+      '<link rel="alternate" type="text/markdown" href="/posts/hello.md"',
+    );
+    expect(canvas).not.toContain('type="text/markdown"');
+  });
+
+  it('reads twitter:card from site config', () => {
+    const html = renderPost(
+      { note, byTag: new Map(), series: [] },
+      { ...config, seo: { twitter_card: 'summary' } },
+    );
+
+    expect(html).toContain('<meta name="twitter:card" content="summary">');
+  });
+});
+
 describe('post mobile CSS', () => {
   it('contains defensive overflow rules for code blocks and tables', async () => {
     const { POST_MOBILE_CSS } = await import('./post.js');

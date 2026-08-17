@@ -1,5 +1,6 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
 import { layout } from './layout.js';
+import { authorEntity, websiteNode } from '../partials/jsonld.js';
 import {
   buildLumioArticles,
   renderAdSlot,
@@ -66,6 +67,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
     body,
     active: 'home',
     path: '/',
+    jsonLd: [websiteNode(config), authorEntity(config)],
   });
 }
 

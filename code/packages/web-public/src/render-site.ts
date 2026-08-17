@@ -23,6 +23,16 @@ import { renderCliDocs } from './templates/cli-docs.js';
 import { renderSearch } from './templates/search.js';
 import { renderGraph } from './templates/graph.js';
 import { renderNewsletter } from './templates/newsletter.js';
+import {
+  isMarkdownNote,
+  readNoteMarkdown,
+  renderLlmsFullTxt,
+  renderLlmsTxt,
+  renderPostMarkdown,
+  renderRobotsTxt,
+  renderSitemap,
+  tagsOf,
+} from './geo-outputs.js';
 import { HOME_MOBILE_CSS } from './templates/home.js';
 import { POST_MOBILE_CSS } from './templates/post.js';
 import { TAG_MOBILE_CSS } from './templates/tag.js';
@@ -243,14 +253,44 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
 
   // 复制 public/feed.xsl(WS-C — 浏览器直接打开 feed.xml 时美化渲染)
   await copyStaticAssets(opts.out);
-  await writeFile(
-    join(opts.out, 'sitemap.xml'),
-    renderSitemap(seoNotes, [...byTag.keys()], opts.config),
-    'utf-8',
-  );
+
+  // sitemap 可被后台设置整体关掉;关掉时 robots.txt 也不再广告 Sitemap 行。
+  const sitemapEnabled = opts.config.seo?.sitemap !== false;
+  if (sitemapEnabled) {
+    await writeFile(
+      join(opts.out, 'sitemap.xml'),
+      renderSitemap(seoNotes, byTag, opts.config),
+      'utf-8',
+    );
+  }
   await writeFile(
     join(opts.out, 'robots.txt'),
-    `User-agent: *\nAllow: /\nSitemap: ${opts.config.site.url}/sitemap.xml\n`,
+    renderRobotsTxt(opts.config, { sitemap: sitemapEnabled }),
+    'utf-8',
+  );
+
+  // GEO 产物 — llms.txt 索引 / llms-full.txt 全文 / posts/<slug>.md 原始 markdown。
+  // 数据源与 sitemap 一致(seoNotes),不索引的笔记不进任何 agent 端点。
+  await writeFile(join(opts.out, 'llms.txt'), renderLlmsTxt(seoNotes, opts.config), 'utf-8');
+  const markdownNotes = seoNotes.filter(isMarkdownNote);
+  // .md 产物的可见性维度比 .html 窄(只有 seo_indexable 的 markdown 笔记),
+  // 所以单独清一遍孤儿,否则笔记转 noindex 后原文仍然可抓。
+  await removeStaleHtmlFiles(
+    join(opts.out, 'posts'),
+    new Set(markdownNotes.map((n) => `${n.slug}.md`)),
+    ['.md'],
+  );
+  const markdownDocs: string[] = [];
+  for (const n of markdownNotes) {
+    const raw = await readNoteMarkdown(n, opts.config.paths.vault);
+    if (!raw) continue;
+    const doc = renderPostMarkdown(n, opts.config, raw, tagsOf(byTag, n.slug));
+    await writeFile(join(opts.out, 'posts', `${n.slug}.md`), doc, 'utf-8');
+    markdownDocs.push(doc);
+  }
+  await writeFile(
+    join(opts.out, 'llms-full.txt'),
+    renderLlmsFullTxt(opts.config, markdownDocs),
     'utf-8',
   );
 
@@ -281,7 +321,11 @@ async function copyHtmlAliases(out: string): Promise<void> {
   }
 }
 
-export async function removeStaleHtmlFiles(dir: string, expected: Set<string>): Promise<void> {
+export async function removeStaleHtmlFiles(
+  dir: string,
+  expected: Set<string>,
+  extensions: readonly string[] = ['.html'],
+): Promise<void> {
   let entries;
   try {
     entries = await readdir(dir, { withFileTypes: true });
@@ -290,7 +334,12 @@ export async function removeStaleHtmlFiles(dir: string, expected: Set<string>): 
   }
   await Promise.all(
     entries
-      .filter((entry) => entry.isFile() && entry.name.endsWith('.html') && !expected.has(entry.name))
+      .filter(
+        (entry) =>
+          entry.isFile() &&
+          extensions.some((ext) => entry.name.endsWith(ext)) &&
+          !expected.has(entry.name),
+      )
       .map((entry) => unlink(join(dir, entry.name))),
   );
 }
@@ -352,22 +401,6 @@ function primaryTagOf(byTag: Map<string, NoteRow[]>, slug: string): string | nul
     if (notes.some((n) => n.slug === slug)) return tag;
   }
   return null;
-}
-
-function renderSitemap(posts: NoteRow[], tags: string[], config: SiteConfig): string {
-  const url = (path: string) => `<url><loc>${config.site.url}${path}</loc></url>`;
-  const items = [
-    url('/'),
-    url('/articles/index.html'),
-    url('/columns/index.html'),
-    url('/about.html'),
-    url('/tags/index.html'),
-    url('/feed/'),
-    ...posts.map((p) => url(`/posts/${p.slug}.html`)),
-    ...tags.map((t) => url(`/tags/${encodeURIComponent(t)}.html`)),
-  ].join('');
-  return `<?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">${items}</urlset>`;
 }
 
 /**
