@@ -31,6 +31,11 @@ Root Directory=/
 Builder=Dockerfile
 ```
 
+The service **must** use `Builder=Dockerfile`. The repository root
+`zbpack.json` already pins `dockerfile.path` to `Dockerfile` (not a suffix
+name). Do not let Zeabur auto-detect this project as a static site and start
+Caddy.
+
 The runtime logs should contain `opennote v0.5 -> http://localhost:<port>`. If
 you only see Caddy logs, Zeabur is not using the Dockerfile yet.
 
