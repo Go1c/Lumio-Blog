@@ -1,14 +1,14 @@
 site:
-  title: Lumio Blog
+  title: Lumio 技术博客
   url: https://blog.lumio.games
-  description: Game systems, AI workflows, and hard-won engineering notes from Lumio.
+  description: 游戏系统、AI 工作流，以及独立开发里踩过的坑。来自 Lumio。
   language: zh-CN
 author:
   name: Lumio
-  bio: Games, tools, and hard-won engineering notes.
+  bio: 游戏、工具，以及踩过的工程坑。
 home:
-  hero_eyebrow: Game systems · AI tooling · engineering notes
-  hero_title_md: Lumio dev notes
+  hero_eyebrow: 游戏系统 · AI 工作流 · 工程笔记
+  hero_title_md: Lumio 技术笔记
   hero_intro_md: 关于游戏开发、AI 工作流和工程踩坑的公开笔记。
   hero_cta_primary: 读最新文章
   hero_cta_secondary: 按主题浏览
