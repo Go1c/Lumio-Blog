@@ -36,8 +36,8 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
     <div class="body">
       <aside class="hero">
         <div class="hero__deco" aria-hidden="true"><div class="hero__grid"></div></div>
-        <div class="hero__eyebrow">Lumio Dev Notes</div>
-        <h1 class="hero__title"><em>Game</em><em>Tech Blog</em></h1>
+        <div class="hero__eyebrow">游戏系统 · AI 工作流 · 工程笔记</div>
+        <h1 class="hero__title"><em>游戏开发</em><em>技术笔记</em></h1>
         <p class="hero__sub"><b>技术文章</b><span class="dot"></span><b>游戏开发</b><span class="dot"></span><b>实践分享</b></p>
         <a class="btn-primary" href="/articles/index.html">
           阅读最新文章
@@ -62,7 +62,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
 
   return layout({
     title: config.site.title,
-    description: config.site.description ?? 'Lumio Game Tech Blog',
+    description: config.site.description ?? '游戏系统、AI 工作流，以及独立开发里踩过的坑。来自 Lumio。',
     config,
     body,
     active: 'home',

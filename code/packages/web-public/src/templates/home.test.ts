@@ -118,7 +118,10 @@ describe('renderHome brand polish', () => {
       config,
     );
 
-    expect(html).toContain('Lumio Dev Notes');
+    expect(html).toContain('游戏系统 · AI 工作流 · 工程笔记');
+    expect(html).toContain('游戏开发');
+    expect(html).toContain('技术笔记');
+    expect(html).not.toContain('GameTech');
     expect(html).not.toContain('v10 · Lumio Blog');
   });
 
