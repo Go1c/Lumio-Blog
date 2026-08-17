@@ -1,7 +1,9 @@
-import { mkdir, stat } from 'node:fs/promises';
+/// <reference path="./archiver.d.ts" />
+import { mkdir, stat, unlink } from 'node:fs/promises';
 import { existsSync, createWriteStream } from 'node:fs';
 import { dirname, join, resolve } from 'node:path';
 import { createHash, randomUUID } from 'node:crypto';
+import { ZipArchive } from 'archiver';
 import type { Database } from 'better-sqlite3';
 import { BackupRepo } from '@opennote/db';
 import type { BackupJob } from '@opennote/core';
@@ -13,8 +15,6 @@ import type { EventBus } from './events.js';
  * - 一次只跑一个 job(in-flight 锁)
  * - 进度持久化到 backup_jobs 表(每写入一个 entry 更新一次)
  * - 用 archiver 打 zip:vault 整目录 + sqlite 文件 + 简单 metadata.json
- *
- * archiver 是动态 import,没装时优雅降级为失败状态。
  */
 
 export interface BackupRunnerOptions {
@@ -82,13 +82,8 @@ export class BackupRunner {
     try {
       await mkdir(this.opts.outDir, { recursive: true });
       const dest = this.filePathFor(id);
-      const archiver = await loadArchiver();
-      if (!archiver) {
-        throw new Error('archiver_not_installed');
-      }
-
       const out = createWriteStream(dest);
-      const archive = archiver('zip', { zlib: { level: 6 } });
+      const archive = new ZipArchive({ zlib: { level: 6 } });
 
       // pipe + 进度计算 — archiver 进度走 entry 事件
       archive.pipe(out);
@@ -137,9 +132,7 @@ export class BackupRunner {
       await archive.finalize();
       await finished;
 
-      // snapshot 清掉
       try {
-        const { unlink } = await import('node:fs/promises');
         if (existsSync(snapPath)) await unlink(snapPath);
       } catch { /* ignore */ }
 
@@ -165,30 +158,6 @@ export class BackupRunner {
     } finally {
       this.busy = false;
     }
-  }
-}
-
-// 动态 archiver 加载:没装就返回 null,让 job 优雅失败(测试 / 没 deps 不挂)
-type ArchiverFactory = (
-  format: string,
-  opts?: { zlib?: { level?: number } },
-) => {
-  pipe(out: NodeJS.WritableStream): unknown;
-  append(src: string | Buffer | NodeJS.ReadableStream, opts: { name: string }): unknown;
-  file(path: string, opts: { name: string }): unknown;
-  directory(path: string, dest: string): unknown;
-  finalize(): Promise<void>;
-  on(event: string, handler: (...args: unknown[]) => void): unknown;
-};
-
-async function loadArchiver(): Promise<ArchiverFactory | null> {
-  try {
-    const mod = (await import('archiver' as string)) as unknown as
-      | { default: ArchiverFactory }
-      | ArchiverFactory;
-    return typeof mod === 'function' ? (mod as ArchiverFactory) : (mod.default as ArchiverFactory);
-  } catch {
-    return null;
   }
 }
 

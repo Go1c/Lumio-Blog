@@ -78,27 +78,34 @@ async function adminReq(method: string, path: string): Promise<Response> {
   });
 }
 
+async function waitForJob(id: string, timeoutMs = 5000): Promise<NonNullable<ReturnType<BackupRepo['get']>>> {
+  const repo = new BackupRepo(db);
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const job = repo.get(id);
+    if (job && (job.status === 'done' || job.status === 'failed')) return job;
+    await new Promise((res) => setTimeout(res, 50));
+  }
+  throw new Error(`backup job ${id} did not finish`);
+}
+
 describe('Backup routes', () => {
-  it('POST 创建 job → status 拿到结果(无 archiver 时降级 failed)', async () => {
+  it('POST 创建 job → 打出可下载的 zip', async () => {
     const r = await adminReq('POST', '/api/admin/backup');
     expect(r.status).toBe(202);
     const job = (await r.json()) as { id: string; status: string };
     expect(job.status).toBe('pending');
 
-    // 等一下让 setImmediate 跑
-    await new Promise((res) => setTimeout(res, 200));
+    const after = await waitForJob(job.id);
+    expect(after.status).toBe('done');
+    expect(after.error).toBeNull();
+    expect(existsSync(runner.filePathFor(job.id))).toBe(true);
 
-    const repo = new BackupRepo(db);
-    const after = repo.get(job.id);
-    expect(after).toBeDefined();
-    // archiver 没装时会失败,装了会成功
-    expect(['done', 'failed', 'running']).toContain(after?.status);
-
-    // status endpoint 也能拿
     const sres = await adminReq('GET', `/api/admin/backup/${job.id}/status`);
     expect(sres.status).toBe(200);
-    const sj = (await sres.json()) as { id: string };
+    const sj = (await sres.json()) as { id: string; status: string };
     expect(sj.id).toBe(job.id);
+    expect(sj.status).toBe('done');
   });
 
   it('GET unknown job → 404', async () => {
@@ -123,14 +130,16 @@ describe('Backup routes', () => {
     expect(r.status).toBe(409);
   });
 
-  it('outDir 在 enqueue 后会被创建(若 archiver 可用)', async () => {
+  it('outDir 在 enqueue 后会被创建,zip 可下载', async () => {
     const r = await adminReq('POST', '/api/admin/backup');
     const job = (await r.json()) as { id: string };
-    await new Promise((res) => setTimeout(res, 200));
+    const after = await waitForJob(job.id);
+    expect(after.status).toBe('done');
     const path = runner.filePathFor(job.id);
-    // archiver 装了 → 文件存在;没装 → 文件不存在但 outDir 也可能不存在,放过
-    if (existsSync(path)) {
-      expect(existsSync(path)).toBe(true);
-    }
+    expect(existsSync(path)).toBe(true);
+
+    const dres = await adminReq('GET', `/api/admin/backup/${job.id}/download`);
+    expect(dres.status).toBe(200);
+    expect(dres.headers.get('content-type')).toBe('application/zip');
   });
 });
