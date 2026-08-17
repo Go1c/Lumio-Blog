@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import { homeAdsFromConfig } from './lumio-design.js';
 import { renderHome } from './home.js';
 
 const config = {
@@ -142,7 +143,7 @@ describe('renderHome brand polish', () => {
     expect(html).toContain('href="/articles/index.html"');
   });
 
-  it('renders the latest sponsored ad carousel on the home feed', () => {
+  it('does not render a demo sponsored carousel when no home ads are configured', () => {
     const html = renderHome(
       {
         posts: [],
@@ -155,11 +156,15 @@ describe('renderHome brand polish', () => {
       config,
     );
 
-    expect(html).toContain('class="adcar"');
-    expect(html).toContain('data-adcar-track');
-    expect(html.match(/class="adcar__slide/g)).toHaveLength(3);
-    expect(html).toContain('data-adcar-dots');
-    expect(html).toContain('setInterval(next, 4500)');
+    expect(homeAdsFromConfig(config)).toEqual([]);
+    expect(html).not.toContain('class="adcar"');
+    expect(html).not.toContain('data-adcar-track');
+    expect(html).not.toContain('赞助 · Sponsored');
+    expect(html).not.toContain('https://example.com/unity6');
+    expect(html).not.toContain('https://example.com/your-ad-target');
+    expect(html).not.toContain('Unity 6 性能套件');
+    expect(html).not.toContain('云渲染农场 RenderX');
+    expect(html).not.toContain('GameConf 2026');
   });
 
   it('uses enabled home ads from config as carousel slides', () => {
@@ -207,7 +212,93 @@ describe('renderHome brand polish', () => {
 
     expect(html.match(/class="adcar__slide/g)).toHaveLength(1);
     expect(html).toContain('Home Ad');
+    expect(html).toContain('https://example.com/home');
     expect(html).not.toContain('Article Ad');
     expect(html).not.toContain('Paused Home Ad');
+    expect(html).not.toContain('Unity 6 性能套件');
+  });
+
+  it('skips home ads without a valid http(s) CTA instead of inventing a link', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      {
+        ...config,
+        home: {
+          ads: [
+            {
+              enabled: true,
+              variant: 'native',
+              slot: 'home',
+              tone: 'blue',
+              title: 'No Link Ad',
+            },
+            {
+              enabled: true,
+              variant: 'native',
+              slot: 'home',
+              tone: 'mint',
+              title: 'Bad Link Ad',
+              cta_href: 'javascript:alert(1)',
+            },
+            {
+              enabled: true,
+              variant: 'native',
+              slot: 'home',
+              tone: 'rose',
+              title: 'Good Ad',
+              cta_label: '打开',
+              cta_href: 'https://blog.lumio.games/about.html',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(html.match(/class="adcar__slide/g)).toHaveLength(1);
+    expect(html).toContain('Good Ad');
+    expect(html).toContain('https://blog.lumio.games/about.html');
+    expect(html).not.toContain('No Link Ad');
+    expect(html).not.toContain('Bad Link Ad');
+    expect(html).not.toContain('https://example.com/your-ad-target');
+    expect(html).not.toContain('data-adcar-dots');
+  });
+
+  it('hides the sponsored slot when every configured home ad lacks a valid CTA', () => {
+    const html = renderHome(
+      {
+        posts: [],
+        byTag: new Map(),
+        recentNotes: [],
+        totalArticles: 0,
+        totalNotes: 0,
+        folders: [],
+      },
+      {
+        ...config,
+        home: {
+          ads: [
+            {
+              enabled: true,
+              variant: 'native',
+              slot: 'home',
+              tone: 'blue',
+              title: 'No Link Ad',
+            },
+          ],
+        },
+      },
+    );
+
+    expect(html).not.toContain('class="adcar"');
+    expect(html).not.toContain('赞助 · Sponsored');
+    expect(html).not.toContain('No Link Ad');
+    expect(html).not.toContain('https://example.com/your-ad-target');
   });
 });

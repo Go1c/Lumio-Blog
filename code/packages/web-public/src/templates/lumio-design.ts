@@ -319,46 +319,12 @@ export function renderHeroScene(): string {
     </div>`;
 }
 
-const FALLBACK_HOME_ADS: HfAdSettings[] = [
-  {
-    id: 'demo-unity6',
-    enabled: true,
-    variant: 'native',
-    slot: 'home',
-    tone: 'blue',
-    title: 'Unity 6 性能套件',
-    body: '一键剖析 Draw Call 与 Overdraw,渲染优化提速 40%',
-    cta_label: '立即试用',
-    cta_href: 'https://example.com/unity6',
-  },
-  {
-    id: 'demo-renderx',
-    enabled: true,
-    variant: 'native',
-    slot: 'home',
-    tone: 'violet',
-    title: '云渲染农场 RenderX',
-    body: '按帧计费的分布式渲染,出图速度快 10 倍',
-    cta_label: '领取额度',
-    cta_href: 'https://renderx.dev',
-  },
-  {
-    id: 'demo-gameconf',
-    enabled: true,
-    variant: 'native',
-    slot: 'home',
-    tone: 'mint',
-    title: 'GameConf 2026',
-    body: '年度游戏技术大会,早鸟票 6 折,限时开售',
-    cta_label: '购票',
-    cta_href: 'https://gameconf.io',
-  },
-];
-
 export function renderAdSlot(config: SiteConfig): string {
   const ads = homeAdsFromConfig(config);
-  const slides = ads.map(renderHomeAdSlide).join('');
-  const nav = ads.length > 1
+  if (ads.length === 0) return '';
+  const slides = ads.map(renderHomeAdSlide).filter(Boolean);
+  if (slides.length === 0) return '';
+  const nav = slides.length > 1
     ? `
       <button class="adcar__nav adcar__nav--prev" type="button" data-adcar-prev aria-label="上一条">${chevronLeftIcon()}</button>
       <button class="adcar__nav adcar__nav--next" type="button" data-adcar-next aria-label="下一条">${chevronRightIcon()}</button>
@@ -367,10 +333,10 @@ export function renderAdSlot(config: SiteConfig): string {
   return `
     <div class="adcar" data-adcar aria-label="赞助广告">
       <span class="ad__label">赞助 · Sponsored</span>
-      <div class="adcar__track" data-adcar-track>${slides}</div>
+      <div class="adcar__track" data-adcar-track>${slides.join('')}</div>
       ${nav}
     </div>
-    ${ads.length > 1 ? renderAdCarouselScript() : ''}`;
+    ${slides.length > 1 ? renderAdCarouselScript() : ''}`;
 }
 
 export function homeAdsFromConfig(config: SiteConfig): HfAdSettings[] {
@@ -382,14 +348,19 @@ export function homeAdsFromConfig(config: SiteConfig): HfAdSettings[] {
   if (legacy?.enabled) {
     return [{ ...legacy, slot: 'home', tone: legacy.tone ?? 'blue' }];
   }
-  return FALLBACK_HOME_ADS;
+  return [];
+}
+
+function homeAdHref(href: string | undefined): string | null {
+  if (!href) return null;
+  const value = href.trim();
+  return /^https?:\/\//i.test(value) ? value : null;
 }
 
 function renderHomeAdSlide(ad: HfAdSettings): string {
+  const href = homeAdHref(ad.cta_href);
+  if (!href) return '';
   const tone = ad.tone ?? toneFromAccent(ad.accent);
-  const href = ad.cta_href && /^https?:\/\//i.test(ad.cta_href)
-    ? ad.cta_href
-    : 'https://example.com/your-ad-target';
   const title = ad.title || ad.name || '广告位 · 首页横幅';
   const desc = ad.body && !/^https?:\/\/\S+\.(?:png|jpe?g|webp|gif|avif)(?:[?#].*)?$/i.test(ad.body)
     ? ad.body
