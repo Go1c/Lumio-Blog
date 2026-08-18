@@ -28,6 +28,21 @@ describe('publicLayout SEO metadata', () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
   });
 
+  it('embeds the official Umami tracker in the public document head', () => {
+    const html = publicLayout({
+      title: 'Lumio Blog',
+      description: 'Lumio notes',
+      config,
+      body: '<p>Hello</p>',
+      path: '/',
+    });
+
+    const umami = '<script defer src="https://data.lumio.games/script.js" data-website-id="2643aa10-6823-4702-8c18-26c3b4a8b4d3"></script>';
+    const head = html.slice(0, html.indexOf('</head>'));
+    expect(head).toContain(umami);
+    expect(html.indexOf(umami)).toBeLessThan(html.indexOf('</head>'));
+  });
+
   it('keeps noindex pages out of robots while still canonicalizing them', () => {
     const html = publicLayout({
       title: 'Draft',
