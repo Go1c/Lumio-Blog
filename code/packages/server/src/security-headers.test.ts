@@ -17,6 +17,9 @@ describe('securityHeaders', () => {
     expect(res.headers.get('strict-transport-security')).toContain('max-age=');
     expect(res.headers.get('permissions-policy')).toContain('camera=()');
     expect(res.headers.get('content-security-policy')).toContain("frame-ancestors 'none'");
+    const csp = res.headers.get('content-security-policy') ?? '';
+    expect(csp).toMatch(/script-src[^;]*https:\/\/data\.lumio\.games/);
+    expect(csp).toMatch(/connect-src[^;]*https:\/\/data\.lumio\.games/);
   });
 
   it('marks admin and api responses noindex, but leaves public pages indexable', async () => {

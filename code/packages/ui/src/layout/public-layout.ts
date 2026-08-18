@@ -168,6 +168,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <script>${THEME_BOOT_SCRIPT}</script>
   ${jsonLd}
   ${o.extraHead ?? ''}
+  <script defer src="https://data.lumio.games/script.js" data-website-id="2643aa10-6823-4702-8c18-26c3b4a8b4d3"></script>
 </head>
 <body class="ui-public lumio-public">
   <a class="skip-link" href="#main-content">跳到正文</a>

@@ -9,8 +9,8 @@ const CONTENT_SECURITY_POLICY = [
   "img-src 'self' data: https:",
   "font-src 'self' data: https://fonts.gstatic.com https://cdn.jsdelivr.net",
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
-  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com",
-  "connect-src 'self'",
+  "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://data.lumio.games",
+  "connect-src 'self' https://data.lumio.games",
 ].join('; ');
 
 /** 后台与 API 不该被任何引擎收录,robots.txt 之外再加一层响应头。 */
