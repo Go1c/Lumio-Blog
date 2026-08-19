@@ -35,7 +35,7 @@ describe('publicLayout SEO metadata', () => {
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
   });
 
-  it('emits Bing and Baidu ownership verification in the public document head', () => {
+  it('emits search engine ownership verification in the public document head', () => {
     const html = publicLayout({
       title: 'Lumio Blog',
       description: 'Lumio notes',
@@ -50,6 +50,9 @@ describe('publicLayout SEO metadata', () => {
     );
     expect(head).toContain(
       '<meta name="baidu-site-verification" content="codeva-qKoHKbt10r">',
+    );
+    expect(head).toContain(
+      '<meta name="google-site-verification" content="YlFC2R5DY626I5yH2cA24zxqOOmciWqMHQcuJAw2El8">',
     );
   });
 
