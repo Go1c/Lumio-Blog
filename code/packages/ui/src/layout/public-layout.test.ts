@@ -25,7 +25,32 @@ describe('publicLayout SEO metadata', () => {
     expect(html).toContain('<link rel="canonical" href="https://blog.lumio.games/">');
     expect(html).toContain('<meta property="og:title" content="Lumio Blog">');
     expect(html).toContain('<meta property="og:url" content="https://blog.lumio.games/">');
+    expect(html).toContain('<meta property="og:locale" content="zh_CN">');
+    expect(html).toContain(
+      '<link rel="alternate" hreflang="zh-CN" href="https://blog.lumio.games/">',
+    );
+    expect(html).toContain(
+      '<link rel="alternate" hreflang="x-default" href="https://blog.lumio.games/">',
+    );
     expect(html).toContain('<meta name="twitter:card" content="summary_large_image">');
+  });
+
+  it('emits Bing and Baidu ownership verification in the public document head', () => {
+    const html = publicLayout({
+      title: 'Lumio Blog',
+      description: 'Lumio notes',
+      config,
+      body: '<p>Hello</p>',
+      path: '/',
+    });
+
+    const head = html.slice(0, html.indexOf('</head>'));
+    expect(head).toContain(
+      '<meta name="msvalidate.01" content="48232FF4A9EAB80D49C7A5AE2D009539">',
+    );
+    expect(head).toContain(
+      '<meta name="baidu-site-verification" content="codeva-qKoHKbt10r">',
+    );
   });
 
   it('embeds the official Umami tracker in the public document head', () => {
