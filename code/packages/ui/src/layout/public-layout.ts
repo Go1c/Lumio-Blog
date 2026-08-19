@@ -127,6 +127,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
   const canonicalUrl = absoluteUrl(o.config.site.url, o.path);
   const imageUrl = o.image ? absoluteUrl(o.config.site.url, o.image) : null;
   const ogType = normalizePath(o.path) === '/' ? 'website' : 'article';
+  const ogLocale = lang.toLowerCase().startsWith('zh') ? 'zh_CN' : lang.replaceAll('-', '_');
   const twitterCard = o.config.seo?.twitter_card || 'summary_large_image';
   // noindex 页面不该被引擎收录,也就没必要喂结构化数据。
   const jsonLd = o.noindex ? '' : jsonLdScript(o.jsonLd ?? []);
@@ -146,13 +147,18 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${escHtml(o.title)}</title>
   <meta name="description" content="${escHtml(description)}">
+  <meta name="msvalidate.01" content="48232FF4A9EAB80D49C7A5AE2D009539">
+  <meta name="baidu-site-verification" content="codeva-qKoHKbt10r">
   ${o.noindex ? '<meta name="robots" content="noindex,nofollow">' : ''}
   <link rel="canonical" href="${escHtml(canonicalUrl)}">
+  <link rel="alternate" hreflang="${escHtml(lang)}" href="${escHtml(canonicalUrl)}">
+  <link rel="alternate" hreflang="x-default" href="${escHtml(canonicalUrl)}">
   <meta property="og:title" content="${escHtml(o.title)}">
   <meta property="og:description" content="${escHtml(description)}">
   <meta property="og:type" content="${escHtml(ogType)}">
   <meta property="og:url" content="${escHtml(canonicalUrl)}">
   <meta property="og:site_name" content="${escHtml(o.config.site.title)}">
+  <meta property="og:locale" content="${escHtml(ogLocale)}">
   <meta name="twitter:card" content="${escHtml(twitterCard)}">
   <meta name="twitter:title" content="${escHtml(o.title)}">
   <meta name="twitter:description" content="${escHtml(description)}">
