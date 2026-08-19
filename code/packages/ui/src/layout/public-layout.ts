@@ -146,6 +146,8 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>${escHtml(o.title)}</title>
   <meta name="description" content="${escHtml(description)}">
+  <meta name="msvalidate.01" content="48232FF4A9EAB80D49C7A5AE2D009539">
+  <meta name="baidu-site-verification" content="codeva-qKoHKbt10r">
   ${o.noindex ? '<meta name="robots" content="noindex,nofollow">' : ''}
   <link rel="canonical" href="${escHtml(canonicalUrl)}">
   <meta property="og:title" content="${escHtml(o.title)}">
