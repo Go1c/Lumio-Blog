@@ -54,6 +54,9 @@ describe('publicLayout SEO metadata', () => {
     expect(head).toContain(
       '<meta name="google-site-verification" content="YlFC2R5DY626I5yH2cA24zxqOOmciWqMHQcuJAw2El8">',
     );
+    expect(head).toContain(
+      '<meta name="sogou_site_verification" content="zRSOrPjKvt">',
+    );
   });
 
   it('embeds the official Umami tracker in the public document head', () => {

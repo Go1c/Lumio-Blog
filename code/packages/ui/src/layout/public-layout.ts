@@ -150,6 +150,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <meta name="msvalidate.01" content="48232FF4A9EAB80D49C7A5AE2D009539">
   <meta name="baidu-site-verification" content="codeva-qKoHKbt10r">
   <meta name="google-site-verification" content="YlFC2R5DY626I5yH2cA24zxqOOmciWqMHQcuJAw2El8">
+  <meta name="sogou_site_verification" content="zRSOrPjKvt">
   ${o.noindex ? '<meta name="robots" content="noindex,nofollow">' : ''}
   <link rel="canonical" href="${escHtml(canonicalUrl)}">
   <link rel="alternate" hreflang="${escHtml(lang)}" href="${escHtml(canonicalUrl)}">
