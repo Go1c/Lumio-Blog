@@ -1,5 +1,6 @@
 import type { HfAdSettings, NoteRow, SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
+import { collectionEntities } from '../partials/jsonld.js';
 import { renderEmptyState, renderPageHead } from './lumio-design.js';
 
 const TONES = ['t-blue', 't-mint', 't-amber', 't-violet'] as const;
@@ -52,12 +53,25 @@ export function renderColumns(
       ${main}
     </main>`;
 
+  const COLUMNS_PATH = '/columns/index.html';
+  const COLUMNS_DESC = '成体系的系列文章,跟随专栏由浅入深,系统掌握一个领域。';
   return layout({
     title: `专栏 · ${config.site.title}`,
-    description: '技术专栏',
+    description: COLUMNS_DESC,
     config,
     body,
     active: 'columns',
+    path: COLUMNS_PATH,
+    jsonLd: collectionEntities({
+      config,
+      path: COLUMNS_PATH,
+      name: `专栏 · ${config.site.title}`,
+      description: COLUMNS_DESC,
+      items: columns.map((column) => ({
+        title: column.name,
+        path: `/folders/${encodeURIComponent(column.name)}.html`,
+      })),
+    }),
   });
 }
 

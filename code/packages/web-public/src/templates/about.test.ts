@@ -27,6 +27,8 @@ describe('renderAbout stats', () => {
     expect(html).toContain('<div class="stat__n">1年</div><div class="stat__l">持续创作</div>');
     expect(html).not.toContain('128+');
     expect(html).not.toContain('15k+');
+    expect(html).toContain('"@type":"Person"');
+    expect(html).toContain('<link rel="canonical" href="https://blog.lumio.games/about.html">');
   });
 
   it('keeps the design fallback when no content stats are available', () => {

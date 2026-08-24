@@ -63,6 +63,8 @@ describe('renderColumns article data', () => {
     expect(html).toContain('AI');
     expect(html).toContain('2 个真实专栏');
     expect(html).toContain('真实渲染管线笔记');
+    expect(html).toContain('<link rel="canonical" href="https://blog.lumio.games/columns/index.html">');
+    expect(html).toContain('"@type":"CollectionPage"');
     expect(html).not.toContain('渲染管线精讲');
   });
 

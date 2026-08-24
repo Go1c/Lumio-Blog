@@ -45,7 +45,7 @@ export interface RenderOptions {
   config: SiteConfig;
 }
 
-export const STATIC_ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js', 'favicon.ico'] as const;
+export const STATIC_ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js', 'favicon.ico', '0ec7c152-58f4-4e25-a2b7-491de367b64b.txt'] as const;
 export const HTML_ALIAS_FILES = [
   { source: 'about.html', alias: 'about/index.html' },
   { source: 'feed.xml', alias: 'rss.xml' },
