@@ -22,6 +22,7 @@ import { SyncDiagnosticsBuffer } from './routes/sync-meta.js';
 import { loadFeaturesYaml } from './routes/settings.js';
 import { applyRuntimeConfig } from './runtime-config.js';
 import { securityHeaders } from './security-headers.js';
+import { registerPublicRedirects } from './public-redirects.js';
 import { rewriteAdminRequestPath } from './admin-static.js';
 import { createShutdownHandler, runStartupSync, stopRuntime } from './startup.js';
 
@@ -170,6 +171,7 @@ async function main(): Promise<void> {
   const root = new Hono();
   root.use('*', logger());
   root.use('*', securityHeaders());
+  registerPublicRedirects(root);
   root.route('/', api);
 
   const adminDist = resolveAdminDist();

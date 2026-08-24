@@ -1,5 +1,6 @@
 import type { SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
+import { authorEntity } from '../partials/jsonld.js';
 import { renderPageHead, renderSubscribe } from './lumio-design.js';
 
 export interface AboutStats {
@@ -93,6 +94,7 @@ export function renderAbout(config: SiteConfig, stats?: AboutStats): string {
     body,
     active: 'about',
     path: '/about.html',
+    jsonLd: [authorEntity(config)],
   });
 }
 

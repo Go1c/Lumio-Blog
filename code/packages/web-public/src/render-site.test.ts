@@ -162,6 +162,9 @@ describe('renderSite GEO outputs', () => {
     expect(robots).toContain('User-agent: GPTBot');
     expect(robots).toContain('User-agent: ClaudeBot');
     expect(robots).toContain('User-agent: PerplexityBot');
+    expect(robots).toContain('User-agent: Sogou web spider');
+    expect(robots).toContain('User-agent: 360Spider');
+    expect(robots).toContain('User-agent: YisouSpider');
     expect(robots).toContain('Disallow: /admin/');
     expect(robots).toContain('Sitemap: https://blog.lumio.games/sitemap.xml');
   });
