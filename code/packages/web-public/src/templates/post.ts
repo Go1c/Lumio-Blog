@@ -252,6 +252,68 @@ export function renderPost(data: PostData, config: SiteConfig): string {
         window.addEventListener('scroll', spy, { passive: true });
         spy();
       })();
+    </script>
+    <script>
+      (function(){
+        var prose = document.querySelector('.post-prose');
+        if (!prose) return;
+
+        var overlay = null;
+        var picture = null;
+        var closer = null;
+        var lastFocus = null;
+
+        function ensure(){
+          if (overlay) return;
+          overlay = document.createElement('div');
+          overlay.className = 'img-lightbox';
+          overlay.setAttribute('role', 'dialog');
+          overlay.setAttribute('aria-modal', 'true');
+          overlay.setAttribute('aria-label', '查看大图');
+          overlay.innerHTML =
+            '<button type="button" class="img-lightbox__close" aria-label="关闭"></button>' +
+            '<img class="img-lightbox__img" alt="">';
+          picture = overlay.querySelector('.img-lightbox__img');
+          picture.draggable = false;
+          closer = overlay.querySelector('.img-lightbox__close');
+          overlay.addEventListener('click', function(ev){
+            if (ev.target === overlay || ev.target === picture || ev.target === closer) close();
+          });
+          document.body.appendChild(overlay);
+        }
+
+        function open(src, alt){
+          ensure();
+          lastFocus = document.activeElement;
+          picture.src = src;
+          picture.alt = alt || '文章图片';
+          overlay.classList.add('is-open');
+          document.body.classList.add('img-lightbox-open');
+          closer.focus();
+        }
+
+        function close(){
+          if (!overlay || !overlay.classList.contains('is-open')) return;
+          overlay.classList.remove('is-open');
+          document.body.classList.remove('img-lightbox-open');
+          picture.removeAttribute('src');
+          if (lastFocus && typeof lastFocus.focus === 'function') lastFocus.focus();
+        }
+
+        prose.addEventListener('click', function(ev){
+          var node = ev.target;
+          if (!node || node.tagName !== 'IMG') return;
+          var src = node.currentSrc || node.getAttribute('src');
+          if (!src) return;
+          ev.preventDefault();
+          ev.stopPropagation();
+          open(src, node.getAttribute('alt') || '');
+        }, true);
+
+        document.addEventListener('keydown', function(ev){
+          if (ev.key === 'Escape') close();
+        });
+      })();
     </script>`;
 
   const path = `/posts/${note.slug}.html`;

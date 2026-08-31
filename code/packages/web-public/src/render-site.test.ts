@@ -245,10 +245,15 @@ describe('composeStyles', () => {
     // 正文 markdown 图片被约束
     const imgRule = styles.indexOf('.post-prose.hf-prose img {');
     expect(imgRule).toBeGreaterThan(-1);
-    const imgBlock = styles.slice(imgRule, imgRule + 240);
+    const imgBlock = styles.slice(imgRule, imgRule + 280);
     expect(imgBlock).toContain('max-width: min(100%, 860px)');
     expect(imgBlock).toContain('height: auto');
     expect(imgBlock).toContain('display: block');
+    expect(imgBlock).toContain('cursor: zoom-in');
+
+    expect(styles).toContain('.img-lightbox {');
+    expect(styles).toContain('cursor: zoom-out');
+    expect(styles).toContain('.img-lightbox.is-open');
 
     // 顶部 cover hero 仍然使用 object-fit: cover,未被正文图片样式影响
     expect(styles).toContain('.post-hero__img { width: 100%; height: 100%; object-fit: cover; display: block; }');

@@ -164,6 +164,24 @@ describe('renderPost head meta (GEO)', () => {
   });
 });
 
+describe('renderPost image lightbox', () => {
+  it('opens article images in a same-page overlay instead of navigating away', () => {
+    const withImage = {
+      ...note,
+      body_html: '<p><img src="/_attachments/shot.png" alt="示意图"></p>',
+    };
+    const html = renderPost({ note: withImage, byTag: new Map(), series: [] }, config);
+
+    expect(html).toContain("querySelector('.post-prose')");
+    expect(html).toContain("className = 'img-lightbox'");
+    expect(html).toContain("aria-label', '查看大图'");
+    expect(html).toContain('preventDefault');
+    expect(html).toContain("ev.key === 'Escape'");
+    expect(html).toContain('img-lightbox-open');
+    expect(html).not.toContain('window.open(');
+  });
+});
+
 describe('post mobile CSS', () => {
   it('contains defensive overflow rules for code blocks and tables', async () => {
     const { POST_MOBILE_CSS } = await import('./post.js');
