@@ -1977,6 +1977,7 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   display: block;
   max-width: min(100%, 860px);
   height: auto;
+  cursor: zoom-in;
   margin: 20px auto 8px;
   border-radius: var(--radius-sm);
   border: 1px solid var(--line);
@@ -2332,5 +2333,79 @@ body.ui-public.lumio-public .post-prose.hf-prose pre.shiki * {
 body.ui-public.lumio-public .post-prose.hf-prose table {
   color: #1E2A3A;
   border-color: #E7ECF6;
+}
+
+body.ui-public.lumio-public .post-prose img {
+  cursor: zoom-in;
+}
+
+.img-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 28px 18px;
+  background: rgba(18, 24, 40, 0.72);
+  cursor: zoom-out;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition: opacity 0.18s ease, visibility 0.18s ease;
+}
+.img-lightbox.is-open {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+}
+.img-lightbox__img {
+  display: block;
+  max-width: min(94vw, 1280px);
+  max-height: 90vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: 12px;
+  background: #fff;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
+  cursor: zoom-out;
+  transform: scale(0.98);
+  transition: transform 0.18s ease;
+}
+.img-lightbox.is-open .img-lightbox__img {
+  transform: scale(1);
+}
+.img-lightbox__close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  width: 40px;
+  height: 40px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.94);
+  color: #1E2A3A;
+  cursor: pointer;
+  font-size: 26px;
+  line-height: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.18);
+}
+.img-lightbox__close::before {
+  content: "×";
+}
+.img-lightbox__close:hover,
+.img-lightbox__close:focus-visible {
+  background: #fff;
+}
+body.img-lightbox-open {
+  overflow: hidden;
+}
+@media (prefers-reduced-motion: reduce) {
+  .img-lightbox,
+  .img-lightbox__img { transition: none; }
 }
 `;
