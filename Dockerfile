@@ -6,12 +6,14 @@ WORKDIR /app/code
 #   python3 + pip → FastNodeSync CLI(Python)
 #   make / g++   → 编 better-sqlite3 之类原生模块
 #   gettext-base → entrypoint.sh 用的 envsubst
+#   fonts-noto-cjk → /og/:slug.png 标题卡需要中文字形
 RUN apt-get update \
   && apt-get install -y --no-install-recommends \
        python3 python3-pip python3-venv \
        make g++ \
        gettext-base \
        ca-certificates \
+       fonts-noto-cjk \
        tini \
   && rm -rf /var/lib/apt/lists/* \
   && npm install -g pnpm@9.7.0

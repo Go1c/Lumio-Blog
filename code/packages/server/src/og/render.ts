@@ -7,14 +7,16 @@ import minimal from './templates/minimal.js';
 import newspaper from './templates/newspaper.js';
 import terminal from './templates/terminal.js';
 import magazine from './templates/magazine.js';
+import { buildOgCardSvg } from './card-svg.js';
+import { encodeOgFallbackPng, isOgSizedPng, OG_HEIGHT, OG_WIDTH } from './png.js';
 
 /**
  * OG renderer — satori + @resvg/resvg-js,纯 JS 输出 PNG。
  *
- * - 4 个模板 → 4 个 .tsx 文件,每个导出 default 函数 (data) => SatoriNode
+ * - 4 个模板 → 4 个文件,每个导出 default 函数 (data) => SatoriNode
  * - 字体:从 og/fonts/ 读 Inter/Inter-Bold(Buffer)
- *   - 没字体时用 satori 报错,降级:返回 1x1 transparent PNG(避免阻塞 build)
- * - satori 也是动态 import,没装时返回 fallback
+ * - satori / 字体缺失时改走 SVG 标题卡 + resvg;再不行则返回 1200×630 纯色 fallback
+ *   (绝不能再吐 1x1 空白图,QQ/微信会拒卡)
  */
 
 export type OgTemplate = 'minimal' | 'newspaper' | 'terminal' | 'magazine';
@@ -85,38 +87,49 @@ async function loadResvg(): Promise<ResvgCtor | null> {
   }
 }
 
-/** 1x1 transparent PNG (88 bytes) — fallback when satori / resvg / fonts 不可用 */
-const FALLBACK_PNG = Buffer.from(
-  '89504e470d0a1a0a0000000d49484452000000010000000108060000001f15c489' +
-    '0000000d49444154789c63000100000005000100' +
-    '0d0a2db40000000049454e44ae426082',
-  'hex',
-);
+function bundledFontPaths(): string[] {
+  return ['Inter-Regular.ttf', 'Inter-Bold.ttf']
+    .map((name) => resolve(FONTS_DIR, name))
+    .filter((p) => existsSync(p));
+}
 
 export async function renderOg(template: OgTemplate, data: OgData): Promise<Buffer> {
   const tmpl = TEMPLATES[template] ?? TEMPLATES.minimal;
   const node = tmpl(data);
 
   const [satori, Resvg, fonts] = await Promise.all([loadSatori(), loadResvg(), loadFonts()]);
-  if (!satori || !Resvg || fonts.length === 0) {
-    // 降级:不报错,但调用方应记录 warn
-    return FALLBACK_PNG;
+
+  if (satori && Resvg && fonts.length > 0) {
+    try {
+      const svg = await satori(node, {
+        width: OG_WIDTH,
+        height: OG_HEIGHT,
+        fonts: fonts.map((f) => ({ ...f })),
+      });
+      const png = Buffer.from(new Resvg(svg).render().asPng());
+      if (isOgSizedPng(png)) return png;
+    } catch (e) {
+      console.warn('[og] satori render failed', (e as Error).message);
+    }
   }
 
-  try {
-    const svg = await satori(node, {
-      width: 1200,
-      height: 630,
-      fonts: fonts.map((f) => ({ ...f })),
-    });
-    const r = new Resvg(svg);
-    const png = r.render().asPng();
-    return Buffer.from(png);
-  } catch (e) {
-    // satori 失败时打印一次警告,但继续返回 fallback —— 不挂主流程
-    console.warn('[og] render failed', (e as Error).message);
-    return FALLBACK_PNG;
+  if (Resvg) {
+    try {
+      const png = Buffer.from(
+        new Resvg(buildOgCardSvg(data), {
+          font: {
+            fontFiles: bundledFontPaths(),
+            loadSystemFonts: true,
+          },
+        }).render().asPng(),
+      );
+      if (isOgSizedPng(png)) return png;
+    } catch (e) {
+      console.warn('[og] svg card render failed', (e as Error).message);
+    }
   }
+
+  return encodeOgFallbackPng();
 }
 
 /** 测试用:模板列表 */

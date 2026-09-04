@@ -165,7 +165,10 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <meta name="twitter:title" content="${escHtml(o.title)}">
   <meta name="twitter:description" content="${escHtml(description)}">
   ${imageUrl ? `<meta property="og:image" content="${escHtml(imageUrl)}">
-  <meta name="twitter:image" content="${escHtml(imageUrl)}">` : ''}
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta name="twitter:image" content="${escHtml(imageUrl)}">
+  <meta itemprop="image" content="${escHtml(imageUrl)}">` : ''}
   ${articleTags}
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
