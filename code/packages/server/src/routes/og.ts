@@ -8,6 +8,7 @@ import type { SiteConfig } from '@opennote/core';
 import { AuthService, getSessionToken } from '../auth.js';
 import { TokenService, requireToken } from '../tokens.js';
 import { renderOg, type OgTemplate, type OgData, OG_TEMPLATES } from '../og/render.js';
+import { isOgSizedPng } from '../og/png.js';
 
 export interface OgDeps {
   db: Database;
@@ -39,12 +40,11 @@ export function register(app: Hono, deps: OgDeps): void {
     }
 
     const tmpl = pickTemplate(c.req.query('template'), deps.config);
-    const updated = (note.updated_at ?? '').replace(/[^A-Za-z0-9]/g, '');
-    const cachePath = resolve(deps.cacheDir, `${tmpl}_${slug}_${updated}.png`);
+    const cachePath = ogCachePath(deps.cacheDir, tmpl, slug, note.updated_at ?? '');
 
     if (existsSync(cachePath)) {
-      const buf = await readFile(cachePath);
-      return pngResponse(buf, true);
+      const cached = await readFile(cachePath);
+      if (isOgSizedPng(cached)) return pngResponse(cached, true);
     }
 
     const data = noteToOg(note, deps.config);
@@ -116,6 +116,9 @@ function noteToOg(
   return out;
 }
 
+/** 缓存世代:旧 1x1 fallback 文件名不含此后缀,部署后自动 miss。 */
+const OG_CACHE_GEN = 'og2';
+
 export function ogCachePath(
   cacheDir: string,
   tmpl: OgTemplate,
@@ -123,7 +126,7 @@ export function ogCachePath(
   updated: string,
 ): string {
   const u = updated.replace(/[^A-Za-z0-9]/g, '');
-  return join(resolve(cacheDir), `${tmpl}_${slug}_${u}.png`);
+  return join(resolve(cacheDir), `${tmpl}_${slug}_${u}_${OG_CACHE_GEN}.png`);
 }
 
 function actorMw(

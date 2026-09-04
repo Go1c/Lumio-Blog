@@ -13,6 +13,29 @@ const config = {
 } as const;
 
 describe('publicLayout SEO metadata', () => {
+  it('emits social-card image tags with dimensions when an image is provided', () => {
+    const html = publicLayout({
+      title: 'Hello · Lumio Blog',
+      description: 'Summary',
+      config,
+      body: '<p>Hello</p>',
+      path: '/posts/hello.html',
+      image: '/og/hello.png',
+    });
+
+    expect(html).toContain(
+      '<meta property="og:image" content="https://blog.lumio.games/og/hello.png">',
+    );
+    expect(html).toContain('<meta property="og:image:width" content="1200">');
+    expect(html).toContain('<meta property="og:image:height" content="630">');
+    expect(html).toContain(
+      '<meta name="twitter:image" content="https://blog.lumio.games/og/hello.png">',
+    );
+    expect(html).toContain(
+      '<meta itemprop="image" content="https://blog.lumio.games/og/hello.png">',
+    );
+  });
+
   it('emits canonical and Open Graph metadata for index pages', () => {
     const html = publicLayout({
       title: 'Lumio Blog',

@@ -109,8 +109,13 @@ describe('renderPost head meta (GEO)', () => {
     expect(html).toContain(
       '<meta property="og:image" content="https://blog.lumio.games/og/hello.png">',
     );
+    expect(html).toContain('<meta property="og:image:width" content="1200">');
+    expect(html).toContain('<meta property="og:image:height" content="630">');
     expect(html).toContain(
       '<meta name="twitter:image" content="https://blog.lumio.games/og/hello.png">',
+    );
+    expect(html).toContain(
+      '<meta itemprop="image" content="https://blog.lumio.games/og/hello.png">',
     );
   });
 
@@ -120,6 +125,12 @@ describe('renderPost head meta (GEO)', () => {
 
     expect(html).toContain(
       '<meta property="og:image" content="https://s3.example.com/hi-lumio.png">',
+    );
+    expect(html).toContain(
+      '<meta name="twitter:image" content="https://s3.example.com/hi-lumio.png">',
+    );
+    expect(html).toContain(
+      '<meta itemprop="image" content="https://s3.example.com/hi-lumio.png">',
     );
     expect(html).not.toContain('/og/hello.png');
   });

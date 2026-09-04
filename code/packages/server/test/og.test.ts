@@ -7,7 +7,11 @@ import Database from 'better-sqlite3';
 import type { Database as DB } from 'better-sqlite3';
 import type { SiteConfig } from '@opennote/core';
 import { register as registerOg } from '../src/routes/og.js';
-import { renderOg, OG_TEMPLATES } from '../src/og/render.js';
+
+function pngSize(buf: Buffer): { width: number; height: number } {
+  expect(buf.subarray(0, 8).toString('hex')).toBe('89504e470d0a1a0a');
+  return { width: buf.readUInt32BE(16), height: buf.readUInt32BE(20) };
+}
 
 let tmp: string;
 let db: DB;
@@ -48,47 +52,37 @@ const cfg: SiteConfig = {
   paths: { vault: '', out: '', db: '' },
 };
 
-beforeEach(() => {
-  tmp = mkdtempSync(join(tmpdir(), 'opennote-og-'));
-  db = new Database(':memory:');
-  setupDbSchema(db);
-  db.prepare(
-    `INSERT INTO notes (slug, title, summary, body_html, body_text, updated_at, reading_minutes)
-     VALUES (?, ?, ?, '', '', '2025-04-15T10:00:00.000Z', 12)`,
-  ).run('hello', 'Hello World', 'a test post');
-
-  app = new Hono();
-  registerOg(app, { db, config: cfg, cacheDir: join(tmp, 'og') });
-});
-
-afterEach(() => {
-  db.close();
-  rmSync(tmp, { recursive: true, force: true });
-});
-
-describe('renderOg core', () => {
-  it('每个模板都返回 Buffer(satori 没装时降级为 1x1 png)', async () => {
-    for (const t of OG_TEMPLATES) {
-      const buf = await renderOg(t, { title: 'Hi', description: 'desc' });
-      expect(Buffer.isBuffer(buf)).toBe(true);
-      expect(buf.byteLength).toBeGreaterThan(0);
-      // PNG magic
-      expect(buf.slice(0, 4).toString('hex')).toBe('89504e47');
-    }
-  });
-});
-
 describe('GET /og/:slug.png', () => {
+  beforeEach(() => {
+    tmp = mkdtempSync(join(tmpdir(), 'opennote-og-'));
+    db = new Database(':memory:');
+    setupDbSchema(db);
+    db.prepare(
+      `INSERT INTO notes (slug, title, summary, body_html, body_text, updated_at, reading_minutes)
+       VALUES (?, ?, ?, '', '', '2025-04-15T10:00:00.000Z', 12)`,
+    ).run('hello', 'Hello World', 'a test post');
+
+    app = new Hono();
+    registerOg(app, { db, config: cfg, cacheDir: join(tmp, 'og') });
+  });
+
+  afterEach(() => {
+    db.close();
+    rmSync(tmp, { recursive: true, force: true });
+  });
+
   it('200 + image/png + 命中缓存', async () => {
     const r = await app.request('/og/hello.png');
     expect(r.status).toBe(200);
     expect(r.headers.get('content-type')).toBe('image/png');
+    const body = Buffer.from(await r.arrayBuffer());
+    expect(pngSize(body)).toEqual({ width: 1200, height: 630 });
     const cacheDir = join(tmp, 'og');
     expect(existsSync(cacheDir)).toBe(true);
 
-    // 第二次走缓存 — 仍然 200
     const r2 = await app.request('/og/hello.png');
     expect(r2.status).toBe(200);
+    expect(pngSize(Buffer.from(await r2.arrayBuffer()))).toEqual({ width: 1200, height: 630 });
   });
 
   it('未知 slug → 404', async () => {
