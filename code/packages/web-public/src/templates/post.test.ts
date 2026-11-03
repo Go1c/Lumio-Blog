@@ -64,9 +64,9 @@ describe('renderPost Lumio layout', () => {
     expect(html).toContain('class="crumb"');
     expect(html).toContain('href="/articles/index.html">文章</a>');
     expect(html).toContain('class="page post-page"');
-    expect(html).toContain('class="layout layout--post"');
+    expect(html).toContain('class="layout layout--post layout--hub"');
+    expect(html).toContain('class="hub-rail"');
     expect(html).toContain('class="post-title"');
-    expect(html).toContain('class="post-hero"');
     expect(html).toContain('class="wsa-prose post-prose prose hf-prose"');
     expect(html).toContain('class="side-card toc"');
     expect(html).toContain('<h2 id="intro">Intro</h2><p>Body</p>');
@@ -92,13 +92,23 @@ describe('renderPost post meta', () => {
 });
 
 describe('renderPost cover image (题图)', () => {
-  it('renders the CSS hero animation when no cover is set', () => {
+  it('renders nothing above the body when there is no media and no cover', () => {
     const html = renderPost({ note, byTag: new Map(), series: [] }, config);
 
-    expect(html).toContain('class="post-hero"');
-    expect(html).toContain('class="post-hero__art"');
+    expect(html).not.toContain('class="post-hero');
+    expect(html).not.toContain('post-hero__art');
+    expect(html).not.toContain('class="media-cover"');
+    expect(html).not.toContain('class="listen"');
+  });
+
+  it('prefers media over the cover image', () => {
+    const html = renderPost(
+      { note: { ...note, cover: '/media/c.png', media: 'https://www.bilibili.com/video/BV1VDJm6VE7w/', media_title: '先听一首' }, byTag: new Map(), series: [] },
+      config,
+    );
+    expect(html).toContain('class="media-cover"');
+    expect(html).toContain('https://player.bilibili.com/player.html?bvid=BV1VDJm6VE7w');
     expect(html).not.toContain('post-hero--cover');
-    expect(html).not.toContain('class="post-hero__img"');
   });
 
   it('renders the cover image and drops the animation when cover is set', () => {

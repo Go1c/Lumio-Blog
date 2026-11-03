@@ -15,6 +15,8 @@ export const frontmatterSchema = z
     short_id: z.string().length(5).optional(),
     tags: z.array(z.string()).optional(),
     cover: z.string().optional(),
+    media: z.string().optional(),
+    media_title: z.string().optional(),
     created_at: z.string().optional(),
     published_at: z.string().optional(),
     scheduled_at: z.string().optional(),

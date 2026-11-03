@@ -1,5 +1,6 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
-import { layout, esc } from './layout.js';
+import { layout, esc, getPlatformGames } from './layout.js';
+import { renderHubRail, renderPostMedia } from '../partials/hub.js';
 import { isoDate, tagsForSlug } from '../partials/shared.js';
 import { renderArticleComments } from '../partials/article-comments.js';
 import { type Neighborhood } from '../partials/backlinks-graph.js';
@@ -25,7 +26,6 @@ export function renderPost(data: PostData, config: SiteConfig): string {
   const iso = isoDate(note);
   const tags = tagsForSlug(byTag, note.slug);
   const author = config.author;
-  const articleDesign = buildLumioArticles([note], byTag)[0];
 
   const visibilityLabel = labelOf(note.visibility);
   const visibilityBadge =
@@ -143,7 +143,8 @@ export function renderPost(data: PostData, config: SiteConfig): string {
           <span class="crumb__cur">${esc(note.title)}</span>
         </nav>
 
-        <div class="layout layout--post">
+        <div class="layout layout--post layout--hub">
+          ${renderHubRail(getPlatformGames())}
           <article class="post-article">
             <h1 class="post-title">${esc(note.title)}</h1>
             <div class="post-tags">
@@ -159,19 +160,7 @@ export function renderPost(data: PostData, config: SiteConfig): string {
               <span class="m">${clockIcon()}${note.reading_minutes} 分钟</span>
             </div>
 
-            ${
-              note.cover
-                ? `<div class="post-hero post-hero--cover">
-              <img class="post-hero__img" src="${esc(note.cover)}" alt="${esc(note.title)}" loading="eager" />
-            </div>`
-                : `<div class="post-hero">
-              <div class="thumb__grid" aria-hidden="true"></div>
-              <div class="post-hero__art" aria-hidden="true">
-                ${articleDesign?.art ?? ''}
-                <div class="cube c-mint float" style="--s:40px; left:58%; top:46%; animation-delay:-1.4s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
-              </div>
-            </div>`
-            }
+            ${renderPostMedia(note)}
 
             ${postBody}
             ${commentsHtml}

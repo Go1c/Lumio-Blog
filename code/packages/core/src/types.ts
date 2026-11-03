@@ -34,6 +34,10 @@ export interface NoteRow {
   word_count: number;
   reading_minutes: number;
   cover: string | null;    // 媒体路径
+  /** 首屏媒体:视频或音频地址(frontmatter media);有它时优先于 cover。见 migration 013。 */
+  media?: string | null;
+  /** 边听边读的曲名 / 视频上方的引导语(frontmatter media_title) */
+  media_title?: string | null;
   hash: string;            // 源文件内容 sha256，用于增量
 }
 
@@ -50,6 +54,8 @@ export interface Frontmatter {
   short_id?: string;
   tags?: string[];
   cover?: string;
+  media?: string;
+  media_title?: string;
   created_at?: string;
   published_at?: string;
   scheduled_at?: string;

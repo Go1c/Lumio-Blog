@@ -123,6 +123,8 @@ async function processNote(
 
   const summary = parsed.frontmatter.summary ?? autoSummary(text);
   const cover = (parsed.frontmatter.cover as string | undefined) ?? null;
+  const media = optionalString(parsed.frontmatter.media);
+  const mediaTitle = optionalString(parsed.frontmatter.media_title);
 
   const row: NoteRow = {
     slug: parsed.slug,
@@ -148,6 +150,8 @@ async function processNote(
     word_count: wordCount,
     reading_minutes: readingMinutes,
     cover,
+    media,
+    media_title: mediaTitle,
     hash: parsed.hash,
   };
 
@@ -589,4 +593,9 @@ async function _walkMarkdown_legacy(dir: string, out: string[] = []): Promise<st
     else if (e.isFile() && e.name.endsWith('.md')) out.push(full);
   }
   return out;
+}
+
+/** frontmatter 里的可选字符串:非字符串或空白都当作没填。 */
+function optionalString(v: unknown): string | null {
+  return typeof v === 'string' && v.trim() ? v.trim() : null;
 }

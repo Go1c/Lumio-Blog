@@ -1,402 +1,187 @@
-/* WS-B 文章侧栏评论 — 飞书风划词高亮 + 本地后端 (/api/posts/:slug/comments)
+/* 文章评论 — 不登录,一个名字框 + 骰子,本地后端 (/api/posts/:slug/comments)
  *
- * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
- * - 高亮 ↔ 评论卡通过 anchor.mid 关联(高亮 mid 走服务端 anchor JSON,引用文本可用于刷新后回锚)
- * - 评论支持 parent_id 楼中楼回复
- * - 评论本身走真后端:GET 拉 approved 列表,POST 默认进入 pending 队列等审核
+ * 设计稿:doc/prototype/hub-v1/index.html 的 data-cmt 段(职能下拉已去掉);说明见 doc/devdoc/blog-hub-plan.md §3.5
+ *
+ * - 骰子随机出完整名字 = 「某职能的苦逼瞬间」+「该职能」,前后对应;连点不和当前名字重复
+ * - 首次进入自动随机一个;名字可自己改写;完整名字记在本机 localStorage,下次自动带上
+ * - GET 拉 approved 列表;POST 进入 pending 队列,自己的评论插到最上面并标「· 审核后公开」
+ * - 用户文本一律走 textContent,不拼 innerHTML
  */
 (function () {
   'use strict';
 
-  var root = document.querySelector('[data-component="comments"]');
+  var root = document.querySelector('[data-cmt]');
   if (!root) return;
 
-  var article = document.querySelector('.wsa-prose, .hf-prose, article.wsa-post__main');
-  var bubble = document.getElementById('wsb-selbubble');
-  var listEl = document.getElementById('wsb-comments-list');
-  var emptyEl = root.querySelector('[data-empty]');
-  var countEl = root.querySelector('[data-count]');
-  var compose = root.querySelector('[data-compose]');
-  var input = compose ? compose.querySelector('input') : null;
-  var errEl = compose ? compose.querySelector('[data-error]') : null;
-  var loginLink = document.getElementById('wsb-comments-login');
+  var form = root.querySelector('[data-cmt-form]');
+  var nameEl = root.querySelector('[data-cmt-name]');
+  var bodyEl = root.querySelector('[data-cmt-body]');
+  var errEl = root.querySelector('[data-cmt-err]');
+  var avatarEl = root.querySelector('[data-cmt-avatar]');
+  var diceEl = root.querySelector('[data-cmt-dice]');
+  var sendEl = root.querySelector('[data-cmt-send]');
+  var listEl = root.querySelector('[data-cmt-list]');
+  var emptyEl = root.querySelector('[data-cmt-empty]');
+  var countEl = root.querySelector('[data-cmt-count]');
+  if (!form || !nameEl || !bodyEl || !listEl) return;
 
   var slug = root.getAttribute('data-slug') || location.pathname.replace(/^\/posts\/|\.html$/g, '');
   var apiBase = '/api/posts/' + encodeURIComponent(slug) + '/comments';
+  var NAME_KEY = 'lumio-comment-name';
 
-  var HL_STORAGE_KEY = 'wsb-comments-hl:' + slug;
-  var AUTHOR_STORAGE_KEY = 'wsb-comments-author';
+  var PAINS = {
+    '客户端': ['打包等了一小时的', '写完代码没人测的', '真机上又闪退的', '被说「这很简单」的', 'UI 又改了一版的'],
+    '服务端': ['凌晨被报警叫醒的', '合服合了一整夜的', '改 Bug 改出新 Bug 的', '被说「服务器又卡了」的'],
+    '策划': ['改了第 8 版需求的', '需求评审又没过的', '被要求「参考原神」的', '写的文档没人看的', '方案 B 也被否了的'],
+    '数值策划': ['表格又被改崩的', '被玩家骂太肝的', '平衡调了一个通宵的', '公式写了三屏的'],
+    '关卡策划': ['地图第 5 次推倒重来的', '自己都通不了关的', '被说「不好玩」的', '摆了一天怪的'],
+    '美术': ['返工第 9 版的', '被要「五彩斑斓的黑」的', '改到最后用了第一版的', '被说「再大气一点」的'],
+    '动画': ['一个动作 K 了一周的', '被说「打击感不够」的', '骨骼又被改了的'],
+    'TA': ['帧率又掉了的', 'Shader 编译了一上午的', '被美术和程序两头夹的'],
+    'QA': ['Bug 被说「无法复现」的', '上线前测了通宵的', '提的 Bug 被标「不修」的'],
+    '运营': ['半夜回玩家消息的', '活动配置又出错的', '替服务器背锅的', '周报写了三小时的'],
+    '制作人': ['开了一天会的', '被拉进 37 个群的', '等版号的', '版本又延期的']
+  };
+  var ROLES = Object.keys(PAINS);
+  // 判断名字以哪个职能结尾时,长的先比(「数值策划」要先于「策划」)
+  var ROLES_BY_LEN = ROLES.slice().sort(function (a, b) { return b.length - a.length; });
 
-  /** @type {{id:number, parent_id:number|null, author:string, website:string|null, body:string, created_at:string, anchor:{mid:string,quote:string}|null, status?:'pending'|'approved'}[]} */
-  var comments = [];
-  /** @type {{mid:string, quote:string}[]} */
-  var highlights = [];
-  var midCounter = 1;
-  var pendingMids = {};
-  var replyTo = null; // {id, author}
-
-  // ---- restore highlights only ----
-  try {
-    var raw = localStorage.getItem(HL_STORAGE_KEY);
-    if (raw) {
-      var saved = JSON.parse(raw);
-      highlights = (saved && saved.highlights) || [];
-      midCounter = (saved && saved.midCounter) || 1;
-    }
-  } catch (e) { /* ignore */ }
-
-  if (loginLink) {
-    loginLink.textContent = '以匿名身份留言';
-    loginLink.removeAttribute('href');
-    loginLink.setAttribute('aria-disabled', 'true');
+  function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+  // 先随机职能,再从该职能的苦逼瞬间里随机一条,拼成完整名字
+  function randomName() {
+    var role = pick(ROLES);
+    return pick(PAINS[role]) + role;
+  }
+  function rollName() {
+    var cur = nameEl.value.trim(), next = randomName();
+    while (next === cur) next = randomName();
+    nameEl.value = next;
+  }
+  function syncAvatar() { if (avatarEl) avatarEl.textContent = avatarFor(nameEl.value.trim()); }
+  function clearErr() { if (errEl) errEl.textContent = ''; }
+  function showErr(msg) { if (errEl) errEl.textContent = msg; }
+  function saveName() {
+    try { localStorage.setItem(NAME_KEY, nameEl.value.trim()); } catch (e) { /* ignore */ }
   }
 
-  // ---- 拉远端评论 ----
+  // ---- 恢复名字;首次进入随机一个 ----
+  var saved = '';
+  try { saved = localStorage.getItem(NAME_KEY) || ''; } catch (e) { saved = ''; }
+  saved = String(saved).trim();
+  if (saved) nameEl.value = saved.slice(0, 40);
+  else { rollName(); saveName(); }
+  syncAvatar();
+
+  nameEl.addEventListener('input', function () { syncAvatar(); clearErr(); saveName(); });
+  if (diceEl) diceEl.addEventListener('click', function () { rollName(); syncAvatar(); clearErr(); saveName(); });
+  bodyEl.addEventListener('input', clearErr);
+
+  // ---- 列表 ----
+  // 名字以已知职能结尾就用职能第一个字,否则用名字第一个字
+  function avatarFor(name) {
+    var n = String(name || '');
+    for (var k = 0; k < ROLES_BY_LEN.length; k++) {
+      var r = ROLES_BY_LEN[k];
+      if (n.length > r.length && n.slice(-r.length) === r) return r.charAt(0);
+    }
+    return n.charAt(0) || '?';
+  }
+
+  function relTime(iso) {
+    var t = Date.parse(iso || '');
+    if (isNaN(t)) return '';
+    var diff = Date.now() - t;
+    if (diff < 60000) return '刚刚';
+    if (diff < 3600000) return Math.floor(diff / 60000) + ' 分钟前';
+    if (diff < 86400000) return Math.floor(diff / 3600000) + ' 小时前';
+    var days = Math.floor(diff / 86400000);
+    if (days < 2) return '昨天';
+    if (days < 30) return days + ' 天前';
+    var d = new Date(t);
+    return d.getFullYear() + '-' + pad(d.getMonth() + 1) + '-' + pad(d.getDate());
+  }
+  function pad(n) { return n < 10 ? '0' + n : String(n); }
+
+  function el(tag, cls, text) {
+    var node = document.createElement(tag);
+    if (cls) node.className = cls;
+    if (text != null) node.textContent = text;
+    return node;
+  }
+
+  function buildItem(c, pending) {
+    var li = el('li', 'cmt__item');
+    li.appendChild(el('span', 'cmt__avatar', avatarFor(c.author))).setAttribute('aria-hidden', 'true');
+    var main = el('div', 'cmt__main');
+    var meta = el('div', 'cmt__meta');
+    meta.appendChild(el('b', '', c.author));
+    var time = el('time', '', relTime(c.created_at));
+    if (c.created_at) time.setAttribute('datetime', c.created_at);
+    meta.appendChild(time);
+    if (pending) meta.appendChild(el('em', '', '· 审核后公开'));
+    main.appendChild(meta);
+    main.appendChild(el('p', '', c.body));
+    li.appendChild(main);
+    return li;
+  }
+
+  var publicCount = 0;
+  function syncEmpty() {
+    if (emptyEl) emptyEl.hidden = listEl.children.length > 0;
+    if (countEl) countEl.textContent = String(publicCount);
+  }
+
   fetch(apiBase, { headers: { accept: 'application/json' } })
     .then(function (r) { return r.ok ? r.json() : { comments: [] }; })
+    .catch(function () { return { comments: [] }; })
     .then(function (data) {
       var list = (data && data.comments) || [];
-      // 按 created_at ASC 入,我们自己组树
-      comments = list;
-      // 把服务端带回的 anchor 同步进本地 highlights 列表(保证别人留言里的 mid 也能在本地高亮)
-      hydrateAnchorsFromComments();
-      reapplyHighlightsFromStorage();
-      render();
+      list = list.slice().sort(function (a, b) { return String(b.created_at || '').localeCompare(String(a.created_at || '')); });
+      publicCount = list.length;
+      // 自己刚发的(若已在列表顶部)保持在最上面,公开评论接在后面
+      for (var j = 0; j < list.length; j++) listEl.appendChild(buildItem(list[j], false));
+      syncEmpty();
+    });
+
+  // ---- 发布 ----
+  var busy = false;
+  form.addEventListener('submit', function (ev) {
+    ev.preventDefault();
+    if (busy) return;
+    var body = bodyEl.value.trim();
+    if (!body) { showErr('写点内容再发'); bodyEl.focus(); return; }
+    clearErr();
+    // 名字被清空时兜底成随机一个
+    if (!nameEl.value.trim()) { rollName(); syncAvatar(); }
+    var author = nameEl.value.trim();
+    saveName();
+    busy = true;
+    if (sendEl) sendEl.disabled = true;
+
+    fetch(apiBase, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', accept: 'application/json' },
+      body: JSON.stringify({ author: author, body: body })
     })
-    .catch(function () {
-      reapplyHighlightsFromStorage();
-      render();
-    });
-
-  // ---- selection bubble ----
-  if (article && bubble) {
-    document.addEventListener('selectionchange', function () {
-      var sel = window.getSelection();
-      if (!sel || sel.isCollapsed) { bubble.hidden = true; return; }
-      var range = sel.rangeCount > 0 ? sel.getRangeAt(0) : null;
-      if (!range || !article.contains(range.commonAncestorContainer)) {
-        bubble.hidden = true; return;
-      }
-      var rect = range.getBoundingClientRect();
-      if (!rect || (rect.width === 0 && rect.height === 0)) { bubble.hidden = true; return; }
-      bubble.hidden = false;
-      var x = rect.left + rect.width / 2 + window.scrollX;
-      var y = rect.top + window.scrollY - 44;
-      bubble.style.left = Math.max(8, x - bubble.offsetWidth / 2) + 'px';
-      bubble.style.top = Math.max(8, y) + 'px';
-    });
-
-    bubble.addEventListener('mousedown', function (ev) { ev.preventDefault(); });
-    bubble.addEventListener('click', function (ev) {
-      var btn = ev.target.closest('button[data-action]');
-      if (!btn) return;
-      var action = btn.getAttribute('data-action');
-      var sel = window.getSelection();
-      if (!sel || sel.isCollapsed) return;
-      var text = sel.toString().trim();
-      if (!text) return;
-      if (action === 'copy') {
-        try { navigator.clipboard.writeText(text); } catch (e) { /* swallow */ }
-      } else if (action === 'highlight') {
-        applyHighlight(sel, text);
-      } else if (action === 'comment') {
-        var mid = applyHighlight(sel, text);
-        if (mid && input) {
-          input.focus();
-          input.setAttribute('data-mid', mid);
-          input.setAttribute('data-quote', text);
-          input.placeholder = '评论选中:"' + (text.length > 30 ? text.slice(0, 28) + '…' : text) + '"';
-        }
-      }
-      bubble.hidden = true;
-      sel.removeAllRanges();
-    });
-  }
-
-  function applyHighlight(sel, text) {
-    if (!sel || sel.rangeCount === 0) return null;
-    var mid = 'm' + (midCounter++);
-    var range = sel.getRangeAt(0);
-    try {
-      var span = document.createElement('mark');
-      span.className = 'wsb-comments__hl';
-      span.setAttribute('data-mid', mid);
-      span.appendChild(range.extractContents());
-      range.insertNode(span);
-      attachHlListeners(span, mid);
-      highlights.push({ mid: mid, quote: text });
-      persistHl();
-      return mid;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function attachHlListeners(el, mid) {
-    el.addEventListener('mouseenter', function () { setActiveCard(mid, true); });
-    el.addEventListener('mouseleave', function () { setActiveCard(mid, false); });
-    el.addEventListener('click', function () { jumpToCard(mid); });
-  }
-
-  function persistHl() {
-    try {
-      localStorage.setItem(HL_STORAGE_KEY, JSON.stringify({
-        highlights: highlights, midCounter: midCounter,
-      }));
-    } catch (e) { /* swallow */ }
-  }
-
-  // 服务端回来的评论里的 anchor 也合并进本地 highlights,使"别人的高亮"也能展示
-  function hydrateAnchorsFromComments() {
-    var seen = {};
-    for (var i = 0; i < highlights.length; i++) seen[highlights[i].mid] = true;
-    for (var j = 0; j < comments.length; j++) {
-      var a = comments[j].anchor;
-      if (a && a.mid && !seen[a.mid]) {
-        highlights.push({ mid: a.mid, quote: a.quote });
-        seen[a.mid] = true;
-      }
-    }
-  }
-
-  // 第一次加载时,把 highlights 里有 quote 的句子在正文中找到并包 mark
-  function reapplyHighlightsFromStorage() {
-    if (!article) return;
-    var existingMids = {};
-    var existing = article.querySelectorAll('.wsb-comments__hl[data-mid]');
-    for (var i = 0; i < existing.length; i++) {
-      var m = existing[i].getAttribute('data-mid');
-      if (m) {
-        existingMids[m] = true;
-        attachHlListeners(existing[i], m);
-      }
-    }
-    for (var k = 0; k < highlights.length; k++) {
-      var hl = highlights[k];
-      if (!hl || !hl.mid || existingMids[hl.mid]) continue;
-      // 只在没找到的时候才"塞"一个不可见占位 — 对正文不破坏,保留 mid ↔ 卡片 联动入口
-      // (真正的 in-article 高亮重渲染需要 text-fragment,留给后续)
-    }
-  }
-
-  // ---- comments list (树形渲染) ----
-  function render() {
-    if (!listEl) return;
-    var visible = comments.filter(function (c) { return c.status !== 'pending' || pendingMids[c.id]; });
-    if (!visible.length) {
-      listEl.innerHTML = '';
-      if (emptyEl) emptyEl.hidden = false;
-      if (countEl) countEl.textContent = '0';
-      return;
-    }
-    if (emptyEl) emptyEl.hidden = true;
-    if (countEl) countEl.textContent = String(visible.filter(function (c) { return c.status !== 'pending'; }).length);
-
-    // 按 parent_id 分组成树
-    var byParent = {};
-    var roots = [];
-    for (var i = 0; i < visible.length; i++) {
-      var c = visible[i];
-      if (c.parent_id == null) roots.push(c);
-      else {
-        if (!byParent[c.parent_id]) byParent[c.parent_id] = [];
-        byParent[c.parent_id].push(c);
-      }
-    }
-    // 顶层倒序(最新在上),回复保持时间正序
-    roots.sort(function (a, b) { return (b.created_at || '').localeCompare(a.created_at || ''); });
-
-    var html = '';
-    for (var r = 0; r < roots.length; r++) html += renderCard(roots[r], byParent, 0);
-    listEl.innerHTML = html;
-
-    Array.prototype.forEach.call(listEl.querySelectorAll('[data-card-id]'), function (card) {
-      var mid = card.getAttribute('data-mid') || '';
-      if (mid) {
-        card.addEventListener('mouseenter', function () { setActiveHl(mid, true); });
-        card.addEventListener('mouseleave', function () { setActiveHl(mid, false); });
-        card.addEventListener('focus', function () { setActiveHl(mid, true); }, true);
-      }
-      var replyBtn = card.querySelector('[data-reply-id]');
-      if (replyBtn) {
-        replyBtn.addEventListener('click', function () {
-          var id = Number(replyBtn.getAttribute('data-reply-id'));
-          var name = replyBtn.getAttribute('data-reply-author') || '';
-          startReply(id, name);
-        });
-      }
-    });
-  }
-
-  function renderCard(c, byParent, depth) {
-    var anchor = c.anchor || null;
-    var quote = anchor ? anchor.quote : '';
-    var avatar = (c.author || '?').slice(0, 1).toUpperCase();
-    var color = avatarColor(c.author || 'anon');
-    var time = formatTime(c.created_at);
-    var pending = c.status === 'pending'
-      ? '<span class="wsb-comments__pending hf-tiny" style="color:var(--warn,#b45)">· 等待审核</span>'
-      : '';
-    var cls = 'wsb-comments__card';
-    if (depth > 0) cls += ' wsb-comments__card--reply';
-    var children = byParent[c.id] || [];
-    children.sort(function (a, b) { return (a.created_at || '').localeCompare(b.created_at || ''); });
-    var childHtml = '';
-    for (var i = 0; i < children.length; i++) childHtml += renderCard(children[i], byParent, depth + 1);
-    return '<li class="' + cls + '" data-card-id="' + c.id + '" data-mid="' + escAttr(anchor ? anchor.mid : '') + '" tabindex="0">'
-      + '<div class="wsb-comments__card-head">'
-      +   '<span class="wsb-comments__avatar" style="background:' + escAttr(color) + '" aria-hidden="true">' + escText(avatar) + '</span>'
-      +   '<span class="wsb-comments__author">' + escText(c.author) + '</span>'
-      +   '<time class="hf-mono hf-tiny hf-faint" datetime="' + escAttr(c.created_at || '') + '">' + escText(time) + '</time>'
-      +   pending
-      + '</div>'
-      + (quote ? '<div class="wsb-comments__quote">"' + escText(quote) + '"</div>' : '')
-      + '<div class="wsb-comments__body hf-sm">' + escText(c.body) + '</div>'
-      + '<div class="wsb-comments__card-foot">'
-      +   '<button type="button" class="wsb-comments__reply-btn hf-tiny" data-reply-id="' + c.id + '" data-reply-author="' + escAttr(c.author) + '">回复</button>'
-      + '</div>'
-      + (childHtml ? '<ul class="wsb-comments__replies">' + childHtml + '</ul>' : '')
-      + '</li>';
-  }
-
-  function startReply(id, author) {
-    if (!input) return;
-    replyTo = { id: id, author: author };
-    input.focus();
-    input.placeholder = '回复 @' + author + '…';
-    input.setAttribute('data-parent', String(id));
-  }
-
-  function setActiveCard(mid, on) {
-    if (!listEl || !mid) return;
-    var card = listEl.querySelector('[data-mid="' + cssEscape(mid) + '"]');
-    if (card) card.classList.toggle('is-active', !!on);
-  }
-  function setActiveHl(mid, on) {
-    if (!mid) return;
-    var hls = document.querySelectorAll('.wsb-comments__hl[data-mid="' + cssEscape(mid) + '"]');
-    Array.prototype.forEach.call(hls, function (el) { el.classList.toggle('is-active', !!on); });
-  }
-  function jumpToCard(mid) {
-    if (!listEl || !mid) return;
-    var card = listEl.querySelector('[data-mid="' + cssEscape(mid) + '"]');
-    if (card && typeof card.scrollIntoView === 'function') {
-      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      card.focus({ preventScroll: true });
-    }
-  }
-
-  // 重新挂已存在 .wsb-comments__hl 的 hover 联动(SSR 渲染场景)
-  Array.prototype.forEach.call(document.querySelectorAll('.wsb-comments__hl'), function (el) {
-    var mid = el.getAttribute('data-mid');
-    if (mid) attachHlListeners(el, mid);
-  });
-
-  // ---- compose → POST /api/posts/:slug/comments ----
-  if (compose && input) {
-    compose.addEventListener('submit', function (ev) {
-      ev.preventDefault();
-      if (errEl) { errEl.hidden = true; errEl.textContent = ''; }
-      var bodyText = (input.value || '').trim();
-      if (!bodyText) { showErr('评论不能为空'); return; }
-      var author = readOrPromptAuthor();
-      if (!author) { showErr('请输入昵称'); return; }
-      var mid = input.getAttribute('data-mid') || null;
-      var quote = input.getAttribute('data-quote') || '';
-      var parentRaw = input.getAttribute('data-parent');
-      var parentId = parentRaw && /^\d+$/.test(parentRaw) ? Number(parentRaw) : null;
-      var btn = compose.querySelector('button[type="submit"]');
-      if (btn) btn.disabled = true;
-
-      var payload = { author: author, body: bodyText };
-      if (parentId != null) payload.parent_id = parentId;
-      if (mid) payload.anchor = { mid: mid, quote: quote || bodyText.slice(0, 60) };
-
-      fetch(apiBase, {
-        method: 'POST',
-        headers: { 'content-type': 'application/json', accept: 'application/json' },
-        body: JSON.stringify(payload),
+      .then(function (r) {
+        return r.json().catch(function () { return null; }).then(function (j) { return { ok: r.ok, status: r.status, j: j }; });
       })
-        .then(function (r) { return r.json().then(function (j) { return { ok: r.ok, j: j }; }); })
-        .then(function (res) {
-          if (!res.ok) {
-            var msg = (res.j && res.j.error && (res.j.error.message || res.j.error.code)) || '提交失败';
-            showErr(String(msg));
-            return;
-          }
-          var nowIso = new Date().toISOString();
-          var newCard = {
-            id: res.j.id,
-            parent_id: parentId,
-            author: author,
-            website: null,
-            body: bodyText,
-            created_at: nowIso,
-            anchor: mid ? { mid: mid, quote: payload.anchor.quote } : null,
-            status: res.j.status || 'approved',
-          };
-          if (newCard.status === 'pending') pendingMids[newCard.id] = true;
-          comments.push(newCard);
-          input.value = '';
-          input.removeAttribute('data-mid');
-          input.removeAttribute('data-quote');
-          input.removeAttribute('data-parent');
-          input.placeholder = '选段评论 · 或全文评论…';
-          replyTo = null;
-          render();
-        })
-        .catch(function (e) {
-          showErr('网络错误:' + (e && e.message ? e.message : 'unknown'));
-        })
-        .then(function () {
-          if (btn) btn.disabled = false;
-        });
-    });
-  }
-
-  function showErr(msg) {
-    if (!errEl) return;
-    errEl.textContent = msg;
-    errEl.hidden = false;
-  }
-
-  function readOrPromptAuthor() {
-    var stored = '';
-    try { stored = localStorage.getItem(AUTHOR_STORAGE_KEY) || ''; } catch (e) { /* ignore */ }
-    if (stored) return stored;
-    var name = '';
-    try { name = window.prompt('设置一个昵称(只显示在评论旁,不会泄露):', '') || ''; } catch (e) { /* ignore */ }
-    name = name.trim().slice(0, 64);
-    if (name) {
-      try { localStorage.setItem(AUTHOR_STORAGE_KEY, name); } catch (e) { /* ignore */ }
-    }
-    return name;
-  }
-
-  function formatTime(iso) {
-    if (!iso) return '';
-    var t = Date.parse(iso);
-    if (isNaN(t)) return iso;
-    var diff = Date.now() - t;
-    if (diff < 60_000) return 'now';
-    if (diff < 3_600_000) return Math.round(diff / 60_000) + 'm';
-    if (diff < 86_400_000) return Math.round(diff / 3_600_000) + 'h';
-    if (diff < 30 * 86_400_000) return Math.round(diff / 86_400_000) + 'd';
-    return iso.slice(0, 10);
-  }
-
-  function avatarColor(seed) {
-    var h = 0;
-    for (var i = 0; i < seed.length; i++) h = (h * 31 + seed.charCodeAt(i)) | 0;
-    var hue = Math.abs(h) % 360;
-    return 'hsl(' + hue + ', 55%, 70%)';
-  }
-
-  function escText(s) {
-    return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-  function escAttr(s) { return escText(s).replace(/"/g, '&quot;'); }
-  function cssEscape(s) {
-    return String(s).replace(/[^a-zA-Z0-9_-]/g, function (c) { return '\\' + c; });
-  }
+      .then(function (res) {
+        if (!res.ok) {
+          showErr(res.status === 429 ? '发得太快了，稍后再试' : '发布失败，稍后再试');
+          return;
+        }
+        var pending = !(res.j && res.j.status === 'approved');
+        if (!pending) publicCount++;
+        listEl.insertBefore(buildItem({ author: author, body: body, created_at: new Date().toISOString() }, pending), listEl.firstChild);
+        bodyEl.value = '';
+        syncEmpty();
+      }, function () {
+        showErr('网络出错，稍后再试');
+      })
+      .then(function () {
+        busy = false;
+        if (sendEl) sendEl.disabled = false;
+      });
+  });
 })();

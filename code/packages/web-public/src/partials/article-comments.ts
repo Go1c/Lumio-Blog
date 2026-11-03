@@ -2,13 +2,13 @@ import type { SiteConfig } from '@opennote/core';
 import { esc } from '../templates/layout.js';
 
 /**
- * 文章侧栏评论 — 飞书风划词高亮 + 本地后端 (/api/posts/:slug/comments)
+ * 文章评论区 — 不登录,一个名字框 + 骰子,走本地后端 (/api/posts/:slug/comments)
  *
- * 设计稿:doc/prototype/hf-article.jsx 评论 rail + hf-extras.jsx §1
+ * 设计稿:doc/prototype/hub-v1/index.html 的 `data-cmt` 段(职能下拉已按后续定稿去掉);
+ * 文字说明见 doc/devdoc/blog-hub-plan.md §3.5
  *
- * - 选中正文文本 → 浮 bubble(复制 / 高亮 / 评论)
- * - 高亮的句子 ↔ 右侧评论卡通过 `data-mid` 关联(高亮纯本地 localStorage)
- * - 评论本身走 Lumio 自带后端:GET 拉 approved 列表,POST 投到 pending 队列等审核
+ * - 骰子随机出「某职能的苦逼瞬间」+「该职能」;苦逼瞬间库、localStorage 记名字都在 public/comments.js
+ * - GET 拉 approved 列表,POST 投到 pending 队列等审核;自己刚发的评论标「· 审核后公开」
  * - 若 features.comments === false → 调用方应 skip 整块
  */
 export interface CommentsConfig {
@@ -16,69 +16,34 @@ export interface CommentsConfig {
   slug: string;
 }
 
+const DICE_ICON =
+  '<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>';
+
 /**
- * 渲染文章评论侧栏。
+ * 渲染文章评论区。
  *
  * 调用方需:
  *  1. 检查 `config.features?.comments !== false`
- *  2. 把返回的 HTML 嵌入到 `<aside id="comments">` 容器
+ *  2. 把返回的 HTML 嵌入到 `#comments` 容器
  */
 export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig): string {
-  const dataAttrs = [
-    `data-component="comments"`,
-    `data-slug="${esc(opts.slug)}"`,
-  ].join(' ');
-
   return `
-    <div class="wsb-comments" ${dataAttrs}>
-      <div class="wsb-comments__sticky">
-        <header class="wsb-comments__head">
-          <h2 class="wsb-comments__title">
-            <span aria-hidden="true">💬</span> 评论
-            <span class="hf-mono hf-tiny" data-count aria-label="评论数">0</span>
-          </h2>
-          <div class="hf-grow"></div>
-          <span class="ui-tag" style="font-size:11px;font-family:var(--mono)">Lumio</span>
-        </header>
-
-        <div class="wsb-comments__hint hf-tiny hf-muted">
-          <span aria-hidden="true">💡</span>
-          选中正文可<b>划线评论</b> — 点击高亮跳转到对应评论
+    <div class="cmt" data-cmt data-component="comments" data-slug="${esc(opts.slug)}">
+      <h2 class="cmt__title">评论 <span data-cmt-count aria-label="评论数">0</span></h2>
+      <form class="cmt__form" data-cmt-form aria-label="发表评论" novalidate>
+        <div class="cmt__who">
+          <span class="cmt__avatar" data-cmt-avatar aria-hidden="true">路</span>
+          <input class="cmt__name" data-cmt-name type="text" maxlength="40" placeholder="打包等了一小时的客户端" aria-label="你的名字" autocomplete="off">
+          <button type="button" class="cmt__dice" data-cmt-dice title="随机换一个名字" aria-label="随机换一个名字">${DICE_ICON}</button>
         </div>
-
-        <ol class="wsb-comments__list" id="wsb-comments-list" aria-label="评论列表" aria-live="polite"></ol>
-
-        <div class="wsb-comments__empty" data-empty>
-          <p class="hf-tiny hf-muted">暂无评论 — 选中段落或在下方留下第一条想法</p>
+        <textarea class="cmt__body" data-cmt-body rows="3" maxlength="4000" placeholder="说点什么…" aria-label="评论内容"></textarea>
+        <div class="cmt__actions">
+          <span class="cmt__err" data-cmt-err role="alert" aria-live="assertive"></span>
+          <button type="submit" class="cmt__send" data-cmt-send>发布</button>
         </div>
-
-        <form class="wsb-comments__compose" data-compose aria-label="发表评论" novalidate>
-          <span class="wsb-comments__avatar" aria-hidden="true">?</span>
-          <label for="wsb-comments-input" class="sr-only">写下你的评论</label>
-          <input
-            id="wsb-comments-input"
-            class="wsb-comments__input"
-            type="text"
-            placeholder="选段评论 · 或全文评论…"
-            autocomplete="off"
-          >
-          <button type="submit" class="ui-btn ui-btn--sm ui-btn--primary" data-submit>发布</button>
-          <p class="wsb-comments__error hf-tiny" role="alert" aria-live="assertive" data-error hidden></p>
-        </form>
-
-        <footer class="wsb-comments__foot hf-tiny hf-faint">
-          评论需先经过审核才会公开 · <a id="wsb-comments-login" aria-disabled="true">以匿名身份留言</a>
-        </footer>
-      </div>
-    </div>
-
-    <!-- 选中文本浮 bubble — 由 comments.js 控制 visibility / position -->
-    <div class="wsb-selbubble" id="wsb-selbubble" role="toolbar" aria-label="选中操作" hidden>
-      <button type="button" data-action="copy" aria-label="复制选中文本"><span aria-hidden="true">📋</span> 复制</button>
-      <span class="wsb-selbubble__sep" aria-hidden="true"></span>
-      <button type="button" data-action="highlight" aria-label="高亮选中文本"><span class="wsb-selbubble__swatch" aria-hidden="true"></span> 高亮</button>
-      <span class="wsb-selbubble__sep" aria-hidden="true"></span>
-      <button type="button" data-action="comment" aria-label="评论选中文本"><span aria-hidden="true">💬</span> 评论</button>
+      </form>
+      <ol class="cmt__list" data-cmt-list aria-label="评论列表" aria-live="polite"></ol>
+      <p class="cmt__empty" data-cmt-empty hidden>还没有人留言，来当第一个</p>
     </div>
 
     <script src="/comments.js" defer></script>`;

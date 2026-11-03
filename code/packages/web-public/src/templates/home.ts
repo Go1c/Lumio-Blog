@@ -1,11 +1,11 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
-import { layout } from './layout.js';
+import { esc, getPlatformGames, layout } from './layout.js';
+import { renderHubCard, renderHubPlay } from '../partials/hub.js';
 import { authorEntity, websiteNode } from '../partials/jsonld.js';
 import {
   buildLumioArticles,
   renderAdSlot,
   renderArticleCard,
-  renderHeroScene,
   renderSubscribe,
 } from './lumio-design.js';
 
@@ -34,16 +34,12 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
 
   const body = `
     <div class="body">
-      <aside class="hero">
-        <div class="hero__deco" aria-hidden="true"><div class="hero__grid"></div></div>
-        <div class="hero__eyebrow">游戏系统 · AI 工作流 · 工程笔记</div>
-        <h1 class="hero__title"><em>游戏开发</em><em>技术笔记</em></h1>
-        <p class="hero__sub"><b>技术文章</b><span class="dot"></span><b>游戏开发</b><span class="dot"></span><b>实践分享</b></p>
-        <a class="btn-primary" href="/articles/index.html">
-          阅读最新文章
-          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h9M8 4l4 4-4 4"></path></svg>
-        </a>
-        ${renderHeroScene()}
+      <aside class="home-hub" aria-label="Lumio 平台">
+        <h1 class="home-hub__h1">${esc(config.site.title)}</h1>
+        <div class="hub-rail home-hub__rail">
+          ${renderHubCard('home_rail')}
+          ${renderHubPlay(getPlatformGames(), 'home_rail')}
+        </div>
       </aside>
 
       <main class="content">
@@ -71,7 +67,20 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
   });
 }
 
-export const HOME_MOBILE_CSS = '';
+/** 首页左栏:创作中心卡 + 平台游戏推荐(替换原来的装饰大图),与文章页左栏同一套组件 */
+export const HOME_MOBILE_CSS = `
+.body:has(.home-hub) { grid-template-columns: 300px minmax(0, 1fr); }
+.home-hub { padding: 30px 0 30px 30px; min-width: 0; }
+.home-hub__rail { position: sticky; top: 22px; }
+.home-hub__h1 {
+  position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px;
+  overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; border: 0;
+}
+@media (max-width: 900px) {
+  .body:has(.home-hub) { grid-template-columns: minmax(0, 1fr); }
+  .home-hub { display: none; }
+}
+`;
 
 function renderHomeEmptyState(): string {
   return `
