@@ -2097,19 +2097,8 @@ mark.hl { background: #FFEFC9; color: #B26B16; border-radius: 3px; padding: 0 2p
   margin-top: 22px;
   padding: 20px;
 }
-.post-comments .wsb-comments__sticky { position: static; }
-.post-comments .wsb-comments__head { margin-bottom: 12px; }
-.post-comments .wsb-comments__hint {
-  background: #F3F6FF;
-  border-color: #D4DCF5;
-  border-radius: var(--radius-sm);
-}
-.post-comments .wsb-comments__compose {
-  background: #F3F6FD;
-  border-color: var(--line);
-  border-radius: var(--radius-sm);
-}
-.post-comments .wsb-comments__card { border-radius: var(--radius-sm); }
+/* 外层 .post-panel 已经是卡片,里面的 .cmt 不再重复边框和底色 */
+.post-comments .cmt { margin: 0; padding: 0; border: 0; border-radius: 0; background: transparent; }
 
 .about-lead {
   font-family: var(--font-zh);
