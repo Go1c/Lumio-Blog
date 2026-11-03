@@ -77,12 +77,13 @@ function str(v: unknown): string {
   return typeof v === 'string' ? v.trim() : '';
 }
 
-function httpUrl(v: unknown): string | null {
+/** 只收 https:站点 CSP 的 img-src 只放行 https,http 封面会显示成坏图 */
+function httpsUrl(v: unknown): string | null {
   const s = str(v);
   if (!s) return null;
   try {
     const u = new URL(s);
-    return u.protocol === 'https:' || u.protocol === 'http:' ? u.toString() : null;
+    return u.protocol === 'https:' ? u.toString() : null;
   } catch {
     return null;
   }
@@ -109,7 +110,7 @@ export function normalizeGame(raw: unknown): CatalogGame | null {
     slug,
     title,
     oneLiner: str(g.oneLiner),
-    coverUrl: httpUrl(g.coverUrl),
+    coverUrl: httpsUrl(g.coverUrl),
     authorName: str(author.name) || handle,
     authorHandle: handle || null,
     plays,
@@ -250,7 +251,7 @@ export class PlatformGamesFeed {
     this.log = opts.log ?? (() => {});
   }
 
-  /** 供 renderSite 调用。未开启 → [];缓存过期会先刷新(最多等 timeoutMs);永不抛错。 */
+  /** 供 renderSite 调用。未开启 → [];缓存过期会先刷新(列表 + 置顶补查,最多约 2 × timeoutMs);永不抛错。 */
   async get(): Promise<PromoGame[]> {
     try {
       const settings = this.resolveSettings();
@@ -259,7 +260,7 @@ export class PlatformGamesFeed {
       if (this.isStale(settings) && this.now() - this.lastFailureAt >= this.retryMs) {
         await this.refresh(settings);
       }
-      return this.cache ? mergePromoGames(this.cache, settings) : [];
+      return this.current(settings);
     } catch (error) {
       this.log('warn', 'platform_games.get.failed', { message: errorMessage(error) });
       return [];
@@ -283,20 +284,26 @@ export class PlatformGamesFeed {
     this.timer = null;
   }
 
+  /** 由定时器以 void 调用,任何异常都必须在这里接住,否则会成为未处理的 rejection 让进程退出 */
   private async tick(onChange?: () => unknown): Promise<void> {
-    const settings = this.resolveSettings();
-    if (!settings) return;
-    await this.loadDiskOnce();
-    const before = this.cache ? signature(mergePromoGames(this.cache, settings)) : '';
-    await this.refresh(settings);
-    const after = this.cache ? signature(mergePromoGames(this.cache, settings)) : '';
-    if (before !== after && onChange) {
-      try {
-        await onChange();
-      } catch (error) {
-        this.log('error', 'platform_games.on_change.failed', { message: errorMessage(error) });
-      }
+    try {
+      const settings = this.resolveSettings();
+      if (!settings) return;
+      await this.loadDiskOnce();
+      const before = signature(this.current(settings));
+      await this.refresh(settings);
+      const after = signature(this.current(settings));
+      if (before !== after && onChange) await onChange();
+    } catch (error) {
+      this.log('error', 'platform_games.tick.failed', { message: errorMessage(error) });
     }
+  }
+
+  /** 缓存只在来源 / 语言 / 站点都和当前配置一致时才可用;换了配置又刷新失败时宁可不显示,也不拿旧来源的数据冒充 */
+  private current(settings: ResolvedPlatformGamesSettings): PromoGame[] {
+    const c = this.cache;
+    if (!c || c.source !== settings.source || c.locale !== settings.locale || c.baseUrl !== settings.base_url) return [];
+    return mergePromoGames(c, settings);
   }
 
   /** 非法配置记一次 warn,同样的错误不重复记。 */
@@ -332,11 +339,10 @@ export class PlatformGamesFeed {
     try {
       const games = extractGames(settings.source, await this.fetchJson(this.listUrl(settings)));
       const known = new Set(games.flatMap((g) => [g.gameKey, g.slug]));
-      const lookups: Record<string, CatalogGame | null> = {};
-      for (const key of settings.pinned) {
-        if (known.has(key) || key in lookups) continue;
-        lookups[key] = await this.lookup(key, settings);
-      }
+      // 置顶补查并发进行,一次刷新最多多等一个 timeoutMs
+      const missing = [...new Set(settings.pinned.filter((key) => !known.has(key)))];
+      const found = await Promise.all(missing.map((key) => this.lookup(key, settings)));
+      const lookups: Record<string, CatalogGame | null> = Object.fromEntries(missing.map((key, i) => [key, found[i] ?? null]));
       this.cache = {
         version: 1,
         source: settings.source,
@@ -358,15 +364,20 @@ export class PlatformGamesFeed {
     }
   }
 
-  /** 置顶项补查;404 记为 null(查不到),其他错误向上抛,整次刷新算失败。 */
+  /**
+   * 置顶项补查;查不到或出错都记为 null(这一轮跳过这款),不连累整份列表。
+   * 下次刷新会重新补查。
+   */
   private async lookup(key: string, settings: ResolvedPlatformGamesSettings): Promise<CatalogGame | null> {
     const url = new URL(`/api/games/${encodeURIComponent(key)}`, settings.base_url);
     url.searchParams.set('locale', settings.locale);
     try {
       return normalizeGame(await this.fetchJson(url.toString()));
     } catch (error) {
-      if (error instanceof NotFoundError) return null;
-      throw error;
+      if (!(error instanceof NotFoundError)) {
+        this.log('warn', 'platform_games.pinned_lookup.failed', { key, message: errorMessage(error) });
+      }
+      return null;
     }
   }
 

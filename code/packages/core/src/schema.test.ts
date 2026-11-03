@@ -40,6 +40,16 @@ describe('siteConfigSchema', () => {
     expect(parsed.platform_games).toEqual({ enabled: true, source: 'nope' });
   });
 
+  it('treats a blank platform_games key as not configured', () => {
+    const parsed = siteConfigSchema.parse({
+      site: { title: 'Lumio Blog', url: 'https://blog.lumio.games' },
+      author: { name: 'Lumio' },
+      paths: { vault: '/vault', out: '/out', db: '/db.sqlite' },
+      platform_games: null,
+    });
+    expect(parsed.platform_games).toBeUndefined();
+  });
+
   it('fills platform_games defaults', () => {
     expect(platformGamesSchema.parse({ enabled: true, blocked: ['g-vxidb3apsj'] })).toEqual({
       enabled: true,

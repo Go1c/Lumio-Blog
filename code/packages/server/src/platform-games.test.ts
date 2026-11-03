@@ -83,6 +83,8 @@ describe('normalizeGame', () => {
       }),
     );
     expect(g?.coverUrl).toBeNull();
+    // 站点 CSP 的 img-src 只放行 https
+    expect(normalizeGame(rawGame('g-2', { coverUrl: 'http://lumiogames.cn/media/g-2' }))?.coverUrl).toBeNull();
     expect(g?.authorName).toBe('only-handle');
     expect(g?.plays).toBeNull();
   });
@@ -184,6 +186,9 @@ describe('resolvePlatformGamesSettings', () => {
     expect(resolvePlatformGamesSettings(undefined)).toBeNull();
     expect(resolvePlatformGamesSettings({})).toBeNull();
     expect(resolvePlatformGamesSettings({ enabled: true, limit: 0 })).toBeNull();
+    // new URL 能解析但不是 http(s) 的地址,拼链接时会抛错,必须在配置校验时拦下
+    expect(resolvePlatformGamesSettings({ enabled: true, base_url: 'localhost:8787' })).toBeNull();
+    expect(resolvePlatformGamesSettings({ enabled: true, base_url: 'http://localhost:8787' })?.base_url).toBe('http://localhost:8787');
     expect(resolvePlatformGamesSettings({ enabled: true })?.source).toBe('hot');
   });
 });
@@ -368,6 +373,64 @@ describe('PlatformGamesFeed', () => {
     ]);
     await feed.get();
     expect(fetch).toHaveBeenCalledTimes(3);
+  });
+
+  it('skips a pinned game whose lookup errors instead of failing the whole refresh', async () => {
+    const log = vi.fn();
+    const fetch = mockFetch((url) => {
+      if (url.pathname === '/api/rank/hot') return json(rankBody(rawGame('a')));
+      if (url.pathname === '/api/games/slug-z') return json(rawGame('z'));
+      if (url.pathname === '/api/games/broken') return json({ error: 'boom' }, 500);
+      throw new Error(`unexpected ${url}`);
+    });
+    const feed = new PlatformGamesFeed({
+      getSettings: () => ({ enabled: true, pinned: ['broken', 'slug-z'] }),
+      fetch,
+      now: clock,
+      log,
+    });
+    expect((await feed.get()).map((g) => g.gameKey)).toEqual(['z', 'a']);
+    expect(log.mock.calls.some(([, m]) => m === 'platform_games.pinned_lookup.failed')).toBe(true);
+    expect(log.mock.calls.some(([, m]) => m === 'platform_games.refresh.failed')).toBe(false);
+  });
+
+  it('does not serve the previous source when a refresh after a config change fails', async () => {
+    let cfg: PlatformGamesSettings = { enabled: true };
+    const fetch = mockFetch((url) => {
+      if (url.pathname === '/api/rank/hot') return json(rankBody(rawGame('a')));
+      return json({ error: 'down' }, 503);
+    });
+    const feed = new PlatformGamesFeed({ getSettings: () => cfg, fetch, now: clock });
+    expect((await feed.get()).map((g) => g.gameKey)).toEqual(['a']);
+    cfg = { enabled: true, source: 'new' };
+    expect(await feed.get()).toEqual([]);
+    cfg = { enabled: true };
+    expect((await feed.get()).map((g) => g.gameKey)).toEqual(['a']);
+  });
+
+  it('keeps the timer alive when a tick throws', async () => {
+    vi.useFakeTimers();
+    const log = vi.fn();
+    let boom = false;
+    const fetch = mockFetch(() => json(rankBody(rawGame('a'))));
+    const feed = new PlatformGamesFeed({
+      getSettings: () => {
+        if (boom) throw new Error('settings exploded');
+        return { enabled: true };
+      },
+      fetch,
+      ttlMs: 1000,
+      log,
+    });
+    await feed.get();
+    feed.start();
+    boom = true;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(log.mock.calls.some(([, m]) => m === 'platform_games.tick.failed')).toBe(true);
+    boom = false;
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(fetch).toHaveBeenCalledTimes(2);
+    feed.stop();
   });
 
   it('refetches when config changes source or adds an unknown pin', async () => {

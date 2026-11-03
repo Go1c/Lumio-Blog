@@ -38,7 +38,12 @@ export const platformGamesSchema = z.object({
   /** detail = /g/{slug} 详情页;play = /g/{slug}/play 直接进游戏(未实名访客会被防沉迷时段拦住) */
   link: z.enum(['detail', 'play']).default('detail'),
   locale: z.string().min(1).default('zh-CN'),
-  base_url: z.string().url().default('https://lumiogames.cn'),
+  /** 必须带 http(s):// —— 「localhost:8787」这类能被 new URL 解析成别的协议,拼链接时会抛错 */
+  base_url: z
+    .string()
+    .url()
+    .refine((v) => /^https?:\/\//i.test(v), { message: 'base_url 必须以 http:// 或 https:// 开头' })
+    .default('https://lumiogames.cn'),
   utm: z
     .object({
       source: z.string().min(1).default('blog'),
@@ -107,7 +112,12 @@ export const siteConfigSchema = z.object({
     .passthrough()
     .optional(),
   /** 这里只保留原样;由 server 用 platformGamesSchema 校验,写错只关掉推荐模块,不影响整站配置加载 */
-  platform_games: z.object({}).passthrough().optional(),
+  // `platform_games:` 下面全注释掉时 YAML 值是 null,按「没配」处理
+  platform_games: z
+    .object({})
+    .passthrough()
+    .nullish()
+    .transform((v) => v ?? undefined),
   auth: z
     .object({
       github: z
