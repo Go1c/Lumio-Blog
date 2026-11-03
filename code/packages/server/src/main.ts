@@ -25,7 +25,7 @@ import { securityHeaders } from './security-headers.js';
 import { registerPublicRedirects } from './public-redirects.js';
 import { rewriteAdminRequestPath } from './admin-static.js';
 import { createShutdownHandler, runStartupSync, stopRuntime } from './startup.js';
-import { PlatformGamesFeed } from './platform-games.js';
+import { PlatformPromoFeed } from './promo/feed.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -109,14 +109,14 @@ async function main(): Promise<void> {
 
   const syncDiagnostics = new SyncDiagnosticsBuffer();
 
-  // 文章页左栏「平台游戏推荐」— 读当前 config.platform_games,未开启时 get() 直接返回 []
-  const platformGames = new PlatformGamesFeed({
-    getSettings: () => config.platform_games,
-    cacheFile: resolve(dataDir, 'platform-games-cache.json'),
+  // 文章页左栏「平台内容推荐」— 读当前 config.platform_promo,未开启时 get() 直接返回 []
+  const platformPromo = new PlatformPromoFeed({
+    getSettings: () => config.platform_promo,
+    cacheFile: resolve(dataDir, 'platform-promo-cache.json'),
     log,
   });
   const renderPublic = async (): Promise<void> =>
-    renderSite({ db, out, config, platformGames: await platformGames.get() });
+    renderSite({ db, out, config, platformPromo: await platformPromo.get() });
 
   const triggerSync = async (opts?: { forceAll?: boolean }): Promise<void> => {
     // Reload render-facing settings while keeping boot-time paths stable.
@@ -158,9 +158,9 @@ async function main(): Promise<void> {
   });
 
   startScheduler(db, bus, triggerSync);
-  platformGames.start({
+  platformPromo.start({
     onChange: () => renderPublic().catch((error: unknown) => {
-      log('error', 'platform_games.render.failed', {
+      log('error', 'platform_promo.render.failed', {
         message: error instanceof Error ? error.message : String(error),
       });
     }),
@@ -214,7 +214,7 @@ async function main(): Promise<void> {
     log,
     stopRuntime: () => stopRuntime({
       stopBackground: () => {
-        platformGames.stop();
+        platformPromo.stop();
         return fnsSupervisor.stop();
       },
       closeServer: () => closeServer(server),

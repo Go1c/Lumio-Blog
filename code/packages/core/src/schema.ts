@@ -22,16 +22,15 @@ export const frontmatterSchema = z
   .passthrough();
 
 /**
- * 平台游戏推荐(文章页左栏「点开即玩」)— config.yaml 顶层 platform_games,可选。
- * 数据由 server 从 lumiogames.cn 公开接口拉取;enabled !== true 时不拉取、不渲染。
- * pinned / blocked 里的值按 gameKey 或 slug 匹配。
+ * 平台内容推荐 · 游戏源(lumiogames.cn)。pinned / blocked 只作用于本 source,值按 gameKey 或 slug 匹配。
  */
-export const platformGamesSchema = z.object({
-  enabled: z.boolean().default(false),
+export const promoGameSourceSchema = z.object({
+  kind: z.literal('game'),
   /** hot = 热门榜(近 7 天热度);new = 新作榜(上线 30 天内);feed = 首页推荐流 */
-  source: z.enum(['hot', 'new', 'feed']).default('hot'),
-  limit: z.number().int().min(1).max(10).default(3),
-  /** 置顶,按数组顺序排最前;接口结果里没有的会按 slug 单独补查,查不到跳过 */
+  board: z.enum(['hot', 'new', 'feed']).default('hot'),
+  /** 本 source 最多出几条;不填则只受顶层 limit 约束 */
+  limit: z.number().int().min(1).max(10).optional(),
+  /** 置顶,按数组顺序排最前;榜单里没有的会按 slug 单独补查,查不到跳过 */
   pinned: z.array(z.string().min(1)).default([]),
   /** 屏蔽,优先级高于 pinned */
   blocked: z.array(z.string().min(1)).default([]),
@@ -39,13 +38,28 @@ export const platformGamesSchema = z.object({
   link: z.enum(['detail', 'play']).default('detail'),
   locale: z.string().min(1).default('zh-CN'),
   base_url: z.string().url().default('https://lumiogames.cn'),
+  utm_campaign: z.string().min(1).default('platform_games'),
+});
+
+/** 新增内容源(如音乐)= 在这里加一个 kind 的 schema + server 侧一个 fetcher。 */
+export const promoSourceSchema = z.discriminatedUnion('kind', [promoGameSourceSchema]);
+
+/**
+ * 平台内容推荐(文章页左栏)— config.yaml 顶层 platform_promo,可选。
+ * 数据由 server 从各平台公开接口拉取;enabled !== true 时不拉取、不渲染。
+ * 多个 source 按数组顺序拼接,跨 source 按 kind:id 去重,总数截断到 limit。
+ */
+export const platformPromoSchema = z.object({
+  enabled: z.boolean().default(false),
+  limit: z.number().int().min(1).max(10).default(3),
+  /** utm_campaign 按 source 区分,见各 source 的 utm_campaign */
   utm: z
     .object({
       source: z.string().min(1).default('blog'),
       medium: z.string().min(1).default('left_rail'),
-      campaign: z.string().min(1).default('platform_games'),
     })
     .default({}),
+  sources: z.array(promoSourceSchema).default([{ kind: 'game' }]),
 });
 
 export const siteConfigSchema = z.object({
@@ -106,7 +120,8 @@ export const siteConfigSchema = z.object({
     })
     .passthrough()
     .optional(),
-  platform_games: platformGamesSchema.optional(),
+  /** 这里只保留原样;由 server 用 platformPromoSchema 校验,写错只关掉推荐模块,不影响整站配置加载 */
+  platform_promo: z.object({}).passthrough().optional(),
   auth: z
     .object({
       github: z

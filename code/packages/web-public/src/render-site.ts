@@ -4,7 +4,7 @@ import { fileURLToPath } from 'node:url';
 import { createHash } from 'node:crypto';
 import type { Database } from 'better-sqlite3';
 import { NoteRepo } from '@opennote/db';
-import type { NoteRow, PromoGame, SiteConfig } from '@opennote/core';
+import type { NoteRow, PromoItem, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
 import { CANVAS_RUNTIME_JS, HTML_EMBED_RUNTIME_JS } from '@opennote/obsidian';
 import { setStylesVersion } from './templates/layout.js';
@@ -44,10 +44,11 @@ export interface RenderOptions {
   out: string;
   config: SiteConfig;
   /**
-   * 文章页左栏「平台游戏推荐」— 由 server 的 PlatformGamesFeed.get() 取好传入,
-   * 已合并置顶/屏蔽、带 UTM 链接;未开启或拉取从未成功时为空/缺省,渲染层应直接不出该模块。
+   * 文章页左栏「平台内容推荐」— 由 server 的 PlatformPromoFeed.get() 取好传入,
+   * 已合并置顶/屏蔽、带 UTM 链接,按 kind 区分(目前只有 game);
+   * 未开启或拉取从未成功时为空/缺省,渲染层应直接不出该模块。
    */
-  platformGames?: PromoGame[];
+  platformPromo?: PromoItem[];
 }
 
 export const STATIC_ASSETS = ['feed.xsl', 'search.js', 'graph.js', 'comments.js', 'favicon.ico', '0ec7c152-58f4-4e25-a2b7-491de367b64b.txt'] as const;
