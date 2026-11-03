@@ -66,7 +66,7 @@ describe('renderAbout stats', () => {
     expect(html).not.toContain('mailto:hello@lumio.games');
   });
 
-  it('presents the bottom email form as newsletter subscription instead of contact', () => {
+  it('has no email subscription form (it never sent any email)', () => {
     const html = renderAbout(config, {
       articles: 3,
       columns: 2,
@@ -74,8 +74,8 @@ describe('renderAbout stats', () => {
       years: 1,
     });
 
-    expect(html).toContain('action="/api/newsletter/subscribe"');
-    expect(html).toContain('订阅更新');
+    expect(html).not.toContain('action="/api/newsletter/subscribe"');
+    expect(html).not.toContain('订阅更新');
     expect(html).not.toContain('联系我们');
     expect(html).not.toContain('合作、投稿或交流');
   });

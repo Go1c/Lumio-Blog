@@ -317,6 +317,7 @@ describe('renderHome article list', () => {
     );
     const html = renderHome({ posts, byTag: new Map(), recentNotes: [], totalArticles: 8, totalNotes: 8, folders: [] }, config);
     for (let i = 0; i < 8; i++) expect(html).toContain(`文章 ${i}`);
+    expect(html).not.toContain('/api/newsletter/subscribe');
     // 最早的 p0 被置顶,排在最新的 p7 前面,并带「置顶」标
     expect(html.indexOf('文章 0')).toBeLessThan(html.indexOf('文章 7'));
     expect(html.match(/badge badge--pin/g)).toHaveLength(1);

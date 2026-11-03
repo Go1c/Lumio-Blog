@@ -144,7 +144,6 @@ export function publicLayout(o: PublicLayoutOpts): string {
   const brand = o.config.site.title || 'Lumio';
   const footerLinks = [
     ...(o.config.features?.graph === false ? [] : [{ href: '/graph/index.html', label: '知识图谱' }]),
-    ...(o.config.features?.newsletter === false ? [] : [{ href: '/newsletter/index.html', label: 'Newsletter' }]),
     { href: '/folders/index.html', label: '文件夹' },
     { href: '/feed/', label: 'RSS' },
   ];

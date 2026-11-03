@@ -6,7 +6,6 @@ import {
   buildLumioArticles,
   renderAdSlot,
   renderArticleCard,
-  renderSubscribe,
 } from './lumio-design.js';
 
 export interface FolderEntry {
@@ -55,7 +54,6 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
         ${articleGrid}
         ${renderAdSlot(config)}
         ${secondGrid}
-        ${renderSubscribe()}
       </main>
     </div>`;
 

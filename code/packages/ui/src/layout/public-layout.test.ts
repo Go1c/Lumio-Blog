@@ -134,7 +134,8 @@ describe('publicLayout SEO metadata', () => {
     });
 
     expect(html).toContain('href="/graph/index.html"');
-    expect(html).toContain('href="/newsletter/index.html"');
+    // 订阅入口已下线:只收邮箱、从不发邮件
+    expect(html).not.toContain('href="/newsletter/index.html"');
     expect(html).toContain('href="/folders/index.html"');
     expect(html).toContain('href="/feed/"');
     expect(html).not.toContain('href="/cli/index.html"');

@@ -1,7 +1,7 @@
 import type { SiteConfig } from '@opennote/core';
 import { layout, esc } from './layout.js';
 import { authorEntity } from '../partials/jsonld.js';
-import { renderPageHead, renderSubscribe } from './lumio-design.js';
+import { renderPageHead } from './lumio-design.js';
 
 export interface AboutStats {
   articles: number;
@@ -84,7 +84,6 @@ export function renderAbout(config: SiteConfig, stats?: AboutStats): string {
         </section>
       </div>
 
-      ${renderSubscribe('订阅更新', '留下邮箱接收最新技术文章与 Newsletter', '订阅', 'style="margin-top:34px;"')}
     </main>`;
 
   return layout({

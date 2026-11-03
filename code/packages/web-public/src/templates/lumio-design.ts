@@ -302,23 +302,6 @@ function highlightArticleText(value: string): string {
   return esc(value).replace(/(渲染|优化)/g, '<mark class="hl">$1</mark>');
 }
 
-export function renderSubscribe(title = '订阅更新', sub = '不错过每一篇技术干货与实践分享', button = '订阅', attrs = ''): string {
-  const attr = attrs ? ` ${attrs}` : '';
-  return `
-    <div class="subscribe"${attr}>
-      <span class="subscribe__icon" aria-hidden="true">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"></rect><path d="m4 7 8 5 8-5"></path></svg>
-      </span>
-      <div class="subscribe__txt">
-        <div class="subscribe__title">${esc(title)}</div>
-        <div class="subscribe__sub">${esc(sub)}</div>
-      </div>
-      <form class="subscribe__form" action="/api/newsletter/subscribe" method="post">
-        <input type="email" name="email" placeholder="输入邮箱地址" aria-label="邮箱地址">
-        <button type="submit">${esc(button)}</button>
-      </form>
-    </div>`;
-}
 
 export function renderHeroScene(): string {
   return `
