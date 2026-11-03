@@ -720,17 +720,6 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   padding: 0;
 }
 .icon-btn:hover { color: var(--primary-d); border-color: #C9D3F5; background: #fff; }
-.avatar {
-  width: 38px;
-  height: 38px;
-  border-radius: 11px;
-  flex-shrink: 0;
-  background: linear-gradient(160deg, #B6C0FF, #7C8CFF);
-  display: grid;
-  place-items: center;
-  color: #fff;
-  box-shadow: inset 0 1px 0 rgba(255,255,255,.5);
-}
 
 .body { display: grid; grid-template-columns: 380px minmax(0, 1fr); }
 .hero {

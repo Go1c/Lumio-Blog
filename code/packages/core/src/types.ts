@@ -248,7 +248,7 @@ export interface PromoGame {
   title: string;
   /** 接口没给时为空串 */
   oneLiner: string;
-  /** 仅 http(s),否则 null */
+  /** 仅 https(站点 CSP img-src 只放行 https),否则 null */
   coverUrl: string | null;
   /** 作者显示名;缺失时退回 handle,再缺失为空串 */
   authorName: string;

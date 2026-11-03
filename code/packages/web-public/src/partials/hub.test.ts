@@ -25,6 +25,14 @@ describe('classifyMedia', () => {
     expect(classifyMedia('/media/song.m4a?v=2')?.kind).toBe('audio');
   });
 
+  it('recognises youtube watch links and allows http only for player embeds', () => {
+    expect(classifyMedia('https://www.youtube.com/watch?v=dQw4w9WgXcQ&t=3')?.kind).toBe('video-embed');
+    expect(classifyMedia('http://www.bilibili.com/video/BV1VDJm6VE7w')?.kind).toBe('video-embed');
+    // CSP 的 media-src 只放行 'self' 和 https:,http 文件直链放不出来,退回 cover
+    expect(classifyMedia('http://cdn.example.com/a.mp3')).toBeNull();
+    expect(classifyMedia('http://cdn.example.com/a.mp4')).toBeNull();
+  });
+
   it('rejects unknown types and unsafe urls', () => {
     expect(classifyMedia('/media/doc.pdf')).toBeNull();
     expect(classifyMedia('javascript:alert(1)//a.mp3')).toBeNull();
@@ -43,6 +51,21 @@ describe('renderPostMedia', () => {
     expect(html).toContain('data-mini');
     expect(html).toContain('过来人 &lt;OGs&gt;');
     expect(html).not.toContain('autoplay');
+  });
+
+  it('renders an embed or a video element for video media, with the optional label', () => {
+    const embed = renderPostMedia({ ...base, media: 'https://youtu.be/dQw4w9WgXcQ', media_title: '先看 <这个>' });
+    expect(embed).toContain('<iframe src="https://www.youtube-nocookie.com/embed/dQw4w9WgXcQ"');
+    expect(embed).toContain('先看 &lt;这个&gt;');
+    const file = renderPostMedia({ ...base, media: '/media/demo.mp4' });
+    expect(file).toContain('<video src="/media/demo.mp4" controls');
+    expect(file).not.toContain('media-cover__label');
+  });
+
+  it('falls back to the file name for the audio title without throwing on bad escapes', () => {
+    expect(renderPostMedia({ ...base, media: '/media/%E8%BF%87%E6%9D%A5%E4%BA%BA.mp3' })).toContain('过来人');
+    expect(() => renderPostMedia({ ...base, media: '/media/100%.mp3' })).not.toThrow();
+    expect(renderPostMedia({ ...base, media: '/media/100%.mp3' })).toContain('100%');
   });
 
   it('falls back to the cover image, then to nothing', () => {
@@ -65,6 +88,7 @@ describe('hub rail and float', () => {
     const html = renderHubPlay([game({ title: '<img src=x onerror=alert(1)>', authorName: 'a"b' })], 'mobile_float');
     expect(html).not.toContain('<img src=x');
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
+    expect(html).toContain('@a&quot;b');
     expect(html).toContain('utm_medium=mobile_float');
     expect(html).not.toContain('utm_medium=left_rail');
   });

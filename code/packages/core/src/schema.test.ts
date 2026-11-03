@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultFeatures, platformGamesSchema, siteConfigSchema } from './schema.js';
+import { defaultFeatures, frontmatterSchema, platformGamesSchema, siteConfigSchema } from './schema.js';
 
 describe('siteConfigSchema', () => {
   it('preserves render-facing home, theme, and seo settings from config.yaml', () => {
@@ -38,6 +38,11 @@ describe('siteConfigSchema', () => {
       platform_games: { enabled: true, source: 'nope' },
     });
     expect(parsed.platform_games).toEqual({ enabled: true, source: 'nope' });
+  });
+
+  it('accepts a blank media key in frontmatter instead of failing the note', () => {
+    expect(frontmatterSchema.safeParse({ title: 'T', media: null, media_title: null }).success).toBe(true);
+    expect(frontmatterSchema.safeParse({ title: 'T', media: '/a.mp3' }).success).toBe(true);
   });
 
   it('treats a blank platform_games key as not configured', () => {

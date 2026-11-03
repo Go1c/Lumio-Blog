@@ -15,8 +15,9 @@ export const frontmatterSchema = z
     short_id: z.string().length(5).optional(),
     tags: z.array(z.string()).optional(),
     cover: z.string().optional(),
-    media: z.string().optional(),
-    media_title: z.string().optional(),
+    // 写了 key 但留空(YAML null)按没填处理,不能让整篇文章同步失败
+    media: z.string().nullish(),
+    media_title: z.string().nullish(),
     created_at: z.string().optional(),
     published_at: z.string().optional(),
     scheduled_at: z.string().optional(),

@@ -170,13 +170,21 @@ export function classifyMedia(raw: string | null | undefined): PostMedia | null 
     if (id && /^[\w-]{11}$/.test(id)) return { kind: 'video-embed', src: `https://www.youtube-nocookie.com/embed/${id}` };
   }
   const ext = extOf(url);
+  // 文件直链必须是 https 或站内路径:CSP 的 media-src 只放行 'self' 和 https:,http 地址放不出来
+  if (url.startsWith('http:')) return null;
   if (['mp4', 'webm', 'mov', 'm4v'].includes(ext)) return { kind: 'video-file', src: url };
   if (['mp3', 'm4a', 'ogg', 'oga', 'wav', 'aac', 'flac'].includes(ext)) return { kind: 'audio', src: url };
   return null;
 }
 
 function mediaTitleFallback(src: string): string {
-  const name = decodeURIComponent((src.split(/[?#]/)[0] ?? '').split('/').pop() ?? '');
+  const raw = (src.split(/[?#]/)[0] ?? '').split('/').pop() ?? '';
+  let name = raw;
+  try {
+    name = decodeURIComponent(raw);
+  } catch {
+    // 「100%.mp3」这类不合法的转义:原样显示,不能让整站渲染中断
+  }
   return name.replace(/\.[a-z0-9]+$/i, '') || '边听边读';
 }
 
@@ -416,7 +424,7 @@ export const HUB_CSS = `
 @media (max-height: 620px) { .hub-rail .hub-play { display: none; } }
 
 /* —— 响应式:推广优先于目录 —— */
-@media (max-width: 1180px) {
+@media (max-width: 1179.98px) {
   .layout.layout--hub { grid-template-columns: 232px minmax(0, 1fr); gap: 28px; }
   .layout--hub > .post-rail { display: none; }
 }
@@ -431,8 +439,9 @@ export const HUB_CSS = `
   .layout--hub > .post-rail { display: none; }
   .nav__ext-link { display: none; }
   body .hub-float { display: block; }
-  .ui-public__main { padding-bottom: 84px; }
-  .mini { bottom: 84px; }
+  /* 给底部悬浮条留出位置(含页脚);.mini 的基础规则写在后面,这里用 body 提高优先级 */
+  body .shell { margin-bottom: 76px; }
+  body .mini { bottom: 84px; }
   .lumio-post .wsc-pill { bottom: 84px; }
 }
 @media (max-width: 640px) {
