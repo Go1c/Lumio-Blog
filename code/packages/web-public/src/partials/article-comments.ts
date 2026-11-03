@@ -2,11 +2,12 @@ import type { SiteConfig } from '@opennote/core';
 import { esc } from '../templates/layout.js';
 
 /**
- * 文章评论区 — 不登录,名字 = 「苦逼瞬间」+ 职能,走本地后端 (/api/posts/:slug/comments)
+ * 文章评论区 — 不登录,一个名字框 + 骰子,走本地后端 (/api/posts/:slug/comments)
  *
- * 设计稿:doc/prototype/hub-v1/index.html 的 `data-cmt` 段;文字说明见 doc/devdoc/blog-hub-plan.md §3.5
+ * 设计稿:doc/prototype/hub-v1/index.html 的 `data-cmt` 段(职能下拉已按后续定稿去掉);
+ * 文字说明见 doc/devdoc/blog-hub-plan.md §3.5
  *
- * - 职能下拉、苦逼瞬间库、骰子、localStorage 记名字都在 public/comments.js
+ * - 骰子随机出「某职能的苦逼瞬间」+「该职能」;苦逼瞬间库、localStorage 记名字都在 public/comments.js
  * - GET 拉 approved 列表,POST 投到 pending 队列等审核;自己刚发的评论标「· 审核后公开」
  * - 若 features.comments === false → 调用方应 skip 整块
  */
@@ -32,9 +33,8 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
       <form class="cmt__form" data-cmt-form aria-label="发表评论" novalidate>
         <div class="cmt__who">
           <span class="cmt__avatar" data-cmt-avatar aria-hidden="true">路</span>
-          <input class="cmt__name" data-cmt-state type="text" maxlength="16" placeholder="打包等了一小时的" aria-label="你的状态" autocomplete="off">
-          <select class="cmt__role" data-cmt-role aria-label="你的职能"></select>
-          <button type="button" class="cmt__dice" data-cmt-dice title="换一个这个职能的苦逼瞬间" aria-label="换一个这个职能的苦逼瞬间">${DICE_ICON}</button>
+          <input class="cmt__name" data-cmt-name type="text" maxlength="40" placeholder="打包等了一小时的客户端" aria-label="你的名字" autocomplete="off">
+          <button type="button" class="cmt__dice" data-cmt-dice title="随机换一个名字" aria-label="随机换一个名字">${DICE_ICON}</button>
         </div>
         <textarea class="cmt__body" data-cmt-body rows="3" maxlength="4000" placeholder="说点什么…" aria-label="评论内容"></textarea>
         <div class="cmt__actions">

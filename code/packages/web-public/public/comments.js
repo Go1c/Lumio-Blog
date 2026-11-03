@@ -1,9 +1,9 @@
-/* 文章评论 — 不登录,名字 = 「苦逼瞬间」+ 职能,本地后端 (/api/posts/:slug/comments)
+/* 文章评论 — 不登录,一个名字框 + 骰子,本地后端 (/api/posts/:slug/comments)
  *
- * 设计稿:doc/prototype/hub-v1/index.html 的 data-cmt 段;说明见 doc/devdoc/blog-hub-plan.md §3.5
+ * 设计稿:doc/prototype/hub-v1/index.html 的 data-cmt 段(职能下拉已去掉);说明见 doc/devdoc/blog-hub-plan.md §3.5
  *
- * - 骰子只在当前职能自己的苦逼瞬间里随机(不和当前值重复);切换职能时自动换一条;左边可以自己改写
- * - 职能和左边文字记在本机 localStorage,下次自动带上
+ * - 骰子随机出完整名字 = 「某职能的苦逼瞬间」+「该职能」,前后对应;连点不和当前名字重复
+ * - 首次进入自动随机一个;名字可自己改写;完整名字记在本机 localStorage,下次自动带上
  * - GET 拉 approved 列表;POST 进入 pending 队列,自己的评论插到最上面并标「· 审核后公开」
  * - 用户文本一律走 textContent,不拼 innerHTML
  */
@@ -14,8 +14,7 @@
   if (!root) return;
 
   var form = root.querySelector('[data-cmt-form]');
-  var stateEl = root.querySelector('[data-cmt-state]');
-  var roleEl = root.querySelector('[data-cmt-role]');
+  var nameEl = root.querySelector('[data-cmt-name]');
   var bodyEl = root.querySelector('[data-cmt-body]');
   var errEl = root.querySelector('[data-cmt-err]');
   var avatarEl = root.querySelector('[data-cmt-avatar]');
@@ -24,12 +23,11 @@
   var listEl = root.querySelector('[data-cmt-list]');
   var emptyEl = root.querySelector('[data-cmt-empty]');
   var countEl = root.querySelector('[data-cmt-count]');
-  if (!form || !stateEl || !roleEl || !bodyEl || !listEl) return;
+  if (!form || !nameEl || !bodyEl || !listEl) return;
 
   var slug = root.getAttribute('data-slug') || location.pathname.replace(/^\/posts\/|\.html$/g, '');
   var apiBase = '/api/posts/' + encodeURIComponent(slug) + '/comments';
-  var WHO_KEY = 'lumio-comment-who';
-  var FALLBACK_STATE = '路过的';
+  var NAME_KEY = 'lumio-comment-name';
 
   var PAINS = {
     '客户端': ['打包等了一小时的', '写完代码没人测的', '真机上又闪退的', '被说「这很简单」的', 'UI 又改了一版的'],
@@ -48,47 +46,38 @@
   // 判断名字以哪个职能结尾时,长的先比(「数值策划」要先于「策划」)
   var ROLES_BY_LEN = ROLES.slice().sort(function (a, b) { return b.length - a.length; });
 
-  for (var i = 0; i < ROLES.length; i++) {
-    var opt = document.createElement('option');
-    opt.value = ROLES[i];
-    opt.textContent = ROLES[i];
-    roleEl.appendChild(opt);
-  }
-
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-  function rollPain() {
-    var list = PAINS[roleEl.value] || [];
-    if (!list.length) return;
-    var cur = stateEl.value, next = pick(list);
-    while (list.length > 1 && next === cur) next = pick(list);
-    stateEl.value = next;
+  // 先随机职能,再从该职能的苦逼瞬间里随机一条,拼成完整名字
+  function randomName() {
+    var role = pick(ROLES);
+    return pick(PAINS[role]) + role;
   }
-  function syncAvatar() { if (avatarEl) avatarEl.textContent = roleEl.value.charAt(0); }
-  function fullName() { return (stateEl.value.trim() || FALLBACK_STATE) + roleEl.value; }
+  function rollName() {
+    var cur = nameEl.value.trim(), next = randomName();
+    while (next === cur) next = randomName();
+    nameEl.value = next;
+  }
+  function syncAvatar() { if (avatarEl) avatarEl.textContent = avatarFor(nameEl.value.trim()); }
   function clearErr() { if (errEl) errEl.textContent = ''; }
   function showErr(msg) { if (errEl) errEl.textContent = msg; }
-  function saveWho() {
-    try { localStorage.setItem(WHO_KEY, JSON.stringify({ state: stateEl.value.trim(), role: roleEl.value })); } catch (e) { /* ignore */ }
+  function saveName() {
+    try { localStorage.setItem(NAME_KEY, nameEl.value.trim()); } catch (e) { /* ignore */ }
   }
 
-  // ---- 恢复名字;首次进入随机一个职能 + 一条苦逼瞬间 ----
-  var saved = null;
-  try { saved = JSON.parse(localStorage.getItem(WHO_KEY) || 'null'); } catch (e) { saved = null; }
-  if (saved && typeof saved.role === 'string' && PAINS[saved.role]) {
-    roleEl.value = saved.role;
-    stateEl.value = typeof saved.state === 'string' ? saved.state : '';
-  } else {
-    roleEl.value = pick(ROLES);
-    rollPain();
-  }
+  // ---- 恢复名字;首次进入随机一个 ----
+  var saved = '';
+  try { saved = localStorage.getItem(NAME_KEY) || ''; } catch (e) { saved = ''; }
+  saved = String(saved).trim();
+  if (saved) nameEl.value = saved.slice(0, 40);
+  else { rollName(); saveName(); }
   syncAvatar();
 
-  roleEl.addEventListener('change', function () { rollPain(); syncAvatar(); clearErr(); saveWho(); });
-  stateEl.addEventListener('input', function () { clearErr(); saveWho(); });
-  if (diceEl) diceEl.addEventListener('click', function () { rollPain(); clearErr(); saveWho(); });
+  nameEl.addEventListener('input', function () { syncAvatar(); clearErr(); saveName(); });
+  if (diceEl) diceEl.addEventListener('click', function () { rollName(); syncAvatar(); clearErr(); saveName(); });
   bodyEl.addEventListener('input', clearErr);
 
   // ---- 列表 ----
+  // 名字以已知职能结尾就用职能第一个字,否则用名字第一个字
   function avatarFor(name) {
     var n = String(name || '');
     for (var k = 0; k < ROLES_BY_LEN.length; k++) {
@@ -162,8 +151,10 @@
     var body = bodyEl.value.trim();
     if (!body) { showErr('写点内容再发'); bodyEl.focus(); return; }
     clearErr();
-    var author = fullName();
-    saveWho();
+    // 名字被清空时兜底成随机一个
+    if (!nameEl.value.trim()) { rollName(); syncAvatar(); }
+    var author = nameEl.value.trim();
+    saveName();
     busy = true;
     if (sendEl) sendEl.disabled = true;
 

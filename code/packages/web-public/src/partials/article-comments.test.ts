@@ -7,11 +7,13 @@ const config = { site: { title: 'Lumio Blog', url: 'https://blog.lumio.games' } 
 describe('renderArticleComments', () => {
   const html = renderArticleComments({ slug: 'hello-world' }, config);
 
-  it('渲染不登录的表单:苦逼瞬间输入框 + 职能下拉 + 骰子 + 内容 + 发布', () => {
+  it('渲染不登录的表单:一个名字框 + 骰子 + 内容 + 发布,没有职能下拉', () => {
     expect(html).toContain('data-cmt ');
     expect(html).toContain('data-slug="hello-world"');
-    expect(html).toMatch(/<input class="cmt__name" data-cmt-state[^>]*maxlength="16"/);
-    expect(html).toContain('<select class="cmt__role" data-cmt-role');
+    expect(html.match(/<input /g)).toHaveLength(1);
+    expect(html).toMatch(/<input class="cmt__name" data-cmt-name[^>]*maxlength="40"/);
+    expect(html).not.toContain('<select');
+    expect(html).not.toContain('data-cmt-role');
     expect(html).toContain('data-cmt-dice');
     expect(html).toContain('placeholder="说点什么…"');
     expect(html).toContain('>发布</button>');

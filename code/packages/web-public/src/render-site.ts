@@ -1189,14 +1189,7 @@ html[data-theme="dark"] .wsb-graph__canvas {
 .cmt__name, .cmt__body {
   font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; outline: none;
 }
-.cmt__name { flex: 0 1 230px; min-width: 0; height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
-.cmt__role {
-  flex: none; height: 34px; padding: 0 28px 0 12px; border-radius: 12px; border: 1px solid var(--line);
-  font: inherit; font-size: 14px; font-weight: 700; color: var(--primary-d); background-color: var(--accent-soft); cursor: pointer;
-  appearance: none; -webkit-appearance: none;
-  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
-  background-position: calc(100% - 15px) 15px, calc(100% - 10px) 15px; background-size: 5px 5px; background-repeat: no-repeat;
-}
+.cmt__name { flex: 0 1 300px; min-width: 0; height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
 .cmt__body { width: 100%; box-sizing: border-box; padding: 10px 12px; font-size: 14.5px; line-height: 1.6; resize: vertical; min-height: 84px; }
 .cmt__name:focus, .cmt__body:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-soft); }
 .cmt__dice { flex: none; width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; display: grid; place-items: center; }
