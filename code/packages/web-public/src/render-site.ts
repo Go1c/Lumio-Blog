@@ -256,7 +256,7 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   // 复制过来,语义和 v0.6 之前一致)。
   const rssNotes = publicNotes.filter((n) => (n.rss_includable ?? 1) === 1);
   const seoNotes = publicNotes.filter((n) => (n.seo_indexable ?? 1) === 1);
-  await writeFile(join(opts.out, 'feed.xml'), renderFeed(rssNotes, opts.config), 'utf-8');
+  await writeFile(join(opts.out, 'feed.xml'), renderFeed(rssNotes, opts.config, byTag), 'utf-8');
   await copyHtmlAliases(opts.out);
 
   // 复制 public/feed.xsl(WS-C — 浏览器直接打开 feed.xml 时美化渲染)

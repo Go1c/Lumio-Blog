@@ -45,6 +45,18 @@ describe('securityHeaders', () => {
     expect(res.headers.get('x-frame-options')).toBe('DENY');
   });
 
+  it('serves the rss feed as application/rss+xml', async () => {
+    const app = new Hono();
+    app.use('*', securityHeaders());
+    app.get('*', (c) => c.body('<rss/>', 200, { 'content-type': 'application/xml' }));
+
+    for (const path of ['/feed.xml', '/rss.xml']) {
+      const res = await app.request(path);
+      expect(res.headers.get('content-type')).toBe('application/rss+xml; charset=utf-8');
+    }
+    expect((await app.request('/sitemap.xml')).headers.get('content-type')).toBe('application/xml');
+  });
+
   it('marks admin and api responses noindex, but leaves public pages indexable', async () => {
     const app = new Hono();
     app.use('*', securityHeaders());

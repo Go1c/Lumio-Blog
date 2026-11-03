@@ -20,6 +20,9 @@ const CONTENT_SECURITY_POLICY = [
 const NOINDEX_PREFIXES = ['/admin', '/api'] as const;
 
 export const MARKDOWN_CONTENT_TYPE = 'text/markdown; charset=utf-8';
+export const RSS_CONTENT_TYPE = 'application/rss+xml; charset=utf-8';
+/** RSS 订阅地址(rss.xml 是 feed.xml 的别名) */
+const RSS_PATHS = new Set(['/feed.xml', '/rss.xml']);
 
 export function isNoindexPath(path: string): boolean {
   return NOINDEX_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
@@ -40,5 +43,7 @@ export function securityHeaders(): MiddlewareHandler {
     // Hono 的 mime 表没有 .md,serveStatic 会回落到 application/octet-stream。
     // 叠加全局 nosniff 后抓取方会直接跳过,所以在这里改回 text/markdown。
     if (path.endsWith('.md')) c.header('Content-Type', MARKDOWN_CONTENT_TYPE);
+    // 订阅方(RSS 阅读器、创作中心)按 Content-Type 识别 RSS
+    if (RSS_PATHS.has(path) && c.res.status === 200) c.header('Content-Type', RSS_CONTENT_TYPE);
   };
 }
