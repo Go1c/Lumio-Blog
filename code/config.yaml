@@ -16,3 +16,15 @@ paths:
   vault: /data/posts
   out: /data/public
   db: /data/opennote/index.db
+
+# 平台游戏推荐(文章页左栏 / 首页左栏 / 手机悬浮条「开发者新作，点开就玩」)
+# 数据每 30 分钟从 lumiogames.cn 热门榜拉取;pinned 置顶,blocked 屏蔽(填 gameKey 或 slug)
+platform_games:
+  enabled: true
+  source: hot
+  limit: 3
+  pinned: []
+  blocked:
+    - g-vxidb3apsj   # 丝袜物理模拟器:不适合放在技术博客旁
+    - g-4xjezlg2mi   # 帽王乱斗 联机测试版:与「帽王乱斗」重复
+    - g-ltwlnhln4i   # Spiderman 3D:涉及他人 IP
