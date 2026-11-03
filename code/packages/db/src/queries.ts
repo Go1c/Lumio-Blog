@@ -35,19 +35,19 @@ export class NoteRepo {
 
   upsert(note: NoteRow, tags: string[], links: LinkEdge[]): void {
     const tx = this.db.transaction(() => {
-      const row = { ...note, kind: note.kind ?? 'markdown' };
+      const row = { ...note, kind: note.kind ?? 'markdown', media: note.media ?? null, media_title: note.media_title ?? null };
       this.db
         .prepare(
           `INSERT INTO notes (
             slug, title, summary, body_html, body_text, kind, visibility, searchable,
             seo_indexable, rss_includable, featured_on_home,
             short_id, source_path, created_at, updated_at, published_at, scheduled_at,
-            word_count, reading_minutes, cover, hash
+            word_count, reading_minutes, cover, media, media_title, hash
           ) VALUES (
             @slug, @title, @summary, @body_html, @body_text, @kind, @visibility, @searchable,
             @seo_indexable, @rss_includable, @featured_on_home,
             @short_id, @source_path, @created_at, @updated_at, @published_at, @scheduled_at,
-            @word_count, @reading_minutes, @cover, @hash
+            @word_count, @reading_minutes, @cover, @media, @media_title, @hash
           )
           ON CONFLICT(slug) DO UPDATE SET
             title = excluded.title,
@@ -68,6 +68,8 @@ export class NoteRepo {
             word_count = excluded.word_count,
             reading_minutes = excluded.reading_minutes,
             cover = excluded.cover,
+            media = excluded.media,
+            media_title = excluded.media_title,
             hash = excluded.hash`,
         )
         .run(row);

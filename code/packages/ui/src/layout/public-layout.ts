@@ -43,7 +43,16 @@ export interface PublicLayoutOpts {
   extraScripts?: string;
   /** styles.css 路径,默认 '/styles.css' */
   stylesHref?: string;
+  /** 放在 .shell 之后的 HTML(例如手机底部悬浮条),不受 .shell 的 overflow 裁切 */
+  afterShell?: string;
 }
+
+/** 右上角外链,带来源参数方便统计(见 doc/devdoc/blog-hub-plan.md 第 6 节) */
+const NAV_SITE_HREF = 'https://lumiogames.cn/?entry=blog&utm_source=blog&utm_medium=nav&utm_campaign=site';
+const NAV_STUDIO_HREF = 'https://lumiogames.cn/studio/?utm_source=blog&utm_medium=nav&utm_campaign=studio_hub';
+
+/** 与官网一致的 Lumio 标志 */
+const BRAND_MARK_SVG = '<svg class="lumio-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="44" height="44" aria-hidden="true" focusable="false"><defs><linearGradient id="lumio-g-nav" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6659db"/><stop offset="1" stop-color="#9aa6ff"/></linearGradient></defs><rect width="100" height="100" rx="29" fill="url(#lumio-g-nav)"/><rect x="25" y="22" width="16" height="16" rx="4" fill="#fff"/><rect x="25" y="42" width="16" height="16" rx="4" fill="#fff"/><rect x="25" y="62" width="16" height="16" rx="4" fill="#fff"/><rect x="45" y="62" width="16" height="16" rx="4" fill="#fff" fill-opacity=".6"/><rect x="65" y="62" width="16" height="16" rx="4" fill="#5de2c6"/><path d="M70 19C71.56 28.1 73.9 30.44 83 32C73.9 33.56 71.56 35.9 70 45C68.44 35.9 66.1 33.56 57 32C66.1 30.44 68.44 28.1 70 19Z" fill="#fff"/></svg>';
 
 interface NavItem {
   id: string;
@@ -186,13 +195,8 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <div class="shell">
     <nav class="ui-public__nav nav" aria-label="主导航">
       <a href="/" class="ui-public__brand brand" aria-label="${escHtml(brand)} 首页">
-        <span class="brand__mark" aria-hidden="true">
-          <span class="brand__pix"><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
-        </span>
-        <span class="brand__txt">
-          <span class="brand__name">LUMIO</span>
-          <span class="brand__sub">.GAMES</span>
-        </span>
+        ${BRAND_MARK_SVG}
+        <span class="lumio-word">Lumio<small>GAMES</small></span>
       </a>
       <ul class="ui-public__nav-list nav__links">
         ${NAV_ITEMS.map((it) => `<li><a class="ui-public__nav-link nav__link${o.active === it.id ? ' is-active' : ''}" href="${it.href}"${o.active === it.id ? ' aria-current="page"' : ''}>${it.label}</a></li>`).join('\n        ')}
@@ -202,12 +206,11 @@ export function publicLayout(o: PublicLayoutOpts): string {
         <svg width="15" height="15" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><circle cx="7" cy="7" r="4.5"></circle><path d="m10.5 10.5 3 3"></path></svg>
         <input type="search" name="q" placeholder="搜索文章、标签" aria-label="搜索文章、标签">
       </form>
+      <a class="nav__ext-link" href="${NAV_SITE_HREF}" target="_blank" rel="noopener">官网</a>
+      <a class="nav__studio" href="${NAV_STUDIO_HREF}" target="_blank" rel="noopener">创作中心<svg width="14" height="14" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 8h10M9 4l4 4-4 4"/></svg></a>
       <button type="button" class="icon-btn" id="ui-theme-toggle" aria-label="切换主题">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="8" cy="8" r="3"></circle><path d="M8 1.5V3M8 13v1.5M1.5 8H3M13 8h1.5M3.4 3.4l1 1M11.6 11.6l1 1M3.4 12.6l1-1M11.6 4.4l1-1"></path></svg>
       </button>
-      <a class="avatar" href="/admin/" title="管理后台" aria-label="管理后台">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>
-      </a>
     </nav>
     <main id="main-content" class="ui-public__main" role="main">${o.body}</main>
     <footer class="ui-public__footer" role="contentinfo">
@@ -217,6 +220,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
       </nav>
     </footer>
   </div>
+  ${o.afterShell ?? ''}
   <script>
     (function(){
       var btn=document.getElementById('ui-theme-toggle');

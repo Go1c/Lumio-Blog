@@ -106,7 +106,7 @@ describe('renderHome brand polish', () => {
     expect(html).toContain('--ink: #1E2A3A;');
   });
 
-  it('uses a purposeful Lumio eyebrow instead of a generated title-length version badge', () => {
+  it('replaces the decorative hero with the Lumio studio card and keeps the site title as h1', () => {
     const html = renderHome(
       {
         posts: [],
@@ -119,11 +119,12 @@ describe('renderHome brand polish', () => {
       config,
     );
 
-    expect(html).toContain('游戏系统 · AI 工作流 · 工程笔记');
-    expect(html).toContain('游戏开发');
-    expect(html).toContain('技术笔记');
+    expect(html).toContain('class="home-hub"');
+    expect(html).toContain('一起做出好玩的游戏');
+    expect(html).toContain('utm_medium=home_rail');
+    expect(html).toMatch(/<h1 class="home-hub__h1">[^<]+<\/h1>/);
+    expect(html).not.toContain('class="hero"');
     expect(html).not.toContain('GameTech');
-    expect(html).not.toContain('v10 · Lumio Blog');
   });
 
   it('links the hero CTA into the articles experience', () => {

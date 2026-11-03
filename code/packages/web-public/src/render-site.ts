@@ -7,7 +7,8 @@ import { NoteRepo } from '@opennote/db';
 import type { NoteRow, PromoGame, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
 import { CANVAS_RUNTIME_JS, HTML_EMBED_RUNTIME_JS } from '@opennote/obsidian';
-import { setStylesVersion } from './templates/layout.js';
+import { setPlatformGames, setStylesVersion } from './templates/layout.js';
+import { HUB_CSS } from './partials/hub.js';
 import { renderHome } from './templates/home.js';
 import { renderArticles } from './templates/articles.js';
 import { renderColumns } from './templates/columns.js';
@@ -111,6 +112,8 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   const obsidianCss = await readObsidianCss();
   const fullCss = composeStyles(obsidianCss);
   setStylesVersion(createHash('sha1').update(fullCss).digest('hex').slice(0, 12));
+  // 平台游戏推荐(文章页左栏、首页、手机悬浮条共用);未开启时为空,各模块直接不出
+  setPlatformGames(opts.platformGames);
 
   await writeFile(
     join(opts.out, 'index.html'),
@@ -1429,5 +1432,6 @@ const CSS =
 
 export function composeStyles(obsidianCss: string): string {
   // Lumio post overrides must be last because obsidian.css owns .hf-prose defaults.
-  return CSS + '\n' + obsidianCss + '\n' + LUMIO_POST_FINAL_CSS;
+  // HUB_CSS(引流改版)再往后,覆盖旧版文章页布局。
+  return CSS + '\n' + obsidianCss + '\n' + LUMIO_POST_FINAL_CSS + '\n' + HUB_CSS;
 }

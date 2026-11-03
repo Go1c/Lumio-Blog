@@ -4,7 +4,8 @@ import {
   type ArticleMeta,
   type PublicLayoutOpts,
 } from '@opennote/ui/ssg';
-import type { SiteConfig } from '@opennote/core';
+import type { PromoGame, SiteConfig } from '@opennote/core';
+import { HUB_RUNTIME_JS, renderHubFloat } from '../partials/hub.js';
 
 export const esc = escFromUi;
 
@@ -31,6 +32,19 @@ export interface LayoutOpts {
 // 样式版本号:默认占位,构建时由 render-site 用 styles.css 内容 hash 覆盖,
 // 保证 CSS 一变 URL 就变、浏览器/CDN 缓存自动失效。
 let stylesVersion = '20260604-lumio-contrast';
+
+// 平台游戏推荐:由 render-site 在每次渲染前设置,手机底部悬浮条在所有页面共用。
+let platformGames: PromoGame[] = [];
+
+/** 由 render-site 在渲染前调用,传入 server 拉好的平台游戏(未开启时为空数组)。 */
+export function setPlatformGames(games: PromoGame[] | undefined): void {
+  platformGames = games ?? [];
+}
+
+/** 当前这次渲染的平台游戏,供文章页左栏 / 首页使用。 */
+export function getPlatformGames(): PromoGame[] {
+  return platformGames;
+}
 
 /** 由 render-site 在写出 styles.css 时调用,传入内容 hash 作为缓存版本号。 */
 export function setStylesVersion(version: string): void {
@@ -94,6 +108,7 @@ export function layout(o: LayoutOpts): string {
     stylesHref: `/styles.css?v=${stylesVersion}`,
     extraHead: `${LUMIO_CONTRAST_HEAD}${o.extraHead ?? ''}`,
     extraScripts,
+    afterShell: `${renderHubFloat(platformGames)}\n  ${HUB_RUNTIME_JS}`,
   };
   if (o.noindex) opts.noindex = true;
   if (o.active) opts.active = o.active;
