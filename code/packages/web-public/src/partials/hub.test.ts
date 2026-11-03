@@ -68,9 +68,9 @@ describe('renderPostMedia', () => {
     expect(renderPostMedia({ ...base, media: '/media/100%.mp3' })).toContain('100%');
   });
 
-  it('falls back to the cover image, then to nothing', () => {
-    expect(renderPostMedia({ ...base, cover: '/media/c.png' })).toContain('post-hero--cover');
-    expect(renderPostMedia({ ...base, cover: '/media/c.png', media: '/x.pdf' })).toContain('post-hero--cover');
+  it('never shows the cover image on the article page', () => {
+    expect(renderPostMedia({ ...base, cover: '/media/c.png' })).toBe('');
+    expect(renderPostMedia({ ...base, cover: '/media/c.png', media: '/x.pdf' })).toBe('');
     expect(renderPostMedia(base)).toBe('');
   });
 });

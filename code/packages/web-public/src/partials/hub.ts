@@ -7,7 +7,7 @@ import { escHtml as esc } from '@opennote/ui/ssg';
  *  - 创作中心卡:面向开发者,第一优先;社群 / 关注 / GitHub / 文档都跳创作中心对应锚点
  *  - 平台游戏推荐:面向玩家,数据来自 server 的 PlatformGamesFeed(已合并置顶 / 屏蔽)
  *  - 手机悬浮条:≤900px 时左栏放不下,改为固定在屏幕底部
- *  - 首屏媒体三选一:media 视频 → 视频位;media 音频 → 边听边读;否则 cover 图片;都没有不显示
+ *  - 首屏媒体:media 视频 → 视频位;media 音频 → 边听边读;否则不显示(cover 只用于列表卡片)
  *
  * 所有外链带 utm_source=blog,utm_medium 区分位置。
  */
@@ -189,10 +189,10 @@ function mediaTitleFallback(src: string): string {
 }
 
 /**
- * 标题下的首屏区域:media 视频 → 视频位;media 音频 → 边听边读;否则 cover 图片;都没有返回空串。
- * cover 仍用于列表缩略图和分享图,不受影响。
+ * 标题下的首屏区域:media 视频 → 视频位;media 音频 → 边听边读;否则不显示。
+ * cover 封面图只在列表卡片和分享图上用,文章页里不再重复显示。
  */
-export function renderPostMedia(note: Pick<NoteRow, 'title' | 'cover' | 'media' | 'media_title'>): string {
+export function renderPostMedia(note: Pick<NoteRow, 'title' | 'media' | 'media_title'>): string {
   const media = classifyMedia(note.media);
   const title = note.media_title?.trim() ?? '';
   if (media?.kind === 'video-embed' || media?.kind === 'video-file') {
@@ -227,12 +227,6 @@ export function renderPostMedia(note: Pick<NoteRow, 'title' | 'cover' | 'media' 
                 <span class="mini__disc"><span class="i-play">${ICON_PLAY}</span><span class="i-pause">${ICON_PAUSE}</span></span>
               </button>
               <span class="mini__tip">♪ ${esc(name)}<span data-mini-time></span></span>
-            </div>`;
-  }
-  if (note.cover) {
-    return `
-            <div class="post-hero post-hero--cover">
-              <img class="post-hero__img" src="${esc(note.cover)}" alt="${esc(note.title)}" loading="eager" />
             </div>`;
   }
   return '';

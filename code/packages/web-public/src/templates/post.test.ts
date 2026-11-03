@@ -111,15 +111,12 @@ describe('renderPost cover image (题图)', () => {
     expect(html).not.toContain('post-hero--cover');
   });
 
-  it('renders the cover image and drops the animation when cover is set', () => {
+  it('does not repeat the cover image on the article page (cover is for list cards and share images)', () => {
     const withCover = { ...note, cover: 'https://s3.example.com/hi-lumio.png' };
     const html = renderPost({ note: withCover, byTag: new Map(), series: [] }, config);
 
-    expect(html).toContain('class="post-hero post-hero--cover"');
-    expect(html).toContain(
-      '<img class="post-hero__img" src="https://s3.example.com/hi-lumio.png"',
-    );
-    expect(html).not.toContain('class="post-hero__art"');
+    expect(html).not.toContain('class="post-hero');
+    expect(html).not.toContain('<img class="post-hero__img"');
   });
 });
 

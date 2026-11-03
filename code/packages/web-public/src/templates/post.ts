@@ -380,8 +380,12 @@ function renderRelatedItem(note: NoteRow, byTag: Map<string, NoteRow[]>, index: 
   return `
     <a class="related__item" href="/posts/${esc(note.slug)}.html">
       <span class="related__thumb thumb ${esc(article?.tone ?? 't-blue')}">
-        <span class="thumb__grid" aria-hidden="true"></span>
-        ${article?.art ?? ''}
+        ${
+          article?.cover
+            ? `<img class="thumb__img" src="${esc(article.cover)}" alt="" loading="lazy" decoding="async">`
+            : `<span class="thumb__grid" aria-hidden="true"></span>
+        ${article?.art ?? ''}`
+        }
       </span>
       <span>
         <span class="related__t">${esc(note.title)}</span>

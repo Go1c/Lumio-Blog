@@ -12,6 +12,25 @@ export interface LumioArticle {
   views: string;
   href: string;
   art: string;
+  /** 文章封面(frontmatter cover);有就在列表卡片上显示,没有显示默认方块动画 */
+  cover?: string | null;
+}
+
+/** cover 只收站内路径或 http(s) 地址 */
+function safeCover(cover: string | null | undefined): string | null {
+  const v = cover?.trim();
+  if (!v) return null;
+  if (v.startsWith('/') && !v.startsWith('//')) return v;
+  return /^https?:\/\//i.test(v) ? v : null;
+}
+
+/** 卡片缩略图内容:有封面显示封面图,没有显示默认的网格 + 方块动画 */
+function thumbInner(article: LumioArticle, art: string, tag: 'div' | 'span' = 'div'): string {
+  if (article.cover) {
+    return `<img class="thumb__img" src="${esc(article.cover)}" alt="" loading="lazy" decoding="async">`;
+  }
+  return `<${tag} class="thumb__grid" aria-hidden="true"></${tag}>
+          <${tag} class="thumb__art" aria-hidden="true">${art}</${tag}>`;
 }
 
 export interface LumioRowOptions {
@@ -134,6 +153,7 @@ export function buildLumioArticles(posts: NoteRow[], byTag: Map<string, NoteRow[
       views: `${Math.max(1.2, (post.word_count || 1200) / 780).toFixed(1)}k`,
       href: `/posts/${post.slug}.html`,
       art: artForTone(tone, index),
+      cover: safeCover(post.cover),
     };
   });
 }
@@ -173,9 +193,8 @@ export function renderArticleCard(article: LumioArticle, attrs = ''): string {
     <article class="card"${data}>
       <a class="card__link" href="${esc(article.href)}">
         <div class="thumb ${esc(article.tone)}">
-          <div class="thumb__grid" aria-hidden="true"></div>
+          ${thumbInner(article, article.art)}
           <span class="badge">${esc(article.category)}</span>
-          <div class="thumb__art" aria-hidden="true">${article.art}</div>
         </div>
         <div class="card__body">
           <h3 class="card__title">${esc(article.title)}</h3>
@@ -195,8 +214,7 @@ export function renderArticleRow(article: LumioArticle, opts: LumioRowOptions = 
   return `
     <a class="arow" href="${esc(article.href)}" data-cat="${esc(article.category)}" data-date="${esc(article.date)}" data-views="${esc(article.views)}" data-kind="${esc(kind)}">
       <span class="arow__thumb thumb ${esc(article.tone)}">
-        <span class="thumb__grid" aria-hidden="true"></span>
-        <span class="thumb__art" aria-hidden="true">${article.art}</span>
+        ${thumbInner(article, article.art, 'span')}
       </span>
       <span class="arow__body">
         <span class="arow__head">
@@ -218,12 +236,9 @@ export function renderFeatureArticle(article: LumioArticle): string {
     <article class="feature">
       <a class="feature__link" href="${esc(article.href)}">
         <div class="feature__art thumb ${esc(article.tone)}">
-          <div class="thumb__grid" aria-hidden="true"></div>
+          ${thumbInner(article, `${article.art}
+            <div class="cube c-amber float" style="--s:28px; left:30%; top:58%; animation-delay:-2.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>`)}
           <span class="badge">置顶</span>
-          <div class="thumb__art" aria-hidden="true">
-            ${article.art}
-            <div class="cube c-amber float" style="--s:28px; left:30%; top:58%; animation-delay:-2.2s;"><i class="f-t"></i><i class="f-l"></i><i class="f-r"></i></div>
-          </div>
         </div>
         <div class="feature__body">
           <span class="chip is-active">${esc(article.category)}</span>
@@ -952,6 +967,8 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   backdrop-filter: blur(4px);
 }
 .thumb__art { position: relative; width: 100%; height: 100%; }
+.thumb__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
+.thumb .badge { z-index: 1; }
 .thumb__art .cube { left: 50%; top: 50%; }
 .card__body { padding: 16px 16px 14px; display: flex; flex-direction: column; flex: 1; }
 .card__title {

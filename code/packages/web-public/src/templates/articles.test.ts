@@ -47,6 +47,19 @@ describe('renderArticles post meta', () => {
   });
 });
 
+describe('renderArticles cover thumbnails', () => {
+  it('shows the cover image on the card when set, and the default art otherwise', () => {
+    const withCover = note({ slug: 'c', title: '有封面', cover: 'https://lumiogames.cn/media/x' });
+    const plain = note({ slug: 'p', title: '没封面' });
+    const unsafe = note({ slug: 'u', title: '坏封面', cover: 'javascript:alert(1)' });
+    const html = renderArticles([withCover, plain, unsafe], new Map([['渲染', [withCover, plain, unsafe]]]), config);
+    expect(html).toContain('<img class="thumb__img" src="https://lumiogames.cn/media/x"');
+    expect(html.match(/class="thumb__img"/g)).toHaveLength(1);
+    expect(html).not.toContain('javascript:alert');
+    expect(html).toContain('thumb__art');
+  });
+});
+
 describe('renderArticles article data', () => {
   it('renders backend posts, counts, and clickable post links when posts exist', () => {
     const livePost = note({
