@@ -217,17 +217,14 @@ export interface SiteConfig {
     /** 旧版单广告配置,保留兼容。 */
     ad?: HfAdSettings;
   };
-  /** 平台内容推荐 — 见 schema.ts platformPromoSchema。 */
-  platform_promo?: PlatformPromoSettings;
+  /** 平台游戏推荐 — 见 schema.ts platformGamesSchema。 */
+  platform_games?: PlatformGamesSettings;
 }
 
-/** 推荐内容的种类;music 为预留,暂无 source。 */
-export type PromoKind = 'game' | 'music';
-
-/** 游戏源配置 — 缺省值见 schema.ts promoGameSourceSchema。 */
-export interface PromoGameSourceSettings {
-  kind: 'game';
-  board?: 'hot' | 'new' | 'feed';
+/** 平台游戏推荐配置(config.yaml platform_games)— 缺省值见 schema.ts platformGamesSchema。 */
+export interface PlatformGamesSettings {
+  enabled?: boolean;
+  source?: 'hot' | 'new' | 'feed';
   limit?: number;
   /** gameKey 或 slug,按顺序置顶 */
   pinned?: string[];
@@ -236,34 +233,22 @@ export interface PromoGameSourceSettings {
   link?: 'detail' | 'play';
   locale?: string;
   base_url?: string;
-  utm_campaign?: string;
+  utm?: { source?: string; medium?: string; campaign?: string };
 }
 
-export type PromoSourceSettings = PromoGameSourceSettings;
-
-/** 平台内容推荐配置(config.yaml platform_promo)— 缺省值见 schema.ts platformPromoSchema。 */
-export interface PlatformPromoSettings {
-  enabled?: boolean;
-  limit?: number;
-  utm?: { source?: string; medium?: string };
-  sources?: PromoSourceSettings[];
-}
-
-/** 渲染层拿到的推荐条目(已合并置顶/屏蔽、已拼好带 UTM 的链接)。 */
-export interface PromoItem {
-  kind: PromoKind;
-  /** source 内稳定 id(游戏 = gameKey);跨 source 用 kind:id 唯一 */
-  id: string;
+/** 渲染层拿到的平台游戏(已合并置顶/屏蔽、已拼好带 UTM 的链接)。 */
+export interface PromoGame {
+  gameKey: string;
   title: string;
-  /** 一句话简介(游戏 = oneLiner);没有时为空串 */
-  subtitle: string;
+  /** 接口没给时为空串 */
+  oneLiner: string;
   /** 仅 http(s),否则 null */
   coverUrl: string | null;
   /** 作者显示名;缺失时退回 handle,再缺失为空串 */
   authorName: string;
   authorHandle: string | null;
-  /** 主指标(游戏 = 游玩次数);接口没给时省略,不要渲染成 0 */
-  metric?: { label: string; value: number };
+  /** 累计游玩次数;接口没给时 null(不要渲染成 0) */
+  plays: number | null;
   url: string;
 }
 

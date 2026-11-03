@@ -1,6 +1,6 @@
 import type { Features, SiteConfig } from '@opennote/core';
 
-function replaceOptional<K extends 'theme' | 'seo' | 'home' | 'auth' | 'platform_promo'>(
+function replaceOptional<K extends 'theme' | 'seo' | 'home' | 'auth' | 'platform_games'>(
   target: SiteConfig,
   source: SiteConfig,
   key: K,
@@ -29,7 +29,7 @@ export function applyRuntimeConfig(
   replaceOptional(target, fresh, 'seo');
   replaceOptional(target, fresh, 'home');
   replaceOptional(target, fresh, 'auth');
-  replaceOptional(target, fresh, 'platform_promo');
+  replaceOptional(target, fresh, 'platform_games');
 
   if (features) {
     target.features = {

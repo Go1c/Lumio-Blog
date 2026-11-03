@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultFeatures, platformPromoSchema, siteConfigSchema } from './schema.js';
+import { defaultFeatures, platformGamesSchema, siteConfigSchema } from './schema.js';
 
 describe('siteConfigSchema', () => {
   it('preserves render-facing home, theme, and seo settings from config.yaml', () => {
@@ -30,39 +30,28 @@ describe('siteConfigSchema', () => {
     expect(parsed.features?.post_summary).toBe(true);
   });
 
-  it('keeps platform_promo as-is so a bad promo config cannot break the site config', () => {
+  it('keeps platform_games as-is so a bad value cannot break the site config', () => {
     const parsed = siteConfigSchema.parse({
       site: { title: 'Lumio Blog', url: 'https://blog.lumio.games' },
       author: { name: 'Lumio' },
       paths: { vault: '/vault', out: '/out', db: '/db.sqlite' },
-      platform_promo: { enabled: true, sources: [{ kind: 'video' }] },
+      platform_games: { enabled: true, source: 'nope' },
     });
-    expect(parsed.platform_promo).toEqual({ enabled: true, sources: [{ kind: 'video' }] });
+    expect(parsed.platform_games).toEqual({ enabled: true, source: 'nope' });
   });
 
-  it('fills platform_promo defaults', () => {
-    expect(platformPromoSchema.parse({ enabled: true, sources: [{ kind: 'game', blocked: ['g-vxidb3apsj'] }] })).toEqual({
+  it('fills platform_games defaults', () => {
+    expect(platformGamesSchema.parse({ enabled: true, blocked: ['g-vxidb3apsj'] })).toEqual({
       enabled: true,
+      source: 'hot',
       limit: 3,
-      utm: { source: 'blog', medium: 'left_rail' },
-      sources: [
-        {
-          kind: 'game',
-          board: 'hot',
-          pinned: [],
-          blocked: ['g-vxidb3apsj'],
-          link: 'detail',
-          locale: 'zh-CN',
-          base_url: 'https://lumiogames.cn',
-          utm_campaign: 'platform_games',
-        },
-      ],
+      pinned: [],
+      blocked: ['g-vxidb3apsj'],
+      link: 'detail',
+      locale: 'zh-CN',
+      base_url: 'https://lumiogames.cn',
+      utm: { source: 'blog', medium: 'left_rail', campaign: 'platform_games' },
     });
-  });
-
-  it('defaults platform_promo sources to one game source and rejects unknown kinds', () => {
-    expect(platformPromoSchema.parse({ enabled: true }).sources).toMatchObject([{ kind: 'game', board: 'hot' }]);
-    expect(platformPromoSchema.safeParse({ sources: [{ kind: 'video' }] }).success).toBe(false);
   });
 
   it('defaults local workflow features to the CLI entrypoint only', () => {
