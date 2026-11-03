@@ -283,7 +283,14 @@ body[data-media="audio"] [data-variant="audio"] { display: flex !important; }
 .cmt__name, .cmt__body {
   font: inherit; color: var(--ink); background: var(--bg); border: 1px solid var(--line); border-radius: 12px; outline: none;
 }
-.cmt__name { width: 260px; max-width: 100%; height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
+.cmt__name { flex: 0 1 230px; min-width: 0; height: 34px; padding: 0 12px; font-size: 14px; font-weight: 600; }
+.cmt__role {
+  flex: none; height: 34px; padding: 0 28px 0 12px; border-radius: 12px; border: 1px solid var(--line);
+  font: inherit; font-size: 14px; font-weight: 700; color: var(--primary-d); background: var(--accent-soft); cursor: pointer;
+  appearance: none; -webkit-appearance: none;
+  background-image: linear-gradient(45deg, transparent 50%, currentColor 50%), linear-gradient(135deg, currentColor 50%, transparent 50%);
+  background-position: calc(100% - 15px) 15px, calc(100% - 10px) 15px; background-size: 5px 5px; background-repeat: no-repeat;
+}
 .cmt__body { width: 100%; padding: 10px 12px; font-size: 14.5px; line-height: 1.6; resize: vertical; min-height: 84px; }
 .cmt__name:focus, .cmt__body:focus { border-color: var(--primary); box-shadow: 0 0 0 3px var(--accent-soft); }
 .cmt__dice { width: 34px; height: 34px; border-radius: 10px; border: 1px solid var(--line); background: var(--card); color: var(--muted); cursor: pointer; display: grid; place-items: center; }
@@ -505,13 +512,14 @@ body.show-notes .proto-note b { width: 18px; height: 18px; border-radius: 50%; b
 
 
             <section class="cmt rel" data-cmt aria-label="评论">
-              <span class="proto-note" style="right:12px; top:-14px"><b>8</b>评论：起个名字就能发，不用登录</span>
+              <span class="proto-note" style="right:12px; top:-14px"><b>8</b>评论：选职能 + 随机苦逼瞬间，不用登录</span>
               <h2 class="cmt__title">评论 <span data-cmt-count>2</span></h2>
               <form class="cmt__form" data-cmt-form novalidate>
                 <div class="cmt__who">
                   <span class="cmt__avatar" data-cmt-avatar aria-hidden="true">路</span>
-                  <input class="cmt__name" data-cmt-name type="text" maxlength="24" placeholder="起个名字" aria-label="你的名字">
-                  <button type="button" class="cmt__dice" data-cmt-dice title="随机一个打工人身份" aria-label="随机一个打工人身份">
+                  <input class="cmt__name" data-cmt-state type="text" maxlength="16" placeholder="打包等了一小时的" aria-label="你的状态">
+                  <select class="cmt__role" data-cmt-role aria-label="你的职能"></select>
+                  <button type="button" class="cmt__dice" data-cmt-dice title="换一个这个职能的苦逼瞬间" aria-label="换一个这个职能的苦逼瞬间">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="18" height="18" rx="4"/><circle cx="8.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="15.5" r="1.2" fill="currentColor"/><circle cx="15.5" cy="8.5" r="1.2" fill="currentColor"/><circle cx="8.5" cy="15.5" r="1.2" fill="currentColor"/></svg>
                   </button>
                 </div>
@@ -522,8 +530,8 @@ body.show-notes .proto-note b { width: 18px; height: 18px; border-radius: 50%; b
                 </div>
               </form>
               <ol class="cmt__list" data-cmt-list>
-                <li class="cmt__item"><span class="cmt__avatar">数</span><div><div class="cmt__meta"><b>改了第 8 版需求的数值策划</b><time>2 小时前</time></div><p>看完很有共鸣，一个人做发行真的太难了，问卷已填。</p></div></li>
-                <li class="cmt__item"><span class="cmt__avatar">我</span><div><div class="cmt__meta"><b>我电脑上是好的</b><time>昨天</time></div><p>LGUI 已经在用了，期待后面一键发布的工作流。</p></div></li>
+                <li class="cmt__item"><span class="cmt__avatar">数</span><div><div class="cmt__meta"><b>表格又被改崩的数值策划</b><time>2 小时前</time></div><p>看完很有共鸣，一个人做发行真的太难了，问卷已填。</p></div></li>
+                <li class="cmt__item"><span class="cmt__avatar">客</span><div><div class="cmt__meta"><b>打包等了一小时的客户端</b><time>昨天</time></div><p>LGUI 已经在用了，期待后面一键发布的工作流。</p></div></li>
               </ol>
             </section>
           </article>
@@ -753,59 +761,51 @@ body.show-notes .proto-note b { width: 18px; height: 18px; border-radius: 50%; b
   addEventListener('scroll', updateMini, { passive: true });
 
 
-  // 评论：名字可自己起，也可随机；名字记在本机，下次自动带上
+  // 评论名字 = 左边的「苦逼瞬间」+ 右边选的职能，例如「打包等了一小时的」+「客户端」。
+  // 骰子只在当前职能自己的苦逼瞬间里随机，保证前后对得上；左边也可以自己改写。名字记在本机。
   var cmt = document.querySelector('[data-cmt]');
-  var nameEl = cmt.querySelector('[data-cmt-name]');
+  var stateEl = cmt.querySelector('[data-cmt-state]');
+  var roleEl = cmt.querySelector('[data-cmt-role]');
   var bodyEl = cmt.querySelector('[data-cmt-body]');
   var errEl = cmt.querySelector('[data-cmt-err]');
   var avatarEl = cmt.querySelector('[data-cmt-avatar]');
-  // 随机名字：游戏公司打工人的日常。一半「状态 + 岗位」，一半一句话就是名字
-  var STATES = [
-    '改了第 8 版需求的', '凌晨三点还在出包的', '版本冻结前夜的', '周报写了三小时的', '提测又被打回的',
-    '加班到地铁停运的', '项目刚被砍的', '在工位吃泡面的', '被说「这很简单」的', '改 Bug 改出新 Bug 的',
-    '开了一天会的', '被拉进 37 个群的', '年终奖还没发的', '等版号的', '返工第 9 版的',
-    '周五晚上发版的', '被老板要求「参考原神」的', '背了三口锅的', '工位上睡着的', '打包等了一小时的',
-    '需求评审又没过的', '写完代码没人测的', '被 KPI 追着跑的', '在会议室里迷路的'
-  ];
-  var ROLES = [
-    '策划', '主策', '数值策划', '关卡策划', '程序', '客户端', '服务端', '美术', '原画', '动作美术',
-    'TA', 'QA', '制作人', '运营', '打工人'
-  ];
-  var PHRASES = [
-    '需求又改了', '明天就要上线', '这个很简单吧', '先上线再说', '我电脑上是好的', '能不能加个开关',
-    '最终版_改_真的最终', '下班前最后一个会', '今晚不回家了', '提测前最后一个 Bug', '等 CI 的人',
-    '周末被叫回公司', '又双叒叕延期了', '这锅我不背', '老板在我身后', '方案 B 也被否了',
-    '在线等，挺急的', '工资条比 Bug 少', '下个版本一定做', '已读不回的策划案'
-  ];
-  var lastAvatar = '';
+  var PAINS = {
+    '客户端': ['打包等了一小时的', '写完代码没人测的', '真机上又闪退的', '被说「这很简单」的', 'UI 又改了一版的'],
+    '服务端': ['凌晨被报警叫醒的', '合服合了一整夜的', '改 Bug 改出新 Bug 的', '被说「服务器又卡了」的'],
+    '策划': ['改了第 8 版需求的', '需求评审又没过的', '被要求「参考原神」的', '写的文档没人看的', '方案 B 也被否了的'],
+    '数值策划': ['表格又被改崩的', '被玩家骂太肝的', '平衡调了一个通宵的', '公式写了三屏的'],
+    '关卡策划': ['地图第 5 次推倒重来的', '自己都通不了关的', '被说「不好玩」的', '摆了一天怪的'],
+    '美术': ['返工第 9 版的', '被要「五彩斑斓的黑」的', '改到最后用了第一版的', '被说「再大气一点」的'],
+    '动画': ['一个动作 K 了一周的', '被说「打击感不够」的', '骨骼又被改了的'],
+    'TA': ['帧率又掉了的', 'Shader 编译了一上午的', '被美术和程序两头夹的'],
+    'QA': ['Bug 被说「无法复现」的', '上线前测了通宵的', '提的 Bug 被标「不修」的'],
+    '运营': ['半夜回玩家消息的', '活动配置又出错的', '替服务器背锅的', '周报写了三小时的'],
+    '制作人': ['开了一天会的', '被拉进 37 个群的', '等版号的', '版本又延期的']
+  };
+  var ROLES = Object.keys(PAINS);
+  roleEl.innerHTML = ROLES.map(function (r) { return '<option>' + r + '</option>'; }).join('');
   function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
-  function randomName() {
-    if (Math.random() < 0.5) {
-      var role = pick(ROLES);
-      lastAvatar = role.charAt(0);
-      return pick(STATES) + role;
-    }
-    var phrase = pick(PHRASES);
-    lastAvatar = phrase.charAt(0);
-    return phrase;
+  function rollPain() {
+    var list = PAINS[roleEl.value], cur = stateEl.value, next = pick(list);
+    while (list.length > 1 && next === cur) next = pick(list);
+    stateEl.value = next;
   }
-  function syncAvatar(fromDice) {
-    var v = nameEl.value.trim();
-    avatarEl.textContent = fromDice && lastAvatar ? lastAvatar : (v.charAt(0) || '?');
-  }
+  function syncAvatar() { avatarEl.textContent = roleEl.value.charAt(0); }
+  function fullName() { return stateEl.value.trim() + roleEl.value; }
   var saved = null;
-  try { saved = localStorage.getItem('blog-comment-name'); } catch (e) {}
-  nameEl.value = saved || randomName();
-  syncAvatar(!saved);
-  nameEl.addEventListener('input', function () { syncAvatar(); errEl.textContent = ''; });
+  try { saved = JSON.parse(localStorage.getItem('blog-comment-who') || 'null'); } catch (e) {}
+  if (saved && PAINS[saved.role]) { roleEl.value = saved.role; stateEl.value = saved.state || ''; }
+  else { roleEl.value = pick(ROLES); rollPain(); }
+  syncAvatar();
+  roleEl.addEventListener('change', function () { rollPain(); syncAvatar(); errEl.textContent = ''; });
+  stateEl.addEventListener('input', function () { errEl.textContent = ''; });
+  cmt.querySelector('[data-cmt-dice]').addEventListener('click', rollPain);
   bodyEl.addEventListener('input', function () { errEl.textContent = ''; });
-  cmt.querySelector('[data-cmt-dice]').addEventListener('click', function () { nameEl.value = randomName(); syncAvatar(true); });
   cmt.querySelector('[data-cmt-form]').addEventListener('submit', function (e) {
     e.preventDefault();
-    var name = nameEl.value.trim(), body = bodyEl.value.trim();
-    if (!name) { errEl.textContent = '起个名字再发'; nameEl.focus(); return; }
+    var name = fullName(), body = bodyEl.value.trim();
     if (!body) { errEl.textContent = '写点内容再发'; bodyEl.focus(); return; }
-    try { localStorage.setItem('blog-comment-name', name); } catch (e2) {}
+    try { localStorage.setItem('blog-comment-who', JSON.stringify({ state: stateEl.value.trim(), role: roleEl.value })); } catch (e2) {}
     var li = document.createElement('li');
     li.className = 'cmt__item';
     li.innerHTML = '<span class="cmt__avatar"></span><div><div class="cmt__meta"><b></b><time>刚刚</time><em>· 审核后公开</em></div><p></p></div>';
