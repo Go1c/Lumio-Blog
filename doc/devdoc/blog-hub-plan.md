@@ -1,6 +1,6 @@
 # Blog 引流与生态打通规划
 
-> 状态：设计已定稿，待实施　·　更新：2026-11-03
+> 状态：Blog 侧已全部实现　·　更新：2026-11-03
 > 高保真原型：[`doc/prototype/hub-v1/index.html`](../prototype/hub-v1/index.html)（底部工具栏可切换电脑 / 手机、封面类型、标注）
 
 ## 1. 目标
@@ -170,15 +170,15 @@ Lumio 的几个对外站点现在各自孤立：Blog 没有任何外链，官网
 
 | # | 子项目 | 所在仓库 | 状态 |
 |---|---|---|---|
-| 1 | 修 B 站视频被 CSP 拦截，删除「中级」和假阅读数 | Lumio-Blog | 已完成，分支 `claude/fix-csp-video-fake-meta-b7fd58`（886e779），待合并 |
-| 2 | 游戏推荐数据层（拉取、缓存、置顶、屏蔽） | Lumio-Blog | 已完成，分支 `claude/feat-platform-games-feed-e5ac3d`（6d30eb8），待合并 |
-| 3 | 创作中心改造成信息中枢（见第 8 节） | Lumio Next | 待平台侧排期，**是第 4 项上线的前提** |
-| 4 | 文章页改版：右上角、左栏、右栏、手机悬浮条、logo、来源参数 | Lumio-Blog | 待开始，依赖 1、2 |
-| 5 | 首屏媒体三选一 + 边听边读 | Lumio-Blog | 待开始，和第 4 项改同一批模板，跟在第 4 项之后 |
-| 6 | 评论改为不登录 | Lumio-Blog | 待开始 |
-| 7 | GitHub 组织页：填写官网地址，README 加创作中心和 Blog 链接，处理指向私有仓库的链接 | GitHub | 对外修改，需确认后执行 |
-| 8 | 首页、文章列表、专栏页沿用同一套左栏和悬浮条 | Lumio-Blog | 第二期 |
-| 9 | 后台管理员用 Lumio 账号登录 | Lumio-Blog + Lumio Next | 低优先级（评论已不需要登录） |
+| 1 | 修 B 站视频被 CSP 拦截，删除「中级」和假阅读数 | Lumio-Blog | 已上线 |
+| 2 | 游戏推荐数据层（拉取、缓存、置顶、屏蔽） | Lumio-Blog | 已上线；`config.yaml` 已开启 |
+| 3 | 创作中心改造成信息中枢（见第 8 节） | Lumio Next | 已转给平台侧 |
+| 4 | 文章页改版：右上角、左栏、右栏、手机悬浮条、logo、来源参数 | Lumio-Blog | 已实现 |
+| 5 | 首屏媒体三选一 + 边听边读 | Lumio-Blog | 已实现（frontmatter `media` / `media_title`） |
+| 6 | 评论改为不登录 | Lumio-Blog | 已实现 |
+| 7 | GitHub 组织页：填写官网地址，README 加创作中心和 Blog 链接，处理指向私有仓库的链接 | GitHub | 已完成（LumioGames/.github e3d49b9、4e7cb8a） |
+| 8 | 首页、文章列表、专栏页沿用同一套左栏和悬浮条 | Lumio-Blog | 首页左栏已实现；手机悬浮条全站通用；列表页和专栏页桌面端暂无左栏 |
+| 9 | 后台管理员用 Lumio 账号登录 | Lumio-Blog + Lumio Next | 暂不做 |
 
 第 4 项不应早于第 3 项上线：Blog 把人送到创作中心，创作中心必须先接得住。
 
@@ -210,6 +210,4 @@ Lumio 的几个对外站点现在各自孤立：Blog 没有任何外链，官网
 
 - 文章列表的「最多阅读」排序读的仍是按字数估算的数值，页面上已不显示，等接入 Umami 真实阅读数后再改排序。
 - 同源 PDF 嵌入（`![[doc.pdf]]`）实际显示不出来：PDF 文件本身带 `X-Frame-Options: DENY` 和 `frame-ancestors 'none'`。要修需要对 PDF 路径放宽为同源，此问题早于本次改动。
-- 游戏推荐的定时刷新在榜单变化时会整站重渲染，但模板还没用到这份数据。等文章页改版接入后才有意义；接入前可以考虑先不挂 `onChange`。
-- 游戏的 `title`、`oneLiner`、作者名是外部接口的原始字符串，文章页改版渲染时必须经过 `esc()`。
 - server 包里 graph、search、settings 三个测试文件共 13 个测试在本次改动前就失败（数据库迁移重复执行、设置接口返回 400）。
