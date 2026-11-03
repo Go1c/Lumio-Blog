@@ -18,7 +18,7 @@ from .sync_engine import SyncEngine
 
 
 def _run_async(coro):
-    """Run an async coroutine with graceful Ctrl+C handling."""
+    """Run an async coroutine with graceful Ctrl+C handling; return its result."""
     if sys.platform == "win32":
         asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
@@ -37,9 +37,9 @@ def _run_async(coro):
         pass
 
     try:
-        loop.run_until_complete(main_task)
+        return loop.run_until_complete(main_task)
     except (asyncio.CancelledError, KeyboardInterrupt):
-        pass
+        return None
     finally:
         loop.run_until_complete(loop.shutdown_asyncgens())
         loop.close()
@@ -98,7 +98,9 @@ def push(config_path: str):
     setup_logger(cfg.logging.level, cfg.logging.file)
     engine = SyncEngine(cfg)
     click.echo("Pushing local files...")
-    _run_async(engine.push())
+    if not _run_async(engine.push()):
+        click.echo("Push FAILED (see errors above).", err=True)
+        sys.exit(1)
     click.echo("Push complete.")
 
 

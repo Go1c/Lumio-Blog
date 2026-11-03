@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import logging
 import os
 import uuid
@@ -12,6 +13,7 @@ from .hash_utils import content_hash, path_hash
 from .protocol import (
     ACTION_NOTE_DELETE,
     ACTION_NOTE_MODIFY,
+    ACTION_NOTE_MODIFY_ACK,
     ACTION_NOTE_SYNC,
     ACTION_NOTE_SYNC_DELETE,
     ACTION_NOTE_SYNC_END,
@@ -50,8 +52,17 @@ class NoteSync:
         self._expected_delete = 0
         self._received_modify = 0
         self._received_delete = 0
+        # NoteSyncNeedPush messages announced in NoteSyncEnd (needUploadCount)
+        # vs. actually received. The server sends NoteSyncEnd *before* the
+        # queued NeedPush messages, so End alone does not mean we are done.
+        self._expected_upload = 0
+        self._received_need_push = 0
         self._got_end = False
         self._pending_last_time = 0
+        # NoteModify messages sent but not yet confirmed by the server,
+        # keyed by pathHash → path. Cleared by NoteModifyAck, or by
+        # NoteSyncMtime when the server only needed to update the mtime.
+        self._pending_acks: dict[str, str] = {}
         # Per-path "last known synced state" — updated on BOTH inbound
         # (server → local write) and outbound (local → server push). Value
         # is the content hash, or _DELETED sentinel for an absent file.
@@ -77,6 +88,29 @@ class NoteSync:
     def is_sync_complete(self) -> bool:
         return self._sync_complete
 
+    @property
+    def pending_ack_paths(self) -> list[str]:
+        return sorted(self._pending_acks.values())
+
+    async def wait_for_acks(self, timeout: float = 30) -> list[str]:
+        """Wait until every sent NoteModify is acked by the server.
+
+        The timeout restarts whenever an ack arrives, so a large push only
+        fails if the server stops confirming for ``timeout`` seconds.
+        Returns the paths still unconfirmed (empty list on success).
+        """
+        loop = asyncio.get_running_loop()
+        remaining = len(self._pending_acks)
+        deadline = loop.time() + timeout
+        while self._pending_acks:
+            if len(self._pending_acks) < remaining:
+                remaining = len(self._pending_acks)
+                deadline = loop.time() + timeout
+            if loop.time() > deadline:
+                break
+            await asyncio.sleep(0.1)
+        return self.pending_ack_paths
+
     def register_handlers(self) -> None:
         ws = self.engine.ws_client
         ws.on(ACTION_NOTE_SYNC_MODIFY, self._on_sync_modify)
@@ -85,6 +119,7 @@ class NoteSync:
         ws.on(ACTION_NOTE_SYNC_MTIME, self._on_sync_mtime)
         ws.on(ACTION_NOTE_SYNC_NEED_PUSH, self._on_sync_need_push)
         ws.on(ACTION_NOTE_SYNC_END, self._on_sync_end)
+        ws.on(ACTION_NOTE_MODIFY_ACK, self._on_modify_ack)
 
     async def request_sync(self) -> None:
         """Send incremental NoteSync request."""
@@ -148,16 +183,18 @@ class NoteSync:
             return
 
         stat = full.stat()
+        p_hash = path_hash(rel_path)
         msg = WSMessage(ACTION_NOTE_MODIFY, {
             "vault": self.config.server.vault,
             "path": rel_path,
-            "pathHash": path_hash(rel_path),
+            "pathHash": p_hash,
             "content": text,
             "contentHash": hash_,
             "ctime": int(stat.st_ctime * 1000),
             "mtime": int(stat.st_mtime * 1000),
         })
         log.info("NoteModify → %s", rel_path)
+        self._pending_acks[p_hash] = rel_path
         await self.engine.ws_client.send(msg)
         # Record the outbound hash so an echoed broadcast from the server
         # (or a repeated watcher event from our own write) is recognized.
@@ -257,7 +294,12 @@ class NoteSync:
         data = _extract_inner(msg.data)
         rel_path: str = data.get("path", "")
         mtime = data.get("mtime", 0)
-        if not rel_path or not mtime:
+        if not rel_path:
+            return
+        # The server answers a NoteModify whose content it already has (but
+        # with a different mtime) with NoteSyncMtime instead of an ack.
+        self._resolve_ack(path_hash(rel_path), rel_path)
+        if not mtime:
             return
         full = self.vault_path / rel_path
         if full.exists():
@@ -272,16 +314,28 @@ class NoteSync:
         rel_path: str = data.get("path", "")
         if not rel_path:
             return
+        self._received_need_push += 1
         log.info("← NoteSyncNeedPush: %s", rel_path)
         # NeedPush is an explicit server request to re-send the local content;
         # it must bypass the normal echo suppression check.
         await self.push_modify(rel_path, force=True)
+        self._check_all_received()
+
+    async def _on_modify_ack(self, msg: WSMessage) -> None:
+        data = _extract_inner(msg.data)
+        rel_path: str = data.get("path", "")
+        p_hash: str = data.get("pathHash", "") or (path_hash(rel_path) if rel_path else "")
+        if not p_hash:
+            return
+        log.info("← NoteModifyAck: %s", rel_path or p_hash)
+        self._resolve_ack(p_hash, rel_path)
 
     async def _on_sync_end(self, msg: WSMessage) -> None:
         data = _extract_inner(msg.data)
         last_time = data.get("lastTime", 0)
         self._expected_modify = data.get("needModifyCount", 0)
         self._expected_delete = data.get("needDeleteCount", 0)
+        self._expected_upload = data.get("needUploadCount", 0)
         self._pending_last_time = last_time
 
         self._got_end = True
@@ -290,10 +344,12 @@ class NoteSync:
             last_time,
             self._expected_modify,
             self._expected_delete,
-            data.get("needUploadCount", 0),
+            self._expected_upload,
         )
 
-        total_expected = self._expected_modify + self._expected_delete
+        total_expected = (
+            self._expected_modify + self._expected_delete + self._expected_upload
+        )
         if total_expected == 0:
             self._sync_complete = True
             self._commit_last_time()
@@ -309,18 +365,34 @@ class NoteSync:
         self._expected_delete = 0
         self._received_modify = 0
         self._received_delete = 0
+        self._expected_upload = 0
+        self._received_need_push = 0
         self._pending_last_time = 0
 
-    def _check_all_received(self) -> None:
-        if not self._got_end:
+    def _resolve_ack(self, p_hash: str, rel_path: str) -> None:
+        if self._pending_acks.pop(p_hash, None) is not None:
             return
-        total_expected = self._expected_modify + self._expected_delete
-        total_received = self._received_modify + self._received_delete
+        # Fall back to the path in case the server re-hashed it differently.
+        for key, pending_path in self._pending_acks.items():
+            if pending_path == rel_path:
+                del self._pending_acks[key]
+                return
+
+    def _check_all_received(self) -> None:
+        if not self._got_end or self._sync_complete:
+            return
+        total_expected = (
+            self._expected_modify + self._expected_delete + self._expected_upload
+        )
+        total_received = (
+            self._received_modify + self._received_delete + self._received_need_push
+        )
         if total_received >= total_expected:
             log.info(
-                "NoteSync complete: %d modified, %d deleted",
+                "NoteSync complete: %d modified, %d deleted, %d pushed",
                 self._received_modify,
                 self._received_delete,
+                self._received_need_push,
             )
             self._sync_complete = True
             self._commit_last_time()

@@ -180,21 +180,38 @@ class SyncEngine:
             except asyncio.CancelledError:
                 pass
 
-    async def push(self) -> None:
-        """Push all local files to remote."""
+    async def push(self, ack_timeout: float = 30) -> bool:
+        """Push all local files to remote.
+
+        Returns False if the note sync did not finish or any NoteModify was
+        not acked by the server within ``ack_timeout`` seconds.
+        """
         self.vault_path.mkdir(parents=True, exist_ok=True)
         self._register_handlers()
 
         ws_task = asyncio.create_task(self.ws_client.run())
+        ok = True
 
         try:
             if not await self.ws_client.wait_ready(timeout=30):
                 log.error("Failed to authenticate within 30s")
-                return
+                return False
 
             if self.config.sync.sync_notes:
                 await self.note_sync.request_full_sync()
-                await self._wait_note_sync(timeout=120)
+                if not await self._wait_note_sync(timeout=120):
+                    ok = False
+                # Closing the socket before the server confirms would drop
+                # NoteModify messages it has not processed yet.
+                missing = await self.note_sync.wait_for_acks(timeout=ack_timeout)
+                if missing:
+                    ok = False
+                    log.error(
+                        "%d NoteModify not acked by server within %.0fs:",
+                        len(missing), ack_timeout,
+                    )
+                    for path in missing:
+                        log.error("  unacked: %s", path)
 
             if self.config.sync.sync_files:
                 await self._push_all_files()
@@ -205,6 +222,7 @@ class SyncEngine:
                 await ws_task
             except asyncio.CancelledError:
                 pass
+        return ok
 
     # ── Internal helpers ─────────────────────────────────────────────
 
@@ -217,14 +235,15 @@ class SyncEngine:
             await self.file_sync.request_sync()
             await self._wait_file_sync(timeout=300)
 
-    async def _wait_note_sync(self, timeout: float = 60) -> None:
+    async def _wait_note_sync(self, timeout: float = 60) -> bool:
         loop = asyncio.get_running_loop()
         deadline = loop.time() + timeout
         while not self.note_sync.is_sync_complete:
             if loop.time() > deadline:
                 log.warning("NoteSync timed out after %.0fs", timeout)
-                break
+                return False
             await asyncio.sleep(0.5)
+        return True
 
     async def _wait_file_sync(self, timeout: float = 60) -> None:
         loop = asyncio.get_running_loop()
