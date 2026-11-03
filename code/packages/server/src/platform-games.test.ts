@@ -138,7 +138,7 @@ describe('mergePromoGames', () => {
       authorName: 'Author a',
       authorHandle: 'h-a',
       plays: 10,
-      url: 'https://lumiogames.cn/g/slug-a?utm_source=blog&utm_medium=left_rail&utm_campaign=platform_games',
+      url: 'https://lumiogames.cn/g/slug-a?entry=blog&utm_source=blog&utm_medium=left_rail&utm_campaign=platform_games',
     });
   });
 
@@ -174,7 +174,7 @@ describe('mergePromoGames', () => {
       settings({ link: 'play', limit: 1, utm: { medium: 'rail' } }),
     );
     expect(g?.url).toBe(
-      'https://lumiogames.cn/g/slug-a/play?utm_source=blog&utm_medium=rail&utm_campaign=platform_games',
+      'https://lumiogames.cn/g/slug-a/play?entry=blog&utm_source=blog&utm_medium=rail&utm_campaign=platform_games',
     );
   });
 });
