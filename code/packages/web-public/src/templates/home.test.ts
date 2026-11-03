@@ -303,3 +303,22 @@ describe('renderHome brand polish', () => {
     expect(html).not.toContain('https://example.com/your-ad-target');
   });
 });
+
+describe('renderHome article list', () => {
+  it('shows every public post on the home page with pinned posts first', () => {
+    const posts = Array.from({ length: 8 }, (_, i) =>
+      note({
+        slug: `p${i}`,
+        title: `文章 ${i}`,
+        word_count: 500,
+        updated_at: `2026-10-0${i + 1}T00:00:00.000Z`,
+        featured_on_home: i === 0 ? 1 : 0,
+      }),
+    );
+    const html = renderHome({ posts, byTag: new Map(), recentNotes: [], totalArticles: 8, totalNotes: 8, folders: [] }, config);
+    for (let i = 0; i < 8; i++) expect(html).toContain(`文章 ${i}`);
+    // 最早的 p0 被置顶,排在最新的 p7 前面,并带「置顶」标
+    expect(html.indexOf('文章 0')).toBeLessThan(html.indexOf('文章 7'));
+    expect(html.match(/badge badge--pin/g)).toHaveLength(1);
+  });
+});

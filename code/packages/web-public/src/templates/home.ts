@@ -24,13 +24,16 @@ export interface HomeData {
 }
 
 export function renderHome(data: HomeData, config: SiteConfig): string {
-  const articles = buildLumioArticles(sortHomePosts(data.posts), data.byTag);
-  const firstRow = articles.slice(0, 3).map((article) => renderArticleCard(article)).join('');
-  const secondRow = articles.slice(3, 6).map((article) => renderArticleCard(article)).join('');
+  const sorted = sortHomePosts(data.posts);
+  const articles = buildLumioArticles(sorted, data.byTag);
+  const cards = articles.map((article, i) => renderArticleCard(article, '', { pinned: sorted[i]?.featured_on_home === 1 }));
+  // 所有公开文章都在首页:第一行之后插广告位,其余按行排下去
+  const firstRow = cards.slice(0, 3).join('');
+  const restRows = cards.slice(3).join('');
   const articleGrid = firstRow
     ? `<div class="grid">${firstRow}</div>`
     : renderHomeEmptyState();
-  const secondGrid = secondRow ? `<div class="grid">${secondRow}</div>` : '';
+  const secondGrid = restRows ? `<div class="grid">${restRows}</div>` : '';
 
   const body = `
     <div class="body">
@@ -92,6 +95,9 @@ function renderHomeEmptyState(): string {
 
 function sortHomePosts(posts: NoteRow[]): NoteRow[] {
   return [...posts].sort((a, b) => {
+    // 置顶的排最前
+    const pinned = Number(b.featured_on_home === 1) - Number(a.featured_on_home === 1);
+    if (pinned !== 0) return pinned;
     const quality = Number(isWeakHomePost(a)) - Number(isWeakHomePost(b));
     if (quality !== 0) return quality;
     const date = sortDateMs(b) - sortDateMs(a);

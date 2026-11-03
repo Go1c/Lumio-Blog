@@ -15,7 +15,7 @@ const SEARCH_FLAGS: { id: SearchFlagId; label: string; sub: string }[] = [
   { id: 'searchable', label: '站内搜索', sub: '出现在 /search' },
   { id: 'seo_indexable', label: 'SEO robots', sub: '允许搜索引擎抓取 / 收入 sitemap' },
   { id: 'rss_includable', label: 'RSS 收录', sub: '出现在 /feed.xml' },
-  { id: 'featured_on_home', label: '首页推荐', sub: '上首页推荐位' },
+  { id: 'featured_on_home', label: '置顶', sub: '在首页排在最前面' },
 ];
 
 export const NOTE_DETAIL_RESPONSIVE_STYLE = `

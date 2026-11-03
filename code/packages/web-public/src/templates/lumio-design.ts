@@ -187,14 +187,16 @@ export function renderEmptyState(
         </section>`;
 }
 
-export function renderArticleCard(article: LumioArticle, attrs = ''): string {
+export function renderArticleCard(article: LumioArticle, attrs = '', opts: { pinned?: boolean } = {}): string {
   const data = attrs ? ` ${attrs}` : '';
+  const pin = opts.pinned ? '<span class="badge badge--pin">置顶</span>' : '';
   return `
     <article class="card"${data}>
       <a class="card__link" href="${esc(article.href)}">
         <div class="thumb ${esc(article.tone)}">
           ${thumbInner(article, article.art)}
           <span class="badge">${esc(article.category)}</span>
+          ${pin}
         </div>
         <div class="card__body">
           <h3 class="card__title">${esc(article.title)}</h3>
@@ -969,6 +971,7 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
 .thumb__art { position: relative; width: 100%; height: 100%; }
 .thumb__img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; }
 .thumb .badge { z-index: 1; }
+.badge.badge--pin { left: auto; right: 12px; background: var(--primary-d); color: #fff; }
 .thumb__art .cube { left: 50%; top: 50%; }
 .card__body { padding: 16px 16px 14px; display: flex; flex-direction: column; flex: 1; }
 .card__title {

@@ -69,8 +69,9 @@ describe('renderPostMedia', () => {
   });
 
   it('never shows the cover image on the article page', () => {
-    expect(renderPostMedia({ ...base, cover: '/media/c.png' })).toBe('');
-    expect(renderPostMedia({ ...base, cover: '/media/c.png', media: '/x.pdf' })).toBe('');
+    const withCover = { ...base, cover: '/media/c.png' } as Parameters<typeof renderPostMedia>[0];
+    expect(renderPostMedia(withCover)).toBe('');
+    expect(renderPostMedia({ ...withCover, media: '/x.pdf' })).toBe('');
     expect(renderPostMedia(base)).toBe('');
   });
 });

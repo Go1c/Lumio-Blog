@@ -88,9 +88,15 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
     byTag.get(t.tag)!.push(note);
   }
 
-  // home — 取最近 N 条作为 feed,recentNotes 取最新 4 条
-  const homeLimit = opts.config.home?.show_recent_posts ?? 12;
-  const homePosts = publicNotes.slice(0, homeLimit);
+  // home — 所有公开文章默认都上首页;置顶(featured_on_home)的排最前,由 home.ts 排序。
+  // 后台设置了 show_recent_posts 时只限制非置顶文章的数量,置顶的始终在。
+  const homeLimit = opts.config.home?.show_recent_posts;
+  const homePosts = homeLimit
+    ? [
+        ...publicNotes.filter((n) => n.featured_on_home === 1),
+        ...publicNotes.filter((n) => n.featured_on_home !== 1).slice(0, homeLimit),
+      ]
+    : publicNotes;
   const recentNotes = publicNotes.slice(0, 4);
 
   // 从 source_path 提取顶层文件夹(只统计 public 文章)
