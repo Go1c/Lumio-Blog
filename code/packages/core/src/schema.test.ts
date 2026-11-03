@@ -30,6 +30,27 @@ describe('siteConfigSchema', () => {
     expect(parsed.features?.post_summary).toBe(true);
   });
 
+  it('keeps platform_games and fills its defaults', () => {
+    const parsed = siteConfigSchema.parse({
+      site: { title: 'Lumio Blog', url: 'https://blog.lumio.games' },
+      author: { name: 'Lumio' },
+      paths: { vault: '/vault', out: '/out', db: '/db.sqlite' },
+      platform_games: { enabled: true, blocked: ['g-vxidb3apsj'] },
+    });
+
+    expect(parsed.platform_games).toEqual({
+      enabled: true,
+      source: 'hot',
+      limit: 3,
+      pinned: [],
+      blocked: ['g-vxidb3apsj'],
+      link: 'detail',
+      locale: 'zh-CN',
+      base_url: 'https://lumiogames.cn',
+      utm: { source: 'blog', medium: 'left_rail', campaign: 'platform_games' },
+    });
+  });
+
   it('defaults local workflow features to the CLI entrypoint only', () => {
     expect(defaultFeatures().workflow).toEqual({ cli_enabled: true });
     expect(defaultFeatures()).not.toHaveProperty('agent');

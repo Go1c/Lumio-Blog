@@ -217,6 +217,39 @@ export interface SiteConfig {
     /** 旧版单广告配置,保留兼容。 */
     ad?: HfAdSettings;
   };
+  /** 平台游戏推荐 — 见 schema.ts platformGamesSchema。 */
+  platform_games?: PlatformGamesSettings;
+}
+
+/** 平台游戏推荐配置(config.yaml platform_games)— 缺省值见 schema.ts platformGamesSchema。 */
+export interface PlatformGamesSettings {
+  enabled?: boolean;
+  source?: 'hot' | 'new' | 'feed';
+  limit?: number;
+  /** gameKey 或 slug,按顺序置顶 */
+  pinned?: string[];
+  /** gameKey 或 slug,优先级高于 pinned */
+  blocked?: string[];
+  link?: 'detail' | 'play';
+  locale?: string;
+  base_url?: string;
+  utm?: { source?: string; medium?: string; campaign?: string };
+}
+
+/** 渲染层拿到的平台游戏(已合并置顶/屏蔽、已拼好带 UTM 的链接)。 */
+export interface PromoGame {
+  gameKey: string;
+  title: string;
+  /** 接口没给时为空串 */
+  oneLiner: string;
+  /** 仅 http(s),否则 null */
+  coverUrl: string | null;
+  /** 作者显示名;缺失时退回 handle,再缺失为空串 */
+  authorName: string;
+  authorHandle: string | null;
+  /** 累计游玩次数;接口没给时 null(不要渲染成 0) */
+  plays: number | null;
+  url: string;
 }
 
 /** 自家广告(HfAd)配置 — 见 schema.ts hfAdSchema。 */
