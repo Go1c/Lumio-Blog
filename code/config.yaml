@@ -22,7 +22,7 @@ paths:
 platform_games:
   enabled: true
   source: hot
-  limit: 3
+  limit: 4
   pinned: []
   blocked:
     - g-vxidb3apsj   # 丝袜物理模拟器:不适合放在技术博客旁

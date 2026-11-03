@@ -69,7 +69,7 @@ export function renderHome(data: HomeData, config: SiteConfig): string {
 
 /** 首页左栏:创作中心卡 + 平台游戏推荐(替换原来的装饰大图),与文章页左栏同一套组件 */
 export const HOME_MOBILE_CSS = `
-.body:has(.home-hub) { grid-template-columns: 300px minmax(0, 1fr); }
+.body:has(.home-hub) { grid-template-columns: 246px minmax(0, 1fr); }
 .home-hub { padding: 30px 0 30px 30px; min-width: 0; }
 .home-hub__rail { position: sticky; top: 22px; }
 .home-hub__h1 {
