@@ -149,10 +149,6 @@ export function renderPost(data: PostData, config: SiteConfig): string {
             <div class="post-tags">
               ${tagLinks || `<span class="tag-inline">${esc(primaryTag)}</span>`}
               ${visibilityBadge}
-              <span class="diff">
-                <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 11l3-3 2 2 4-4 3 3"></path></svg>
-                中级
-              </span>
             </div>
             <div class="post-meta">
               <span class="post-meta__author">
@@ -161,7 +157,6 @@ export function renderPost(data: PostData, config: SiteConfig): string {
               </span>
               <span class="m">${calendarIcon()}<time datetime="${esc(iso)}">${esc(iso)}</time></span>
               <span class="m">${clockIcon()}${note.reading_minutes} 分钟</span>
-              <span class="m">${eyeIcon()}${displayViews(note)} 阅读</span>
             </div>
 
             ${
@@ -406,11 +401,6 @@ function renderRelatedItem(note: NoteRow, byTag: Map<string, NoteRow[]>, index: 
     </a>`;
 }
 
-function displayViews(note: NoteRow): string {
-  const value = Math.max(1.1, (note.word_count || 1200) / 900);
-  return `${value.toFixed(1)}k`;
-}
-
 function userIcon(): string {
   return '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>';
 }
@@ -421,10 +411,6 @@ function calendarIcon(): string {
 
 function clockIcon(): string {
   return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
-}
-
-function eyeIcon(): string {
-  return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5z"></path><circle cx="8" cy="8" r="2"></circle></svg>';
 }
 
 interface OutlineEntry {

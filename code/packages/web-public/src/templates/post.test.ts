@@ -80,6 +80,17 @@ describe('renderPost Lumio layout', () => {
   });
 });
 
+describe('renderPost post meta', () => {
+  it('does not render a hard-coded difficulty badge or fabricated view count', () => {
+    const html = renderPost({ note: { ...note, word_count: 5000 }, byTag: new Map(), series: [] }, config);
+
+    expect(html).not.toContain('class="diff"');
+    expect(html).not.toContain('中级');
+    expect(html).not.toMatch(/\d+(\.\d+)?k 阅读/);
+    expect(html).toContain('1 分钟');
+  });
+});
+
 describe('renderPost cover image (题图)', () => {
   it('renders the CSS hero animation when no cover is set', () => {
     const html = renderPost({ note, byTag: new Map(), series: [] }, config);

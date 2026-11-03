@@ -11,6 +11,9 @@ const CONTENT_SECURITY_POLICY = [
   "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.jsdelivr.net",
   "script-src 'self' 'unsafe-inline' https://static.cloudflareinsights.com https://data.lumio.games",
   "connect-src 'self' https://data.lumio.games",
+  // 文章内嵌视频播放器;同源 PDF iframe 走 'self',html-embed 的 srcdoc iframe 不受 frame-src 约束
+  "frame-src 'self' https://player.bilibili.com https://www.youtube-nocookie.com",
+  "media-src 'self' https:",
 ].join('; ');
 
 /** 后台与 API 不该被任何引擎收录,robots.txt 之外再加一层响应头。 */
