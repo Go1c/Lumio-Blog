@@ -25,6 +25,7 @@ import { securityHeaders } from './security-headers.js';
 import { registerPublicRedirects } from './public-redirects.js';
 import { rewriteAdminRequestPath } from './admin-static.js';
 import { createShutdownHandler, runStartupSync, stopRuntime } from './startup.js';
+import { PlatformGamesFeed } from './platform-games.js';
 
 /**
  * 找 web-admin 的构建产物。优先级：
@@ -108,6 +109,15 @@ async function main(): Promise<void> {
 
   const syncDiagnostics = new SyncDiagnosticsBuffer();
 
+  // 文章页左栏「平台游戏推荐」— 读当前 config.platform_games,未开启时 get() 直接返回 []
+  const platformGames = new PlatformGamesFeed({
+    getSettings: () => config.platform_games,
+    cacheFile: resolve(dataDir, 'platform-games-cache.json'),
+    log,
+  });
+  const renderPublic = async (): Promise<void> =>
+    renderSite({ db, out, config, platformGames: await platformGames.get() });
+
   const triggerSync = async (opts?: { forceAll?: boolean }): Promise<void> => {
     // Reload render-facing settings while keeping boot-time paths stable.
     const freshConfig = await loadConfig(cfgPath).catch(() => null);
@@ -126,7 +136,7 @@ async function main(): Promise<void> {
       // exactOptionalPropertyTypes:不能显式传 undefined,只在为 true 时才注入字段
       ...(opts?.forceAll ? { forceAll: true } : {}),
     });
-    await renderSite({ db, out, config });
+    await renderPublic();
   };
 
   await runStartupSync(triggerSync, log);
@@ -137,7 +147,7 @@ async function main(): Promise<void> {
     onEvent: async (e) => {
       bus.emit(e);
       if (e.kind === 'sync.completed') {
-        await renderSite({ db, out, config }).catch((error: unknown) => {
+        await renderPublic().catch((error: unknown) => {
           log('error', 'watch.render.failed', {
             message: error instanceof Error ? error.message : String(error),
           });
@@ -148,6 +158,13 @@ async function main(): Promise<void> {
   });
 
   startScheduler(db, bus, triggerSync);
+  platformGames.start({
+    onChange: () => renderPublic().catch((error: unknown) => {
+      log('error', 'platform_games.render.failed', {
+        message: error instanceof Error ? error.message : String(error),
+      });
+    }),
+  });
   startAnalyticsRollup({ db, log });
 
   // FastNoteSync supervisor — 从 fns-config.yaml 启动 Python fns_cli 子进程
@@ -162,7 +179,7 @@ async function main(): Promise<void> {
 
   const api = buildApp({
     db, config, bus, triggerSync,
-    renderSite: () => renderSite({ db, out, config }),
+    renderSite: renderPublic,
     dataDir, vaultDir: vault, dbPath,
     backupRunner, mediaStore,
     syncDiagnostics,
@@ -196,7 +213,10 @@ async function main(): Promise<void> {
   const shutdown = createShutdownHandler({
     log,
     stopRuntime: () => stopRuntime({
-      stopBackground: () => fnsSupervisor.stop(),
+      stopBackground: () => {
+        platformGames.stop();
+        return fnsSupervisor.stop();
+      },
       closeServer: () => closeServer(server),
       log,
     }),

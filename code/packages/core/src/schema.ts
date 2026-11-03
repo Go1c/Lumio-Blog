@@ -21,6 +21,33 @@ export const frontmatterSchema = z
   })
   .passthrough();
 
+/**
+ * 平台游戏推荐(文章页左栏「点开即玩」)— config.yaml 顶层 platform_games,可选。
+ * 数据由 server 从 lumiogames.cn 公开接口拉取;enabled !== true 时不拉取、不渲染。
+ * pinned / blocked 里的值按 gameKey 或 slug 匹配。
+ */
+export const platformGamesSchema = z.object({
+  enabled: z.boolean().default(false),
+  /** hot = 热门榜(近 7 天热度);new = 新作榜(上线 30 天内);feed = 首页推荐流 */
+  source: z.enum(['hot', 'new', 'feed']).default('hot'),
+  limit: z.number().int().min(1).max(10).default(3),
+  /** 置顶,按数组顺序排最前;接口结果里没有的会按 slug 单独补查,查不到跳过 */
+  pinned: z.array(z.string().min(1)).default([]),
+  /** 屏蔽,优先级高于 pinned */
+  blocked: z.array(z.string().min(1)).default([]),
+  /** detail = /g/{slug} 详情页;play = /g/{slug}/play 直接进游戏(未实名访客会被防沉迷时段拦住) */
+  link: z.enum(['detail', 'play']).default('detail'),
+  locale: z.string().min(1).default('zh-CN'),
+  base_url: z.string().url().default('https://lumiogames.cn'),
+  utm: z
+    .object({
+      source: z.string().min(1).default('blog'),
+      medium: z.string().min(1).default('left_rail'),
+      campaign: z.string().min(1).default('platform_games'),
+    })
+    .default({}),
+});
+
 export const siteConfigSchema = z.object({
   site: z.object({
     title: z.string(),
@@ -79,6 +106,8 @@ export const siteConfigSchema = z.object({
     })
     .passthrough()
     .optional(),
+  /** 这里只保留原样;由 server 用 platformGamesSchema 校验,写错只关掉推荐模块,不影响整站配置加载 */
+  platform_games: z.object({}).passthrough().optional(),
   auth: z
     .object({
       github: z

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { defaultFeatures, siteConfigSchema } from './schema.js';
+import { defaultFeatures, platformGamesSchema, siteConfigSchema } from './schema.js';
 
 describe('siteConfigSchema', () => {
   it('preserves render-facing home, theme, and seo settings from config.yaml', () => {
@@ -28,6 +28,30 @@ describe('siteConfigSchema', () => {
     expect(parsed.site.locale).toBe('zh-CN');
     expect(parsed.author.bio_md).toBe('**maker** notes');
     expect(parsed.features?.post_summary).toBe(true);
+  });
+
+  it('keeps platform_games as-is so a bad value cannot break the site config', () => {
+    const parsed = siteConfigSchema.parse({
+      site: { title: 'Lumio Blog', url: 'https://blog.lumio.games' },
+      author: { name: 'Lumio' },
+      paths: { vault: '/vault', out: '/out', db: '/db.sqlite' },
+      platform_games: { enabled: true, source: 'nope' },
+    });
+    expect(parsed.platform_games).toEqual({ enabled: true, source: 'nope' });
+  });
+
+  it('fills platform_games defaults', () => {
+    expect(platformGamesSchema.parse({ enabled: true, blocked: ['g-vxidb3apsj'] })).toEqual({
+      enabled: true,
+      source: 'hot',
+      limit: 3,
+      pinned: [],
+      blocked: ['g-vxidb3apsj'],
+      link: 'detail',
+      locale: 'zh-CN',
+      base_url: 'https://lumiogames.cn',
+      utm: { source: 'blog', medium: 'left_rail', campaign: 'platform_games' },
+    });
   });
 
   it('defaults local workflow features to the CLI entrypoint only', () => {
