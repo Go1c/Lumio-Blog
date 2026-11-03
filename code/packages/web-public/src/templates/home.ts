@@ -109,8 +109,9 @@ function isWeakHomePost(n: NoteRow): boolean {
   return !title || /^未命名(?:\s+\d+)?$/.test(title) || Number(n.word_count ?? 0) <= 0;
 }
 
+/** 按发布时间排:只改标签 / 正文不会让旧文章跑到前面。 */
 function sortDateMs(n: NoteRow): number {
-  const raw = n.updated_at || n.published_at || n.created_at || '';
+  const raw = n.published_at || n.updated_at || n.created_at || '';
   const ms = Date.parse(raw);
   return Number.isFinite(ms) ? ms : 0;
 }

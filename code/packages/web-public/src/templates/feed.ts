@@ -13,6 +13,11 @@ function absoluteCover(cover: string | null, siteUrl: string): string | null {
   }
 }
 
+function pubMs(n: NoteRow): number {
+  const ms = Date.parse(n.published_at ?? n.updated_at ?? '');
+  return Number.isFinite(ms) ? ms : 0;
+}
+
 /**
  * RSS 2.0。除标题 / 链接 / 时间 / 摘要外,每篇带:
  *  - <category>:文章标签,订阅方(如创作中心「官方动态」)按它筛选
@@ -21,7 +26,9 @@ function absoluteCover(cover: string | null, siteUrl: string): string | null {
  */
 export function renderFeed(posts: NoteRow[], config: SiteConfig, byTag: Map<string, NoteRow[]> = new Map()): string {
   const siteUrl = config.site.url.replace(/\/+$/, '');
-  const items = posts
+  // 按发布时间倒序(调用方给的是按 updated_at 排的列表,改个标签不应让旧文章排到最前)
+  const items = [...posts]
+    .sort((a, b) => pubMs(b) - pubMs(a))
     .slice(0, 50)
     .map((p) => {
       const categories = tagsForSlug(byTag, p.slug)
@@ -33,7 +40,7 @@ export function renderFeed(posts: NoteRow[], config: SiteConfig, byTag: Map<stri
       <title>${esc(p.title)}</title>
       <link>${esc(siteUrl)}/posts/${esc(p.slug)}.html</link>
       <guid>${esc(siteUrl)}/posts/${esc(p.slug)}.html</guid>
-      <pubDate>${new Date(p.published_at ?? p.updated_at).toUTCString()}</pubDate>
+      <pubDate>${new Date(pubMs(p)).toUTCString()}</pubDate>
       ${p.summary ? `<description>${esc(p.summary)}</description>` : ''}
       ${categories}
       ${cover ? `<media:content url="${esc(cover)}" medium="image" />` : ''}

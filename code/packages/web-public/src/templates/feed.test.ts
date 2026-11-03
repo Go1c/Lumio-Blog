@@ -33,6 +33,14 @@ describe('renderFeed', () => {
     expect(xml).toContain('A &lt;title&gt;');
   });
 
+  it('orders items by publish date, not by last edit', () => {
+    const old = note({ slug: 'old', published_at: '2026-06-01T00:00:00.000Z', updated_at: '2026-11-03T09:00:00.000Z' });
+    const fresh = note({ slug: 'fresh', published_at: '2026-11-01T00:00:00.000Z', updated_at: '2026-11-01T00:00:00.000Z' });
+    const xml = renderFeed([old, fresh], config);
+    expect(xml.indexOf('/posts/fresh.html')).toBeLessThan(xml.indexOf('/posts/old.html'));
+    expect(xml).toContain('<pubDate>Mon, 01 Jun 2026 00:00:00 GMT</pubDate>');
+  });
+
   it('omits the cover when it is missing or not http(s)', () => {
     const xml = renderFeed([note({ cover: 'javascript:alert(1)' }), note({ slug: 'b' })], config);
     expect(xml).not.toContain('media:content');
