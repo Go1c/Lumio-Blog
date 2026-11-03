@@ -4,7 +4,7 @@
  *
  * - 骰子随机出完整名字 = 「某职能的苦逼瞬间」+「该职能」,前后对应;连点不和当前名字重复
  * - 首次进入自动随机一个;名字可自己改写;完整名字记在本机 localStorage,下次自动带上
- * - GET 拉 approved 列表;POST 进入 pending 队列,自己的评论插到最上面并标「· 审核后公开」
+ * - GET 拉 approved 列表;POST 默认直接公开,自己的评论插到最上面(服务端若返回 pending 则标「· 审核后公开」)
  * - 用户文本一律走 textContent,不拼 innerHTML
  */
 (function () {

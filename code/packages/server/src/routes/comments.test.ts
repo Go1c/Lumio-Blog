@@ -117,7 +117,7 @@ class FakeDb {
 }
 
 describe('comments routes', () => {
-  it('defaults public submissions to pending moderation', async () => {
+  it('publishes public submissions immediately by default', async () => {
     const fake = new FakeDb();
     const app = new Hono();
     register(app, { db: fake.asDatabase() });
@@ -125,21 +125,32 @@ describe('comments routes', () => {
     const post = await app.request('/api/posts/hello-comments/comments', {
       method: 'POST',
       headers: { 'content-type': 'application/json' },
-      body: JSON.stringify({ author: 'Reader', body: 'Needs review first.' }),
+      body: JSON.stringify({ author: 'Reader', body: 'Shows up right away.' }),
     });
 
     expect(post.status).toBe(200);
-    expect(await post.json()).toMatchObject({ ok: true, status: 'pending' });
+    expect(await post.json()).toMatchObject({ ok: true, status: 'approved' });
 
-    const publicList = await app.request('/api/posts/hello-comments/comments');
-    expect(await publicList.json()).toEqual({ comments: [] });
+    const publicList = (await (await app.request('/api/posts/hello-comments/comments')).json()) as {
+      comments: Array<{ author: string; body: string }>;
+    };
+    expect(publicList.comments).toHaveLength(1);
+    expect(publicList.comments[0]).toMatchObject({ author: 'Reader', body: 'Shows up right away.' });
+  });
 
-    expect(fake.comments).toHaveLength(1);
-    expect(fake.comments[0]).toMatchObject({
-      slug: 'hello-comments',
-      author: 'Reader',
-      body: 'Needs review first.',
-      status: 'pending',
+  it('can still queue submissions for moderation when configured', async () => {
+    const fake = new FakeDb();
+    const app = new Hono();
+    register(app, { db: fake.asDatabase(), defaultStatus: 'pending' });
+
+    const post = await app.request('/api/posts/hello-comments/comments', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ author: 'Reader', body: 'Needs review first.' }),
     });
+
+    expect(await post.json()).toMatchObject({ ok: true, status: 'pending' });
+    expect(await (await app.request('/api/posts/hello-comments/comments')).json()).toEqual({ comments: [] });
+    expect(fake.comments[0]).toMatchObject({ status: 'pending' });
   });
 });
