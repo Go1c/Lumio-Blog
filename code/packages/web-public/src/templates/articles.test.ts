@@ -38,6 +38,15 @@ function note(overrides: Partial<Record<string, unknown>>) {
   } as any;
 }
 
+describe('renderArticles post meta', () => {
+  it('does not show a view count estimated from word count', () => {
+    const post = note({ slug: 'long', title: '长文', word_count: 9000, reading_minutes: 20 });
+    const html = renderArticles([post], new Map([['渲染', [post]]]), config);
+    expect(html).not.toMatch(/\d+(\.\d+)?k 阅读/);
+    expect(html).toContain('20 分钟');
+  });
+});
+
 describe('renderArticles article data', () => {
   it('renders backend posts, counts, and clickable post links when posts exist', () => {
     const livePost = note({

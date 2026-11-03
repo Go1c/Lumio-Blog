@@ -208,7 +208,6 @@ export function renderArticleRow(article: LumioArticle, opts: LumioRowOptions = 
           <span class="arow__author">${userIcon()}${esc(author)}</span>
           <span>${calendarIcon()}${esc(article.date)}</span>
           ${article.minutes > 0 ? `<span>${clockIcon()}${article.minutes} 分钟</span>` : ''}
-          <span>${eyeIcon()}${esc(article.views)} 阅读</span>
         </span>
       </span>
     </a>`;
@@ -230,7 +229,7 @@ export function renderFeatureArticle(article: LumioArticle): string {
           <span class="chip is-active">${esc(article.category)}</span>
           <h2 class="feature__title">${esc(article.title)}</h2>
           <p class="feature__dek">${esc(article.description)}</p>
-          ${renderMeta(article, true)}
+          ${renderMeta(article)}
         </div>
       </a>
     </article>`;
@@ -446,12 +445,11 @@ function renderAdCarouselScript(): string {
   </script>`;
 }
 
-function renderMeta(article: LumioArticle, includeViews = false): string {
+function renderMeta(article: LumioArticle): string {
   return `
     <div class="card__meta">
       <span>${calendarIcon()}${esc(article.date)}</span>
       <span>${clockIcon()}${article.minutes} 分钟</span>
-      ${includeViews ? `<span>${eyeIcon()}${esc(article.views)} 阅读</span>` : ''}
     </div>`;
 }
 
@@ -505,9 +503,6 @@ function clockIcon(): string {
   return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="8" cy="8" r="5.5"></circle><path d="M8 5v3l2 1.5" stroke-linecap="round" stroke-linejoin="round"></path></svg>';
 }
 
-function eyeIcon(): string {
-  return '<svg width="13" height="13" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M8 3C4.5 3 2 8 2 8s2.5 5 6 5 6-5 6-5-2.5-5-6-5z"></path><circle cx="8" cy="8" r="2"></circle></svg>';
-}
 
 function userIcon(): string {
   return '<svg width="13" height="13" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><circle cx="12" cy="9" r="3.4"></circle><path d="M5 20c0-3.6 3.1-6 7-6s7 2.4 7 6"></path></svg>';
