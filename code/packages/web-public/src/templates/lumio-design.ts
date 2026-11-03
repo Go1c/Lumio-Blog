@@ -1657,19 +1657,6 @@ body.ui-public.lumio-public::after { top: 14px; right: 14px; transform: scaleX(-
   overflow-wrap: anywhere;
 }
 .post-tags { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 18px; }
-.diff {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  font-family: var(--font-zh);
-  font-size: 12px;
-  font-weight: 700;
-  padding: 3px 11px;
-  border-radius: 8px;
-  background: #FDEFDC;
-  color: #cf8023;
-}
-.diff svg { width: 13px; height: 13px; }
 .post-meta {
   display: flex;
   align-items: center;

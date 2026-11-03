@@ -22,6 +22,29 @@ describe('securityHeaders', () => {
     expect(csp).toMatch(/connect-src[^;]*https:\/\/data\.lumio\.games/);
   });
 
+  it('allows embedded video players and external media without loosening framing of our own pages', async () => {
+    const app = new Hono();
+    app.use('*', securityHeaders());
+    app.get('*', (c) => c.text('ok'));
+
+    const res = await app.request('/posts/letter-to-opc-game-devs.html');
+    const csp = res.headers.get('content-security-policy') ?? '';
+    const directive = (name: string) =>
+      csp.split(';').map((d) => d.trim()).find((d) => d.startsWith(`${name} `)) ?? '';
+
+    const frameSrc = directive('frame-src').split(/\s+/);
+    // 同源 PDF iframe(![[doc.pdf]])与 B 站 / YouTube 无 cookie 播放器
+    expect(frameSrc).toEqual(
+      expect.arrayContaining(["'self'", 'https://player.bilibili.com', 'https://www.youtube-nocookie.com']),
+    );
+    expect(frameSrc).not.toContain('https:');
+    expect(frameSrc).not.toContain('*');
+    expect(directive('media-src').split(/\s+/)).toEqual(['media-src', "'self'", 'https:']);
+    // 防别人嵌我们的两道闸不变
+    expect(directive('frame-ancestors')).toBe("frame-ancestors 'none'");
+    expect(res.headers.get('x-frame-options')).toBe('DENY');
+  });
+
   it('marks admin and api responses noindex, but leaves public pages indexable', async () => {
     const app = new Hono();
     app.use('*', securityHeaders());
