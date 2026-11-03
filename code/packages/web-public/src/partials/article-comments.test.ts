@@ -46,3 +46,16 @@ describe('renderArticleComments', () => {
     expect(out).toContain('data-slug="a&quot;&gt;&lt;script&gt;x&lt;/script&gt;"');
   });
 });
+
+describe('script cache busting', () => {
+  it('loads comments.js with the content version so a stale cached script is never paired with new markup', async () => {
+    const { setScriptsVersion } = await import('../templates/layout.js');
+    setScriptsVersion('abc123def456');
+    try {
+      const html = renderArticleComments({ slug: 'a' }, {} as never);
+      expect(html).toContain('src="/comments.js?v=abc123def456"');
+    } finally {
+      setScriptsVersion('');
+    }
+  });
+});

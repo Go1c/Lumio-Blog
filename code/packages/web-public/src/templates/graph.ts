@@ -1,5 +1,5 @@
 import type { SiteConfig } from '@opennote/core';
-import { layout, esc } from './layout.js';
+import { layout, esc, scriptUrl } from './layout.js';
 
 /**
  * 知识图谱 — 全屏 SVG d3-force
@@ -77,7 +77,7 @@ export function renderGraph(config: SiteConfig): string {
         </aside>
       </div>
     </div>
-    <script type="module" src="/graph.js"></script>`;
+    <script type="module" src="${esc(scriptUrl('graph.js'))}"></script>`;
 
   return layout({
     title: `知识图谱 · ${esc(config.site.title)}`,

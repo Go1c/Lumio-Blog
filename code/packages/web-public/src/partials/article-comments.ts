@@ -1,5 +1,5 @@
 import type { SiteConfig } from '@opennote/core';
-import { esc } from '../templates/layout.js';
+import { esc, scriptUrl } from '../templates/layout.js';
 
 /**
  * 文章评论区 — 不登录,一个名字框 + 骰子,走本地后端 (/api/posts/:slug/comments)
@@ -46,5 +46,5 @@ export function renderArticleComments(opts: CommentsConfig, _config: SiteConfig)
       <p class="cmt__empty" data-cmt-empty hidden>还没有人留言，来当第一个</p>
     </div>
 
-    <script src="/comments.js" defer></script>`;
+    <script src="${esc(scriptUrl('comments.js'))}" defer></script>`;
 }

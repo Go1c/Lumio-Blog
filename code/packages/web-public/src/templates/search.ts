@@ -1,5 +1,5 @@
 import type { NoteRow, SiteConfig } from '@opennote/core';
-import { layout, esc } from './layout.js';
+import { layout, esc, scriptUrl } from './layout.js';
 import { renderHotTags } from './lumio-design.js';
 
 export interface SearchTemplateData {
@@ -99,7 +99,7 @@ export function renderSearch(config: SiteConfig, data: SearchTemplateData = {}):
         </div>
       </main>
     </div>
-    <script src="/search.js" defer></script>`;
+    <script src="${esc(scriptUrl('search.js'))}" defer></script>`;
 
   return layout({
     title: `搜索 · ${config.site.title}`,

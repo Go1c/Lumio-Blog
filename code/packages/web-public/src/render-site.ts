@@ -7,7 +7,7 @@ import { NoteRepo } from '@opennote/db';
 import type { NoteRow, PromoGame, SiteConfig } from '@opennote/core';
 import { ALL_CSS } from '@opennote/ui/ssg';
 import { CANVAS_RUNTIME_JS, HTML_EMBED_RUNTIME_JS } from '@opennote/obsidian';
-import { setPlatformGames, setStylesVersion } from './templates/layout.js';
+import { setPlatformGames, setScriptsVersion, setStylesVersion } from './templates/layout.js';
 import { HUB_CSS } from './partials/hub.js';
 import { renderHome } from './templates/home.js';
 import { renderArticles } from './templates/articles.js';
@@ -112,6 +112,8 @@ export async function renderSite(opts: RenderOptions): Promise<void> {
   const obsidianCss = await readObsidianCss();
   const fullCss = composeStyles(obsidianCss);
   setStylesVersion(createHash('sha1').update(fullCss).digest('hex').slice(0, 12));
+  // 页面脚本同理:地址带内容 hash,脚本改了地址就变,避免新页面配到被缓存的旧脚本
+  setScriptsVersion(await computeScriptsVersion());
   // 平台游戏推荐(文章页左栏、首页、手机悬浮条共用);未开启时为空,各模块直接不出
   setPlatformGames(opts.platformGames);
 
@@ -382,6 +384,25 @@ async function readObsidianCss(): Promise<string> {
  *
  * 容忍 dev 环境下 public/ 不存在(silent skip)。
  */
+/** 所有页面脚本(public/*.js + obsidian 运行时)内容的 hash,作为脚本地址的版本号。 */
+async function computeScriptsVersion(): Promise<string> {
+  const here = dirname(fileURLToPath(import.meta.url));
+  const hash = createHash('sha1');
+  hash.update(`${CANVAS_RUNTIME_JS}\n${HTML_EMBED_RUNTIME_JS}`);
+  for (const name of STATIC_ASSETS) {
+    if (!name.endsWith('.js')) continue;
+    for (const src of [join(here, '..', 'public', name), join(here, '..', '..', 'public', name)]) {
+      try {
+        hash.update(name).update(await readFile(src));
+        break;
+      } catch {
+        // try next candidate
+      }
+    }
+  }
+  return hash.digest('hex').slice(0, 12);
+}
+
 async function copyStaticAssets(out: string): Promise<void> {
   // 这个文件位于 src/ 或 dist/。public/ 是包根的兄弟目录。
   // import.meta.url -> .../packages/web-public/src/render-site.ts (开发) 或 .../dist/render-site.js (build)

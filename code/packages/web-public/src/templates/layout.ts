@@ -46,6 +46,21 @@ export function getPlatformGames(): PromoGame[] {
   return platformGames;
 }
 
+// 页面脚本(comments.js / search.js / graph.js / obsidian-runtime.js)的版本号:内容 hash。
+// 脚本地址不带版本号时,Cloudflare / 浏览器 / 微信内置浏览器会按小时级缓存旧脚本,
+// 新页面配旧脚本就会失效(例如评论框不初始化)。
+let scriptsVersion = '';
+
+/** 由 render-site 在渲染前调用,传入所有页面脚本内容的 hash。 */
+export function setScriptsVersion(version: string): void {
+  scriptsVersion = version;
+}
+
+/** 站内脚本地址,带内容版本号:脚本一改,地址就变,缓存自动失效。 */
+export function scriptUrl(name: string): string {
+  return scriptsVersion ? `/${name}?v=${scriptsVersion}` : `/${name}`;
+}
+
 /** 由 render-site 在写出 styles.css 时调用,传入内容 hash 作为缓存版本号。 */
 export function setStylesVersion(version: string): void {
   if (version) stylesVersion = version;
@@ -99,7 +114,7 @@ export function layout(o: LayoutOpts): string {
       aside.classList.toggle('is-collapsed');
     });
   </script>
-  <script defer src="/obsidian-runtime.js"></script>`;
+  <script defer src="${scriptUrl('obsidian-runtime.js')}"></script>`;
   const opts: PublicLayoutOpts = {
     title: o.title,
     description: o.description,
