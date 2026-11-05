@@ -10,7 +10,7 @@ const game = (over: Partial<PromoGame> = {}): PromoGame => ({
   authorName: 'Lumio',
   authorHandle: 'lumio',
   plays: 59,
-  url: 'https://lumiogames.cn/g/slug?entry=blog&utm_source=blog&utm_medium=left_rail&utm_campaign=platform_games',
+  url: 'https://lumiogames.cn/g/slug?entry=blog',
   ...over,
 });
 
@@ -80,18 +80,19 @@ describe('hub rail and float', () => {
   it('always renders the studio card, and games only when there are some', () => {
     const empty = renderHubRail([]);
     expect(empty).toContain('一起做出好玩的游戏');
-    expect(empty).toContain('https://lumiogames.cn/studio/?utm_source=blog&amp;utm_medium=left_rail&amp;utm_campaign=studio_hub#community');
+    expect(empty).toContain('https://lumiogames.cn/studio/#community');
     expect(empty).not.toContain('hub-play');
     expect(renderHubRail([game()])).toContain('开发者新作，点开就玩');
   });
 
-  it('escapes upstream text and rewrites utm_medium per placement', () => {
+  it('escapes upstream text and keeps outbound links free of utm params', () => {
     const html = renderHubPlay([game({ title: '<img src=x onerror=alert(1)>', authorName: 'a"b' })], 'mobile_float');
     expect(html).not.toContain('<img src=x');
     expect(html).toContain('&lt;img src=x onerror=alert(1)&gt;');
     expect(html).toContain('@a&quot;b');
-    expect(html).toContain('utm_medium=mobile_float');
-    expect(html).not.toContain('utm_medium=left_rail');
+    expect(html).not.toContain('utm_');
+    expect(html).toContain('href="https://lumiogames.cn/g/slug?entry=blog"');
+    expect(html).toContain('href="https://lumiogames.cn/?entry=blog"');
   });
 
   it('omits the play count when unknown and the play button when there are no games', () => {

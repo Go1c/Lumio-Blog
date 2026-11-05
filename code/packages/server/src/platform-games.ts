@@ -145,11 +145,9 @@ export function extractGames(source: ResolvedPlatformGamesSettings['source'], bo
 export function buildGameUrl(slug: string, settings: ResolvedPlatformGamesSettings): string {
   const path = `/g/${encodeURIComponent(slug)}${settings.link === 'play' ? '/play' : ''}`;
   const url = new URL(path, settings.base_url);
-  // entry 是 lumiogames.cn 自己的入口归因参数(站内用 entry=rank 等),与 utm_source 取同一值
+  // entry 是 lumiogames.cn 自己的入口归因参数(站内用 entry=rank 等)。不再拼 utm_*:
+  // 官网 canonical 由平台逐页输出,UTM 只会产生重复 URL(SEO 2026-11 清理)。
   url.searchParams.set('entry', settings.utm.source);
-  url.searchParams.set('utm_source', settings.utm.source);
-  url.searchParams.set('utm_medium', settings.utm.medium);
-  url.searchParams.set('utm_campaign', settings.utm.campaign);
   return url.toString();
 }
 
