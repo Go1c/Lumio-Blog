@@ -9,7 +9,8 @@ import { escHtml as esc } from '@opennote/ui/ssg';
  *  - 手机悬浮条:≤900px 时左栏放不下,改为固定在屏幕底部
  *  - 首屏媒体:media 视频 → 视频位;media 音频 → 边听边读;否则不显示(cover 只用于列表卡片)
  *
- * 所有外链带 utm_source=blog,utm_medium 区分位置。
+ * 外链不带 utm_* 追踪参数:官网 canonical 由平台逐页输出,UTM 只会产生重复 URL。
+ * entry=blog 保留,它是 lumiogames.cn 自己的入口归因参数(站内也用 entry=rank 等)。
  */
 
 const STUDIO_URL = 'https://lumiogames.cn/studio/';
@@ -17,23 +18,12 @@ const SITE_URL = 'https://lumiogames.cn/';
 
 export type HubMedium = 'left_rail' | 'mobile_float' | 'home_rail';
 
-function studioHref(medium: HubMedium, anchor = ''): string {
-  return `${STUDIO_URL}?utm_source=blog&utm_medium=${medium}&utm_campaign=studio_hub${anchor}`;
+function studioHref(anchor = ''): string {
+  return `${STUDIO_URL}${anchor}`;
 }
 
-function allGamesHref(medium: HubMedium): string {
-  return `${SITE_URL}?entry=blog&utm_source=blog&utm_medium=${medium}&utm_campaign=platform_games`;
-}
-
-/** 数据层统一拼成 left_rail;其他位置改写 utm_medium,方便分位置统计。 */
-function withMedium(url: string, medium: HubMedium): string {
-  try {
-    const u = new URL(url);
-    if (u.searchParams.has('utm_medium')) u.searchParams.set('utm_medium', medium);
-    return u.toString();
-  } catch {
-    return url;
-  }
+function allGamesHref(): string {
+  return `${SITE_URL}?entry=blog`;
 }
 
 /** 官网同款 Lumio 标志。同页多次出现时 gradient id 必须唯一。 */
@@ -54,7 +44,7 @@ const ICON_HEADPHONES = '<svg width="14" height="14" viewBox="0 0 24 24" fill="n
 /** 创作中心卡(面向开发者)。 */
 export function renderHubCard(medium: HubMedium): string {
   const chip = (anchor: string, icon: string, label: string) =>
-    `<a class="hub-chip" href="${esc(studioHref(medium, anchor))}" target="_blank" rel="noopener">${icon}${label}</a>`;
+    `<a class="hub-chip" href="${esc(studioHref(anchor))}" target="_blank" rel="noopener">${icon}${label}</a>`;
   return `
     <section class="hub-card" aria-label="Lumio 创作中心">
       <div class="hub-card__eyebrow">${lumioMark(`lumio-g-card-${medium}`, 30)}<span>Lumio 创作中心</span></div>
@@ -65,12 +55,12 @@ export function renderHubCard(medium: HubMedium): string {
         ${chip('#github', ICON_GITHUB, 'GitHub')}
         ${chip('#docs', ICON_BOOK, '文档')}
       </div>
-      <a class="hub-card__cta" href="${esc(studioHref(medium))}" target="_blank" rel="noopener">进入创作中心${ICON_ARROW}</a>
+      <a class="hub-card__cta" href="${esc(studioHref())}" target="_blank" rel="noopener">进入创作中心${ICON_ARROW}</a>
     </section>`;
 }
 
-function renderGameItem(game: PromoGame, medium: HubMedium): string {
-  const href = withMedium(game.url, medium);
+function renderGameItem(game: PromoGame): string {
+  const href = game.url;
   const cover = game.coverUrl
     ? `<img class="hub-game__cover" src="${esc(game.coverUrl)}" alt="" loading="lazy" decoding="async">`
     : '<span class="hub-game__cover" aria-hidden="true"></span>';
@@ -86,8 +76,8 @@ export function renderHubPlay(games: PromoGame[], medium: HubMedium, extraClass 
   return `
     <section class="hub-play${extraClass ? ` ${extraClass}` : ''}" aria-label="开发者新作,点开就玩">
       <div class="hub-play__head"><span class="hub-play__title">开发者新作，点开就玩</span></div>
-      <div class="hub-play__list">${games.map((g) => renderGameItem(g, medium)).join('')}</div>
-      <a class="hub-play__more" href="${esc(allGamesHref(medium))}" target="_blank" rel="noopener">全部游戏 →</a>
+      <div class="hub-play__list">${games.map((g) => renderGameItem(g)).join('')}</div>
+      <a class="hub-play__more" href="${esc(allGamesHref())}" target="_blank" rel="noopener">全部游戏 →</a>
     </section>`;
 }
 
@@ -114,7 +104,7 @@ export function renderHubFloat(games: PromoGame[]): string {
       ${lumioMark('lumio-g-float', 30)}
       <span class="hub-float__t">Lumio 创作中心</span>
       ${playBtn}
-      <a class="hub-float__go" href="${esc(studioHref('mobile_float'))}" target="_blank" rel="noopener">进入 →</a>
+      <a class="hub-float__go" href="${esc(studioHref())}" target="_blank" rel="noopener">进入 →</a>
       <button type="button" class="hub-float__min" data-float-min aria-label="收起">×</button>
     </div>
     <button type="button" class="hub-float__fab" data-float-fab aria-label="展开 Lumio 创作中心">${lumioMark('lumio-g-fab', 48)}</button>

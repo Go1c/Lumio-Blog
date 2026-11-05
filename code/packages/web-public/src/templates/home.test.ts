@@ -121,7 +121,8 @@ describe('renderHome brand polish', () => {
 
     expect(html).toContain('class="home-hub"');
     expect(html).toContain('一起做出好玩的游戏');
-    expect(html).toContain('utm_medium=home_rail');
+    expect(html).toContain('https://lumiogames.cn/studio/');
+    expect(html).not.toContain('utm_');
     expect(html).toMatch(/<h1 class="home-hub__h1">[^<]+<\/h1>/);
     expect(html).not.toContain('class="hero"');
     expect(html).not.toContain('GameTech');

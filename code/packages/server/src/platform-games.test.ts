@@ -140,7 +140,7 @@ describe('mergePromoGames', () => {
       authorName: 'Author a',
       authorHandle: 'h-a',
       plays: 10,
-      url: 'https://lumiogames.cn/g/slug-a?entry=blog&utm_source=blog&utm_medium=left_rail&utm_campaign=platform_games',
+      url: 'https://lumiogames.cn/g/slug-a?entry=blog',
     });
   });
 
@@ -170,14 +170,12 @@ describe('mergePromoGames', () => {
     expect(out.map((g) => g.gameKey)).toEqual(['a', 'b']);
   });
 
-  it('builds play links and custom utm', () => {
+  it('builds play links and keeps only the platform entry param', () => {
     const [g] = mergePromoGames(
       { games: pool, lookups: {} },
       settings({ link: 'play', limit: 1, utm: { medium: 'rail' } }),
     );
-    expect(g?.url).toBe(
-      'https://lumiogames.cn/g/slug-a/play?entry=blog&utm_source=blog&utm_medium=rail&utm_campaign=platform_games',
-    );
+    expect(g?.url).toBe('https://lumiogames.cn/g/slug-a/play?entry=blog');
   });
 });
 

@@ -1,6 +1,9 @@
 import type { SiteConfig } from '@opennote/core';
 import { THEME_BOOT_SCRIPT } from '../theme-boot.js';
 
+// 填入 360 站长平台为 blog.lumio.games 下发的 content 值；留空时不输出验证标签。
+const QIHOO_SITE_VERIFICATION: string = '';
+
 export function escHtml(s: string): string {
   return s
     .replace(/&/g, '&amp;')
@@ -47,9 +50,9 @@ export interface PublicLayoutOpts {
   afterShell?: string;
 }
 
-/** 右上角外链,带来源参数方便统计(见 doc/devdoc/blog-hub-plan.md 第 6 节) */
-const NAV_SITE_HREF = 'https://lumiogames.cn/?entry=blog&utm_source=blog&utm_medium=nav&utm_campaign=site';
-const NAV_STUDIO_HREF = 'https://lumiogames.cn/studio/?utm_source=blog&utm_medium=nav&utm_campaign=studio_hub';
+// 右上角外链,不带追踪参数:官网 canonical 由平台逐页输出,UTM 只会产生重复 URL。
+const NAV_SITE_HREF = 'https://lumiogames.cn/';
+const NAV_STUDIO_HREF = 'https://lumiogames.cn/studio/';
 
 /** 与官网一致的 Lumio 标志 */
 const BRAND_MARK_SVG = '<svg class="lumio-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" width="44" height="44" aria-hidden="true" focusable="false"><defs><linearGradient id="lumio-g-nav" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#6659db"/><stop offset="1" stop-color="#9aa6ff"/></linearGradient></defs><rect width="100" height="100" rx="29" fill="url(#lumio-g-nav)"/><rect x="25" y="22" width="16" height="16" rx="4" fill="#fff"/><rect x="25" y="42" width="16" height="16" rx="4" fill="#fff"/><rect x="25" y="62" width="16" height="16" rx="4" fill="#fff"/><rect x="45" y="62" width="16" height="16" rx="4" fill="#fff" fill-opacity=".6"/><rect x="65" y="62" width="16" height="16" rx="4" fill="#5de2c6"/><path d="M70 19C71.56 28.1 73.9 30.44 83 32C73.9 33.56 71.56 35.9 70 45C68.44 35.9 66.1 33.56 57 32C66.1 30.44 68.44 28.1 70 19Z" fill="#fff"/></svg>';
@@ -143,6 +146,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
   const articleTags = articleMetaTags(o.article);
   const brand = o.config.site.title || 'Lumio';
   const footerLinks = [
+    { href: 'https://lumiogames.cn/', label: 'Lumio 游戏官网' },
     ...(o.config.features?.graph === false ? [] : [{ href: '/graph/index.html', label: '知识图谱' }]),
     { href: '/folders/index.html', label: '文件夹' },
     { href: '/feed/', label: 'RSS' },
@@ -159,6 +163,7 @@ export function publicLayout(o: PublicLayoutOpts): string {
   <meta name="baidu-site-verification" content="codeva-qKoHKbt10r">
   <meta name="google-site-verification" content="YlFC2R5DY626I5yH2cA24zxqOOmciWqMHQcuJAw2El8">
   <meta name="sogou_site_verification" content="zRSOrPjKvt">
+  ${QIHOO_SITE_VERIFICATION.trim() && canonicalUrl.startsWith('https://blog.lumio.games/') ? `<meta name="360-site-verification" content="${escHtml(QIHOO_SITE_VERIFICATION.trim())}">` : ''}
   ${o.noindex ? '<meta name="robots" content="noindex,nofollow">' : ''}
   <link rel="canonical" href="${escHtml(canonicalUrl)}">
   <link rel="alternate" hreflang="${escHtml(lang)}" href="${escHtml(canonicalUrl)}">
